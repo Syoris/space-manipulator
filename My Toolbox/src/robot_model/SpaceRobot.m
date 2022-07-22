@@ -1,4 +1,4 @@
-classdef SpaceRobot < InternalAccess
+classdef SpaceRobot
 %SpaceRobot Create a tree-structured robot
 %   ROBOT = SpaceRobot() creates a default model that contains no
 %   rigid bodies.
@@ -39,97 +39,64 @@ classdef SpaceRobot < InternalAccess
 %       writeAsFunction       - Create rigidBodyTree generating function
 
 %#codegen
-    properties(SetAccess = private, GetAccess = public)
-        % rigidBodyTree Tree constructed for a fixed manipulator
-        rigidBodyTree
-    end
-
-    properties(SetAccess = private, Dependent)
-        %NumBodies Number of rigid bodies in the robot
-        %
-        %   Default: 0
-        NumBodies
-
-        %Bodies Cell array of rigidBody handles
-        %
-        %   Default: {}
-        Bodies
-
-        %Base Base of the robot
-        %
-        %   1x1 rigidBody with no access to Joint and Parent properties
-        Base
-    end
-
     properties
-        %BodyNames Names of all rigid bodies in the robot
+        %Name Robot Name
         %
-        %   Default: {}
-        BodyNames
+        %   Default: ""
+        Name
 
-        %BaseName Name of the base of the robot
-        %
-        %   Default: 'base'
-        BaseName
-
-        %DataFormat Input/output data format for kinematics/dynamics function
-        %   This char vector indicates the input and output data format
-        %   for all the kinematics and dynamics functions of RigidBodyTree
-        %   object. It takes either one of the three values: 'struct',
-        %   'row', 'column'.
-        %
-        %   Default: 'struct'
-        DataFormat
-    end
-
-    properties (Dependent, Access = ?robotics.manip.internal.InternalAccess)
-
-        %ShowTag Tag to identify the graphic objects that belong to the robot.
-        %   The tag is a randomly generated string.
-        ShowTag
-
-        %NumNonFixedBodies Number of rigid bodies with non-fixed joint in the robot
+        %NumLinks Number of links in the robot
         %
         %   Default: 0
-        NumNonFixedBodies
+        NumLinks
+        
+        NumJoints               %  Number of active joints
+
+        Links                   %  Cell array of robot links
+
+        Joints                  %  Cell array of robot joints
+        
+        Base                    %  Base link of the robot
+
+        Con                     %  Structure with additional connectivity information.
     end
     
     % Robo Representation methods
     methods
         function obj = SpaceRobot(varargin)
             if nargin==1
-                if isa(varargin{1}, 'rigidBodyTree')
-                    robotModel = varargin{1};
+                if isa(varargin{1}, 'struct')
+                    structModel = varargin{1};
                 elseif isa(varargin{1}, 'string') || isa(varargin{1}, 'char')
-                    robotModel = importrobot(varargin{1});
+                    [structModel, structKeys] = urdf2robot(varargin{1});
                 else
                     error("Error creating SpaceRobot: Invalid robot model specified")
                 end
-                obj.rigidBodyTree = robotModel;
 
-                NumBodies = robotModel.NumBodies;
-                Bodies = robotModel.Bodies;
-                Base = robotModel.Base;
-                BodyNames = robotModel.BodyNames;
-                BaseName = robotModel.BaseName;
-                DataFormat = robotModel.DataFormat;
-            
+                Name = structModel.name;
+                NumJoints = structModel.n_q; 
+                Links = structModel.links;                   
+                NumLinks = length(Links);
+                Joints = structModel.joints;           
+                Base = structModel.base_link;
+                Con = structModel.con;                                 
             else
-                NumBodies = 0;
-                Bodies = cell(1, 0);
-                Base = rigidBody('spacecraft');
-                BodyNames = cell(1, 0);
-                BaseName = 'spacecraft';
-                DataFormat = 'struct';
-
+                Name = "empty";
+                NumLinks = 0;
+                NumJoints = 0;
+                Links = {};                   
+                Joints = {};           
+                Base = "";
+                Con = {};   
             end
-                %SpaceRobot Constructor
-%                 obj.NumBodies = NumBodies;
-%                 obj.Bodies = Bodies;
-%                 obj.Base = Base;
-                obj.BodyNames = BodyNames;
-                obj.BaseName = BaseName;
-                obj.DataFormat = DataFormat;
+
+            obj.Name = Name; 
+            obj.NumLinks = NumLinks; 
+            obj.NumJoints = NumJoints; 
+            obj.Links = Links; 
+            obj.Joints = Joints; 
+            obj.Base = Base; 
+            obj.Con = Con;    
         end
         
         % TODO
@@ -155,8 +122,7 @@ classdef SpaceRobot < InternalAccess
         %
         %   See also showdetails, randomConfiguration
 
-%             Q = obj.TreeInternal.homeConfiguration();
-            % TODO
+            % Q = obj.TreeInternal.homeConfiguration();
             warning("Not yet implemented");
         end
         
@@ -698,40 +664,5 @@ classdef SpaceRobot < InternalAccess
             warning('Not yet implemented')
         end
     end
-    
-    % Property access methods
-    methods
-        function nb = get.NumBodies(obj)
-            nb = obj.rigidBodyTree.NumBodies;
-        end
 
-        function bnames = get.BodyNames(obj)
-        %get.BodyNames
-            bnames = obj.rigidBodyTree.BodyNames;
-        end
-
-        function basename = get.BaseName(obj)
-        %get.BaseName
-            basename = obj.rigidBodyTree.Base.Name;
-        end
-        
-        function base = get.Base(obj)
-        %get.Base
-            base = rigidBody('-', 'BodyInternal', obj.rigidBodyTree.Base, ...
-                             'TreeInternal', obj.rigidBodyTree.TreeInternal);
-        end
-
-        function bodies = get.Bodies(obj)
-        %get.Bodies
-            bodies = repmat({obj.Base}, 1, obj.NumBodies);
-            j = 1;
-            for i = coder.unroll(1:obj.rigidBodyTree.MaxNumBodies)
-                if i <= obj.NumBodies
-                    bodies{j} = rigidBody('-', 'BodyInternal', obj.rigidBodyTree.Bodies{i}, ...
-                                          'TreeInternal', obj.rigidBodyTree);
-                    j = j + 1;
-                end
-            end
-        end
-    end
 end
