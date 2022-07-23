@@ -1,10 +1,10 @@
-classdef SpaceRobot
+classdef SpaceRobot < handle
 %SpaceRobot Create a tree-structured robot
 %   ROBOT = SpaceRobot() creates a default model that contains no
 %   rigid bodies.
 %
 %   rigidBodyTree properties:
-%       NumBodies              - Number of bodies
+%       NumLinks               - Number of linkss
 %       Bodies                 - Cell array of rigid bodies
 %       Base                   - Base of the robot
 %       BodyNames              - Cell array of Names of rigid bodies
@@ -50,77 +50,124 @@ classdef SpaceRobot
         %   Default: 0
         NumLinks
         
-        NumJoints               %  Number of active joints
+        NumActiveJoints             %  Number of active joints
 
-        Links                   %  Cell array of robot links
+        Links                       %  Cell array of robot links
 
-        Joints                  %  Cell array of robot joints
+        LinkNames
+
+        % Joints                    %  Cell array of robot joints
         
-        Base                    %  Base link of the robot
+        Base                        %  Base link of the robot
+        BaseName
 
-        Con                     %  Structure with additional connectivity information.
+        % Con                       %  Structure with additional connectivity information.
     end
     
     % Robo Representation methods
     methods
         function obj = SpaceRobot(varargin)
             if nargin==1
-                if isa(varargin{1}, 'struct')
-                    structModel = varargin{1};
-                elseif isa(varargin{1}, 'string') || isa(varargin{1}, 'char')
-                    [structModel, structKeys] = urdf2robot(varargin{1});
-                else
-                    error("Error creating SpaceRobot: Invalid robot model specified")
-                end
+                % TODO: Init from struct, urdf file, DH params
+                % if isa(varargin{1}, 'struct')
+                %     structModel = varargin{1};
+                % elseif isa(varargin{1}, 'string') || isa(varargin{1}, 'char')
+                %     [structModel, structKeys] = urdf2robot(varargin{1});
+                % else
+                %     error("Error creating SpaceRobot: Invalid robot model specified")
+                % end
 
-                Name = structModel.name;
-                NumJoints = structModel.n_q; 
-                Links = structModel.links;                   
-                NumLinks = length(Links);
-                Joints = structModel.joints;           
-                Base = structModel.base_link;
-                Con = structModel.con;                                 
+                % Name = structModel.name;
+                % NumJoints = structModel.n_q; 
+                % Links = structModel.links;                   
+                % NumLinks = length(Links);
+                % Joints = structModel.joints;           
+                % Base = structModel.base_link;
+                % Con = structModel.con;                                 
             else
-                Name = "empty";
+                Name = "";
                 NumLinks = 0;
-                NumJoints = 0;
-                Links = {};                   
-                Joints = {};           
-                Base = "";
-                Con = {};   
+                NumActiveJoints = 0;
+                Links = cell(1, 0);                   
+                LinkNames = cell(1, 0);
+                BaseName = 'spacecraftBase';
+                % Joints = {};           
+                % Con = {};   
             end
 
             obj.Name = Name; 
             obj.NumLinks = NumLinks; 
-            obj.NumJoints = NumJoints; 
+            obj.NumActiveJoints = NumActiveJoints; 
             obj.Links = Links; 
-            obj.Joints = Joints; 
-            obj.Base = Base; 
-            obj.Con = Con;    
+            obj.LinkNames = LinkNames;
+            obj.BaseName = BaseName;
+            obj.Base = Link(BaseName);
+            
+            % obj.Joints = Joints; 
+            % obj.Con = Con;    
         end
         
+        function addLink(obj, linkIn, parentName)
+            narginchk(3,3);
+            validateattributes(linkIn, {'Link'}, ...
+                               {'scalar', 'nonempty'},'addBody', 'linkIn');
+
+            % Check if link with same name exists already in robot
+            linkId = obj.findLinkIdxByName(linkIn.Name); % Find link id from name
+            
+            if linkId > -1
+                error("Invalid link name. Same name already exists in the robot")
+            end
+
+            % Check if parent exists in robot
+            pId = obj.findLinkIdxByName(parentName);
+            if pId == -1
+                error("Invalid parent name")
+            end
+            
+            % TODO: Check joint name collision
+
+            % Update indexes
+            obj.NumLinks = obj.NumLinks + 1;
+            linkId = obj.NumLinks;
+
+            obj.Links{linkId} = linkIn;
+            obj.LinkNames{linkId} = linkIn.Name;
+            linkIn.Id = linkId;
+            
+            if pId > 0
+                parent = obj.Links{pId};
+            else
+                parent = obj.Base;
+            end
+            
+            linkIn.ParentId = pId;
+            linkIn.Parent = parent;
+            parent.Children{end+1} = linkIn;
+        end
+
         % TODO
         function Q = homeConfiguration(obj)
-        %homeConfiguration Return the home configuration for robot
-        %   Q = homeConfiguration(ROBOT) returns the home
-        %   configuration of ROBOT as predefined in the robot model.
-        %   The configuration Q is returned as an array of structs.
-        %   The structure array contains one struct for each non-fixed
-        %   joint. Each struct contains two fields
-        %       - JointName
-        %       - JointPosition
-        %   The sequence of structs in the array is the same as that
-        %   displayed by SHOWDETAILS
-        %
-        %
-        %   Example;
-        %       % Load predefined robot models
-        %       load exampleRobots
-        %
-        %       % Get the predefined home configuration for PUMA robot
-        %       Q = homeConfiguration(puma1)
-        %
-        %   See also showdetails, randomConfiguration
+            %homeConfiguration Return the home configuration for robot
+            %   Q = homeConfiguration(ROBOT) returns the home
+            %   configuration of ROBOT as predefined in the robot model.
+            %   The configuration Q is returned as an array of structs.
+            %   The structure array contains one struct for each non-fixed
+            %   joint. Each struct contains two fields
+            %       - JointName
+            %       - JointPosition
+            %   The sequence of structs in the array is the same as that
+            %   displayed by SHOWDETAILS
+            %
+            %
+            %   Example;
+            %       % Load predefined robot models
+            %       load exampleRobots
+            %
+            %       % Get the predefined home configuration for PUMA robot
+            %       Q = homeConfiguration(puma1)
+            %
+            %   See also showdetails, randomConfiguration
 
             % Q = obj.TreeInternal.homeConfiguration();
             warning("Not yet implemented");
@@ -139,16 +186,16 @@ classdef SpaceRobot
         %
         %   See also show
             fprintf('--------------------\n');
-            fprintf('Robot: (%d bodies)\n\n', int32(obj.NumBodies));
+            fprintf('Robot: (%d bodies)\n\n', int32(obj.NumLinks));
             
             widMaxBodyName = 10;
             widMaxJointName = 10;
             
-            for i = 1:obj.NumBodies
+            for i = 1:obj.NumLinks
                 widMaxBodyName = ...
-                    max(widMaxBodyName, length(obj.Bodies{i}.Name)+5);
+                    max(widMaxBodyName, length(obj.Links{i}.Name)+5);
                 widMaxJointName = ...
-                    max(widMaxJointName, length(obj.Bodies{i}.Joint.Name)+5);
+                    max(widMaxJointName, length(obj.Links{i}.Joint.Name)+5);
             end
             
             fprintf('%4s   %*s   %*s   %*s   %*s(Idx)   Children Name(s)\n', ...
@@ -164,43 +211,44 @@ classdef SpaceRobot
                 widMaxJointName, '----------',...
                 widMaxBodyName+2, '-----------');
             
-            for i = 1:obj.NumBodies
+            for i = 1:obj.NumLinks
                 
-                jointname = obj.Bodies{i}.Joint.Name;
-                jointtype = obj.Bodies{i}.Joint.Type;
-                bodyname = obj.Bodies{i}.Name;
+                jointname = obj.Links{i}.Joint.Name;
+                jointtype = obj.Links{i}.Joint.Type;
+                linkName = obj.Links{i}.Name;
                 
-%                 fprintf('%4d', int32(obj.Bodies{i}.Index));
+%                 fprintf('%4d', int32(obj.Links{i}.Index));
                 fprintf('%4d', i);
-                fprintf('   %*s', widMaxBodyName, bodyname);
+                fprintf('   %*s', widMaxBodyName, linkName);
                 fprintf('   %*s', widMaxJointName, jointname);
                 fprintf('   %*s', widMaxJointName, jointtype);
                 
                 
-%                 pid = obj.Bodies{i}.ParentIndex;
-%                 if pid > 0
-%                     parent = obj.Bodies{pid};
-%                 else
-%                     parent = obj.Base;
-%                 end
-%                 pid = obj.Bodies{i}.ParentIndex;
+                pid = obj.Links{i}.ParentId;
+                if pid > 0
+                    parent = obj.Links{pid};
+                else
+                    parent = obj.Base;
+                end
+                pid = obj.Links{i}.ParentId;
                 
                 % estimate the number of digits for a body index
-%                 p = pid;
-%                 widID = 0;
-%                 while p > 0.2
-%                     p = floor(p/10);
-%                     widID = widID+1;
-%                 end
-%                 widID = max(1, widID);
+                p = pid;
+                widID = 0;
+                while p > 0.2
+                    p = floor(p/10);
+                    widID = widID+1;
+                end
+                widID = max(1, widID);
                 
-                parentName = obj.Bodies{i}.Parent.Name;
-                fprintf('%*s   ', widMaxBodyName+8, parentName);
+                parentName = obj.Links{i}.Parent.Name;
+                fprintf('%*s(%*d)   ', widMaxBodyName+8-widID, parent.Name, widID, int32(pid));
                 
-                childrenList = obj.Bodies{i}.Children;
+                childrenList = obj.Links{i}.Children;
                 for j = 1:length(childrenList)
                     childrenName = childrenList{j}.Name;
-                    fprintf('%s  ', childrenName);
+                    childrenId = childrenList{j}.Id;
+                    fprintf('%s(%d)  ', childrenName, int32(childrenId) );
                 end
                 
                 fprintf('\n');
@@ -354,6 +402,29 @@ classdef SpaceRobot
             warning('Not yet implemented')
         end
        
+    end
+
+    methods %(Access = Private)
+        function lId = findLinkIdxByName(obj, linkName)
+            % Returns idx of link with name 'linkName'. Returns 0 for the base.
+            % return -1 if name not found
+            
+            lId = -1;
+
+            linkName = convertStringsToChars(linkName);
+
+            if strcmp(obj.Base.Name, linkName)
+                lId = 0;
+                return
+            end
+
+            for i = 1:obj.NumLinks
+                if strcmp(obj.Links{i}.Name, linkName)
+                    lId = i;
+                    break;
+                end
+            end
+        end
     end
 
     % Kinematics Methods
