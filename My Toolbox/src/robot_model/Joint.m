@@ -58,6 +58,19 @@ classdef Joint < handle
 %             obj.T1 = eye(4);
         end
         
+        function T = transformLink2Parent(obj)
+            % Find current config to initial config transform
+            switch(obj.Type)
+                case 'fixed'
+                    TJ = eye(4);
+                case 'revolute'
+                    TJ = axang2tform([obj.Axis, obj.Position]);
+                otherwise
+                    error("Wrong Type")
+            end
+            T = obj.JointToParentTransform*TJ;
+        end
+
     end
 
     % Setter/Getter

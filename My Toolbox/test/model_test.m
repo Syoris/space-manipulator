@@ -5,6 +5,7 @@ robot = rigidBodyTree;
 sc = SpaceRobot;
 sc.Name = 'spaceRobot';
 
+[robotSpart,robot_keys] = urdf2robot('ModelTest.urdf');
 %% Build Robot
 % Link 1
 scLink1 = Link('Link1');
@@ -58,24 +59,45 @@ robot.addBody(body1,'base'); % Add body1 to base
 robot.addBody(body2,'body1'); % Add body2 to body1
 addBody(robot,bodyEndEffector,'body2');
 
-%% Config
+%% Config Test
 close all
+qm = [pi/4, -pi/2];
 
-% Config test
+% SpaceRobot
 homeConf = sc.JointsConfig;
 newConf = homeConf;
-newConf(1).JointPosition = -1;
-newConf(2).JointPosition = 3;
+newConf(1).JointPosition = qm(1);
+newConf(2).JointPosition = qm(2);
 
-sc.setJointsConfig(newConf);
-sc.setJointsConfig([0, pi/2]);
+sc.setJointsConfig(newConf);  % Alternative: sc.setJointsConfig(qm)
+tTree = sc.forwardKinematics;
+figure
+hold on
+title("SpaceRobot")
+plotTransforms(tform2trvec(tTree{1}), tform2quat(tTree{1}), 'FrameSize', 0.1)
+plotTransforms(tform2trvec(tTree{2}), tform2quat(tTree{2}), 'FrameSize', 0.1)
+plotTransforms(tform2trvec(tTree{3}), tform2quat(tTree{3}), 'FrameSize', 0.1)
+hold off
 
-% Home config
-config = homeConfiguration(robot);
-tform = getTransform(robot,config,'body2','base');
 
-% figure
-% hold on
-% show(robot);
-% plotTransforms(tform2trvec(tform), tform2quat(tform))
-% hold off
+% Toolbox
+tform = getTransform(robot,newConf,'body2','base');
+figure
+title("Toolbox")
+hold on
+show(robot, newConf);
+plotTransforms(tform2trvec(tform), tform2quat(tform))
+hold off
+
+% Spart
+R0 = eye(3);
+r0 = [0; 0; 0];
+[RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0,qm,robotSpart);
+
+figure
+hold on
+title("SPART")
+plotTransforms(rJ(:, 1)', rotm2quat(RJ(:, :, 1)), 'FrameSize', 0.1)
+plotTransforms(rJ(:, 2)', rotm2quat(RJ(:, :, 2)), 'FrameSize', 0.1)
+plotTransforms(rJ(:, 3)', rotm2quat(RJ(:, :, 3)), 'FrameSize', 0.1)
+hold off

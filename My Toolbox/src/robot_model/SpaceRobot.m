@@ -391,38 +391,67 @@ classdef SpaceRobot < handle
 
     % Kinematics Methods
     methods
-                % TODO
-        function T = getTransform(obj, varargin)
+        function Ttree = forwardKinematics(obj)
+            % Compute forwardKinematics of the robot. Output an array of the homogenous 
+            % transformation matrix of inertial from to link: T_inertial_linkI
+
+            n = obj.NumLinks;
+            Ttree = repmat({eye(4)}, 1, n);             
+
+            for i = 1:n
+                link = obj.Links{i};
+                
+                % Find transform to parent
+                TLink2Parent = link.Joint.transformLink2Parent; % Taking into account current config 
+
+                % Find transform to inertial frame
+                if link.ParentId > 0
+                    Ttree{i} = Ttree{link.ParentId} * TLink2Parent;
+                else % If parent is base
+                    Ttree{i} = TLink2Parent;
+                end
+            
+            end
+        end
+
+        % TODO
+        function T = getTransform(obj, linkName1, linkName2)
         %getTransform Get the transform between two body frames
-        %   T1 = getTransform(ROBOT, Q, BODYNAME1) computes a
+        %   T1 = getTransform(ROBOT, BODYNAME1) computes a
         %   transform T1 that converts points originally expressed in
-        %   BODYNAME1 frame to be expressed in the robot's base frame
-        %   under configuration Q.
+        %   BODYNAME1 frame to be expressed in the robot's base frame.
         %
         %   T2 = getTransform(ROBOT, Q, BODYNAME1, BODYNAME2) computes
         %   a transform T2 that converts points originally expressed in
-        %   BODYNAME1 frame to be expressed in BODYNAME2 frame
-        %   under configuration Q.
-        %
-        %   Example:
-        %       % Load predefined robot models
-        %       load exampleRobots
-        %
-        %       % Get the transform that takes points in body 'L6' frame
-        %       % and express them in the base coordinates for PUMA robot
-        %       % under home configuration
-        %       T = getTransform(puma1, puma1.homeConfiguration, 'L6');
-        %
-        %       % Get the transform that takes points in body 'L2' frame
-        %       % and express them in body 'L5' frame for PUMA robot
-        %       % under a user-defined configuration
-        %       Q = puma1.homeConfiguration;
-        %       q = [ 0 0 pi/2 0 0 0];
-        %       Q = arrayfun(@(x,y) setfield(x, 'JointPosition', y), Q, q);
-        %       T = getTransform(puma1, Q, 'L2', 'L5');
+        %   BODYNAME1 frame to be expressed in BODYNAME2.
+        
+            narginchk(2,3);
+            
+            Ttree = obj.forwardKinematics(qvec);
+            
+            % 2-argument case: getTransform(ROBOT, linkName1)
+            lId1 = findLinkIdxByName(obj, linkName1);
+            if lId1 == 0
+                T1 = eye(4);
+            else
+                T1 = Ttree{lId1};
+            end
+            
+            T2 = eye(4);
+            if nargin == 4
+                % 4-argument case: getTransform(ROBOT, linkName1, linkName2)
+                lId2 = findLinkIdxByName(obj, linkName2);
+                if lId2 == 0
+                    T2 = eye(4);
+                else
+                    T2 = Ttree{lId2};
+                end
+            end
 
-%             T = obj.TreeInternal.getTransform(varargin{:});
-            warning("Not yet implemented");
+            R = T2(1:3,1:3)';
+            p = -R*T2(1:3,4);
+            T = [R,p;[0 0 0 1]]*T1; % the first term is inv(T2)
+
         end
         
         % TODO
