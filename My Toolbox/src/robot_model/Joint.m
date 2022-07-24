@@ -1,19 +1,23 @@
 classdef Joint < handle
     properties
+        % Identificaiton
         Name
         Id
         Type                        % Either revolute or fixed
         Q_id                        % Active joint id (-1 if fixed)
+        
+        % Config
+        Position                    % Current Joint Positition
         PositionLimits              % Position limits of the joint. Specified as [min max].
+        HomePosition                % Joint home position
+
+        % Kin
         ParentLink
         ChildLink
         Axis
         
-        
-        T1                          %  Homogeneous transformation matrix from parent link [4x4].
-        
         % Might add later
-        HomePosition
+        % T1                          %  Homogeneous transformation matrix from parent link [4x4].
         
 
     end
@@ -48,6 +52,7 @@ classdef Joint < handle
             obj.ChildLink = '';
             obj.Axis = [0 0 1];
             obj.HomePosition = 0;
+            obj.Position = 0;
             obj.JointToParentTransform = eye(4);
 
 %             obj.T1 = eye(4);

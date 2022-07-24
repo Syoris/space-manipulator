@@ -63,8 +63,12 @@ classdef SpaceRobot < handle
 
         % Con                       %  Structure with additional connectivity information.
     end
+
+    properties(SetAccess = private)
+        JointsConfig                % Joints current configuration (struct)
+    end
     
-    % Robo Representation methods
+    % Robot Representation methods
     methods
         function obj = SpaceRobot(varargin)
             if nargin==1
@@ -102,6 +106,7 @@ classdef SpaceRobot < handle
             obj.LinkNames = LinkNames;
             obj.BaseName = BaseName;
             obj.Base = Link(BaseName);
+            obj.JointsConfig = struct('JointName', '', 'JointPosition', 0);
             
             % obj.Joints = Joints; 
             % obj.Con = Con;    
@@ -144,36 +149,17 @@ classdef SpaceRobot < handle
             linkIn.ParentId = pId;
             linkIn.Parent = parent;
             parent.Children{end+1} = linkIn;
-        end
 
-        % TODO
-        function Q = homeConfiguration(obj)
-            %homeConfiguration Return the home configuration for robot
-            %   Q = homeConfiguration(ROBOT) returns the home
-            %   configuration of ROBOT as predefined in the robot model.
-            %   The configuration Q is returned as an array of structs.
-            %   The structure array contains one struct for each non-fixed
-            %   joint. Each struct contains two fields
-            %       - JointName
-            %       - JointPosition
-            %   The sequence of structs in the array is the same as that
-            %   displayed by SHOWDETAILS
-            %
-            %
-            %   Example;
-            %       % Load predefined robot models
-            %       load exampleRobots
-            %
-            %       % Get the predefined home configuration for PUMA robot
-            %       Q = homeConfiguration(puma1)
-            %
-            %   See also showdetails, randomConfiguration
+            % Add active joints to config and set joints to HomePosition
+            if ~strcmp(linkIn.Joint.Type, 'fixed')
+                obj.NumActiveJoints = obj.NumActiveJoints + 1;
+                linkIn.Joint.Position = linkIn.Joint.HomePosition;
+                linkIn.Joint.Q_id = obj.NumActiveJoints;
+                obj.JointsConfig(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, 'JointPosition', linkIn.Joint.Position);                 
 
-            % Q = obj.TreeInternal.homeConfiguration();
-            warning("Not yet implemented");
+            end
         end
         
-        % TODO 
         function showdetails(obj)
         %showdetails Display details of the robot
         %   showdetails(ROBOT) displays details of each body in the
@@ -241,7 +227,6 @@ classdef SpaceRobot < handle
                 end
                 widID = max(1, widID);
                 
-                parentName = obj.Links{i}.Parent.Name;
                 fprintf('%*s(%*d)   ', widMaxBodyName+8-widID, parent.Name, widID, int32(pid));
                 
                 childrenList = obj.Links{i}.Children;
@@ -402,29 +387,6 @@ classdef SpaceRobot < handle
             warning('Not yet implemented')
         end
        
-    end
-
-    methods %(Access = Private)
-        function lId = findLinkIdxByName(obj, linkName)
-            % Returns idx of link with name 'linkName'. Returns 0 for the base.
-            % return -1 if name not found
-            
-            lId = -1;
-
-            linkName = convertStringsToChars(linkName);
-
-            if strcmp(obj.Base.Name, linkName)
-                lId = 0;
-                return
-            end
-
-            for i = 1:obj.NumLinks
-                if strcmp(obj.Links{i}.Name, linkName)
-                    lId = i;
-                    break;
-                end
-            end
-        end
     end
 
     % Kinematics Methods
@@ -734,6 +696,110 @@ classdef SpaceRobot < handle
 %             fext = externalForce(obj.TreeInternal, bodyName, wrench, varargin{:});
             warning('Not yet implemented')
         end
+    end
+    
+    % Utilities
+    methods %(Access = Private)
+        function lId = findLinkIdxByName(obj, linkName)
+            % Returns idx of link with name 'linkName'. Returns 0 for the base.
+            % return -1 if name not found
+            
+            lId = -1;
+
+            linkName = convertStringsToChars(linkName);
+
+            if strcmp(obj.Base.Name, linkName)
+                lId = 0;
+                return
+            end
+
+            for i = 1:obj.NumLinks
+                if strcmp(obj.Links{i}.Name, linkName)
+                    lId = i;
+                    break;
+                end
+            end
+        end
+
+        function joint = findJointByName(obj, jntName)
+            for i=1:length(obj.Links)
+                joint = obj.Links{i}.Joint;
+                if strcmp(joint.Name, jntName)
+                    return 
+                end
+            end
+            error("Invalid Joint name specified");
+        end
+    end
+
+    % Setter/Getters
+    methods
+        function setJointsConfig(obj, newConfig)
+            %setJointsConfig
+            validateattributes(newConfig, {'struct', 'numeric'},...
+                {'row','nonempty'}, 'SpaceRobot', 'JointsConfig');
+            
+            if isa(newConfig,'struct')
+                if size(newConfig) ~= size(obj.JointsConfig)
+                    error("Invalid config: Missing values")
+                end
+                obj.JointsConfig = newConfig;
+            else
+                if length(newConfig) ~= obj.NumActiveJoints
+                    error("Invalid config: Missing values")
+                end
+                for i=1:length(newConfig)
+                    obj.JointsConfig(i).JointPosition = newConfig(i);
+                end
+            end
+
+            %Update all joints position
+            for i=1:length(obj.JointsConfig)
+                jntName = obj.JointsConfig(i).JointName;
+                jntPosition = obj.JointsConfig(i).JointPosition;
+
+                joint = obj.findJointByName(jntName);
+
+                if i ~= joint.Q_id
+                    error("Invalid joint idx while setting config")
+                end
+                joint.Position = jntPosition;
+            end
+
+        end
+
+        function Q = homeConfiguration(obj)
+            %homeConfiguration Return the home configuration for robot
+            %   Q = homeConfiguration(ROBOT) returns the home
+            %   configuration of ROBOT as predefined in the robot model.
+            %   The configuration Q is returned as an array of structs.
+            %   The structure array contains one struct for each non-fixed
+            %   joint. Each struct contains two fields
+            %       - JointName
+            %       - JointPosition
+            %   The sequence of structs in the array is the same as that
+            %   displayed by SHOWDETAILS
+            %
+            %
+            %   Example;
+            %       % Load predefined robot models
+            %       load exampleRobots
+            %
+            %       % Get the predefined home configuration for PUMA robot
+            %       Q = homeConfiguration(puma1)
+            %
+            %   See also showdetails, randomConfiguration
+    
+            % Q = obj.TreeInternal.homeConfiguration();
+                Q = obj.JointsConfig;
+
+                for i=1:length(Q)
+                    jntName = Q(i).JointName;
+                    joint = obj.findJointByName(jntName);
+                    
+                    Q(i).JointPosition = joint.HomePosition;
+                end
+            end
     end
 
 end

@@ -7,7 +7,7 @@ classdef Link < handle
         Mass            % Link mass
         CenterOfMass    % CoM of link specified as 
         Inertia         % Link Inertia relative to the body frame. [Ixx Iyy Izz Iyz Ixz Ixy]. Unit: kilogram-meter-squared (kg*m^2)
-        T               % Homogeneous transformation matrix from parent joint [4x4].
+        % T               % Homogeneous transformation matrix from parent joint [4x4].
         
         Parent          % Link parent. Joint specifies how this link can move relative to parent
         ParentId

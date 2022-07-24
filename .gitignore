@@ -28,3 +28,5 @@ codegen/
 
 # Simulink cache files
 *.slxc
+
+*.code-workspace
