@@ -58,14 +58,15 @@ classdef SpaceRobot < handle
 
         % Joints                    %  Cell array of robot joints
         
-        Base                        %  Base link of the robot
+        Base                        %  Base link of the robot, SpacecraftBase
         BaseName
+        BaseConfig
+        JointsConfig                % Joints current configuration (struct)
 
         % Con                       %  Structure with additional connectivity information.
     end
 
     properties(SetAccess = private)
-        JointsConfig                % Joints current configuration (struct)
     end
     
     % Robot Representation methods
@@ -87,7 +88,8 @@ classdef SpaceRobot < handle
                 % NumLinks = length(Links);
                 % Joints = structModel.joints;           
                 % Base = structModel.base_link;
-                % Con = structModel.con;                                 
+                % Con = structModel.con;
+                error("[SpaceRobot] Constructor from DH or urdf not yet implemented")                                
             else
                 Name = "";
                 NumLinks = 0;
@@ -105,8 +107,9 @@ classdef SpaceRobot < handle
             obj.Links = Links; 
             obj.LinkNames = LinkNames;
             obj.BaseName = BaseName;
-            obj.Base = Link(BaseName);
-            obj.JointsConfig = struct('JointName', '', 'JointPosition', 0);
+            obj.Base = SpacecraftBase(BaseName);
+%             obj.JointsConfig = struct('JointName', '', 'JointPosition', 0);
+            obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
             
             % obj.Joints = Joints; 
             % obj.Con = Con;    
@@ -763,13 +766,14 @@ classdef SpaceRobot < handle
 
     % Setter/Getters
     methods
-        function setJointsConfig(obj, newConfig)
-            %setJointsConfig
+        function set.JointsConfig(obj, newConfig)
+            %set JointsConfig
+
             validateattributes(newConfig, {'struct', 'numeric'},...
-                {'row','nonempty'}, 'SpaceRobot', 'JointsConfig');
+                {'row'}, 'SpaceRobot', 'JointsConfig');
             
             if isa(newConfig,'struct')
-                if size(newConfig) ~= size(obj.JointsConfig)
+                if length(newConfig) ~= obj.NumActiveJoints
                     error("Invalid config: Missing values")
                 end
                 obj.JointsConfig = newConfig;
@@ -829,6 +833,42 @@ classdef SpaceRobot < handle
                     Q(i).JointPosition = joint.HomePosition;
                 end
             end
+        
+        function baseConf = get.BaseConfig(obj)
+            baseConf = struct;
+            baseConf.Position = obj.Base.BasePosition;
+            baseConf.Rot = obj.Base.BaseRot;
+        end
+
+        function set.BaseConfig(obj, newConfig)
+            % Set new base config
+            % Can set by passing either a struct or array in the form [x, y, z; r, p, y]
+            %
+            %
+            % Ex:
+            %   newConfig = sc.BaseConfig
+            %   newConfig.BasePosition = [1, 2, 3]
+            %   sc.BaseConfig = newConfig
+            %
+            %   sc.BaseConfig = [1, 2, 3; pi/2, 0, 0]
+            
+            if isa(newConfig,'struct')
+                validateattributes(newConfig, {'struct'},...
+                {'nonempty'}, 'SpaceRobot', 'BaseConfig');
+
+%                 obj.BaseConfig = newConfig;
+                obj.Base.BasePosition = newConfig.Position;
+                obj.Base.BaseRot = newConfig.Rot;
+
+            else
+                
+                validateattributes(newConfig, {'numeric'},...
+                {'nonempty', 'size', [2, 3]}, 'SpaceRobot', 'BaseConfig');
+                
+                obj.Base.BasePosition = newConfig(1, :);
+                obj.Base.BaseRot = newConfig(2, :);
+            end
+        end
     end
 
 end

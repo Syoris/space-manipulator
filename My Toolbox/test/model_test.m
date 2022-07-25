@@ -69,35 +69,42 @@ newConf = homeConf;
 newConf(1).JointPosition = qm(1);
 newConf(2).JointPosition = qm(2);
 
-sc.setJointsConfig(newConf);  % Alternative: sc.setJointsConfig(qm)
-tTree = sc.forwardKinematics;
-figure
-hold on
-title("SpaceRobot")
-plotTransforms(tform2trvec(tTree{1}), tform2quat(tTree{1}), 'FrameSize', 0.1)
-plotTransforms(tform2trvec(tTree{2}), tform2quat(tTree{2}), 'FrameSize', 0.1)
-plotTransforms(tform2trvec(tTree{3}), tform2quat(tTree{3}), 'FrameSize', 0.1)
-hold off
+sc.JointsConfig = newConf;  % Alternative: sc.setJointsConfig = qm;
+
+baseConf = sc.BaseConfig;
+baseConf.Position = [2, 3, 4];
+baseConf.Rot = [0, pi/4, 0];
+
+sc.BaseConfig = baseConf;  % sc.BaseConfig = [2 3 4; 0 pi/4 0];
+
+% tTree = sc.forwardKinematics;
+% figure
+% hold on
+% title("SpaceRobot")
+% plotTransforms(tform2trvec(tTree{1}), tform2quat(tTree{1}), 'FrameSize', 0.1)
+% plotTransforms(tform2trvec(tTree{2}), tform2quat(tTree{2}), 'FrameSize', 0.1)
+% plotTransforms(tform2trvec(tTree{3}), tform2quat(tTree{3}), 'FrameSize', 0.1)
+% hold off
 
 
-% Toolbox
-tform = getTransform(robot,newConf,'body2','base');
-figure
-title("Toolbox")
-hold on
-show(robot, newConf);
-plotTransforms(tform2trvec(tform), tform2quat(tform))
-hold off
+% % Toolbox
+% tform = getTransform(robot,newConf,'body2','base');
+% figure
+% title("Toolbox")
+% hold on
+% show(robot, newConf);
+% plotTransforms(tform2trvec(tform), tform2quat(tform))
+% hold off
 
-% Spart
-R0 = eye(3);
-r0 = [0; 0; 0];
-[RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0,qm,robotSpart);
-
-figure
-hold on
-title("SPART")
-plotTransforms(rJ(:, 1)', rotm2quat(RJ(:, :, 1)), 'FrameSize', 0.1)
-plotTransforms(rJ(:, 2)', rotm2quat(RJ(:, :, 2)), 'FrameSize', 0.1)
-plotTransforms(rJ(:, 3)', rotm2quat(RJ(:, :, 3)), 'FrameSize', 0.1)
-hold off
+% % Spart
+% R0 = eye(3);
+% r0 = [0; 0; 0];
+% [RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0,qm,robotSpart);
+% 
+% figure
+% hold on
+% title("SPART")
+% plotTransforms(rJ(:, 1)', rotm2quat(RJ(:, :, 1)), 'FrameSize', 0.1)
+% plotTransforms(rJ(:, 2)', rotm2quat(RJ(:, :, 2)), 'FrameSize', 0.1)
+% plotTransforms(rJ(:, 3)', rotm2quat(RJ(:, :, 3)), 'FrameSize', 0.1)
+% hold off
