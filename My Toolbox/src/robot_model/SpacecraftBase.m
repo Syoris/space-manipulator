@@ -30,7 +30,7 @@ classdef SpacecraftBase < Link
                 trans = zeros(3, 1);
             end
 
-            obj.BaseToParentTransform = [rotM, trans; zeros(1, 4)];
+            obj.BaseToParentTransform = [rotM, trans; zeros(1, 3), 1];
         end
     end
 

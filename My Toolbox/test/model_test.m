@@ -64,7 +64,7 @@ close all
 qm = [pi/4, -pi/2];
 
 % SpaceRobot
-homeConf = sc.JointsConfig;
+homeConf = sc.homeConfiguration; % Get home config
 newConf = homeConf;
 newConf(1).JointPosition = qm(1);
 newConf(2).JointPosition = qm(2);
@@ -72,29 +72,36 @@ newConf(2).JointPosition = qm(2);
 sc.JointsConfig = newConf;  % Alternative: sc.setJointsConfig = qm;
 
 baseConf = sc.BaseConfig;
-baseConf.Position = [2, 3, 4];
-baseConf.Rot = [0, pi/4, 0];
+baseConf.Position = [0.25, 0.5, 0.1];
+baseConf.Rot = [0, pi/2, 0];
 
 sc.BaseConfig = baseConf;  % sc.BaseConfig = [2 3 4; 0 pi/4 0];
 
-% tTree = sc.forwardKinematics;
-% figure
-% hold on
-% title("SpaceRobot")
-% plotTransforms(tform2trvec(tTree{1}), tform2quat(tTree{1}), 'FrameSize', 0.1)
-% plotTransforms(tform2trvec(tTree{2}), tform2quat(tTree{2}), 'FrameSize', 0.1)
-% plotTransforms(tform2trvec(tTree{3}), tform2quat(tTree{3}), 'FrameSize', 0.1)
-% hold off
+tTree = sc.forwardKinematics;
+
+inertialFrame = [eye(3), zeros(3, 1); zeros(1, 3), 1];
+
+figure
+hold on
+title("SpaceRobot")
+plotTransforms(tform2trvec(inertialFrame), tform2quat(inertialFrame), 'FrameSize', 0.1);
+linkNames = fieldnames(tTree);
+for i = 1:length(linkNames)
+    linkName = linkNames{i};
+    T = tTree.(linkName).Transform;
+    plotTransforms(tform2trvec(T), tform2quat(T), 'FrameSize', 0.1)
+end
+hold off
 
 
-% % Toolbox
-% tform = getTransform(robot,newConf,'body2','base');
-% figure
-% title("Toolbox")
-% hold on
-% show(robot, newConf);
+% Toolbox
+tform = getTransform(robot,newConf,'body2','base'); % To check computed transform
+figure
+title("Toolbox")
+hold on
+show(robot, newConf);
 % plotTransforms(tform2trvec(tform), tform2quat(tform))
-% hold off
+hold off
 
 % % Spart
 % R0 = eye(3);
