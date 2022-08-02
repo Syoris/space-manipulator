@@ -83,8 +83,7 @@ classdef RobotVizHelper < handle
             V = Ttree.(obj.robot.BaseName).Transform*[V'; ones(1,length(V)) ];
             V = V(1:3,:)';
             
-            % TODO
-            % hasVisuals = ~isempty(robot.Base.VisualsInternal);
+            hasVisuals = ~isempty(obj.robot.Base.Visuals);
             
             % Base frame patches
             linkDisplayObjArray{end - 1, 2} = patch(ax, ...
@@ -122,8 +121,7 @@ classdef RobotVizHelper < handle
                 Vi = Ttree.(linkName).Transform*[Vi'; ones(1,length(Vi)) ];
                 Vi = Vi(1:3,:)';
                 
-                % TODO
-                % hasVisuals = ~isempty(robot.Bodies{i}.VisualsInternal);
+                hasVisuals = ~isempty(obj.robot.Links{i}.Visuals);
                 
                 % Body frame patches
                 linkDisplayObjArray{i, 2} = patch(ax,...
@@ -178,50 +176,88 @@ classdef RobotVizHelper < handle
                 end
             end
             
-            % % body visuals visibility
-            % if displayVisuals
-            %     vis = 'on';
-            % else
-            %     vis = 'off';
-            % end
+            % body visuals visibility
+            if displayVisuals
+                vis = 'on';
+            else
+                vis = 'off';
+            end
             
-            % for i = 1:robot.NumBodies+1
-            %     if i > robot.NumBodies
-            %         visGeom = robot.Base.VisualsInternal;
-            %         T = Ttree{i};
-            %         bname = robot.BaseName;
-            %     else
-            %         visGeom = robot.Bodies{i}.VisualsInternal;
-            %         T = Ttree{i};
-            %         bname = robot.Bodies{i}.Name;
-            %     end
-                
-            %     meshPatchCell = cell(length(visGeom),1);
-            %     for k = 1:length(visGeom)
-            %         V = visGeom{k}.Vertices;
-            %         F = visGeom{k}.Faces;
-            %         TVis = visGeom{k}.Tform;
-            %         color = visGeom{k}.Color;
+            for i = 1:obj.robot.NumLinks+1
+                % Find transform
+                if i > obj.robot.NumLinks
+                    visGeom = obj.robot.Base.Visuals;
+                    linkName = obj.robot.BaseName;
+                else
+                    visGeom = obj.robot.Links{i}.Visuals;
+                    linkName = obj.robot.LinkNames{i};
+                end
+                T = Ttree.(linkName).Transform;
+
+                % Draw all visuals of current link
+                meshPatchCell = cell(length(visGeom),1);
+                for k = 1:length(visGeom)
+                    V = visGeom{k}.Vertices;
+                    F = visGeom{k}.Faces;
+                    TVis = visGeom{k}.Tform;
+                    color = visGeom{k}.Color;
                     
-            %         numVertices = size(V,1);
-            %         Vi = T*TVis*[V'; ones(1,numVertices) ];
-            %         Vi = Vi(1:3,:)';
+                    numVertices = size(V,1);
+                    Vi = T*TVis*[V'; ones(1,numVertices) ];
+                    Vi = Vi(1:3,:)';
                     
-            %         meshPatchCell{k} = patch(ax, ...
-            %             'Faces', F,...
-            %             'Vertices', Vi,...
-            %             'FaceColor', color(1:3),...
-            %             'LineStyle', 'none',...
-            %             'Tag', robot.ShowTag, ...
-            %             'DisplayName', [bname '_mesh'], ...
-            %             'Visible', vis, ...
-            %             'ButtonDownFcn', {@robotics.manip.internal.RigidBodyTreeVisualizationHelper.infoDisplay, robot, i, T}, ...
-            %             'UIContextMenu', robotics.manip.internal.RigidBodyTreeVisualizationHelper.getBodyContextMenu(robot.ShowTag, ax, bname, 1, displayVisuals), ...
-            %             'DeleteFcn', @robotics.manip.internal.RigidBodyTreeVisualizationHelper.deleteUIContextMenuUponPatchDestruction);
-            %     end
-            %     % Base and body visual patches
-            %     linkDisplayObjArray{i,1} = meshPatchCell;
+                    meshPatchCell{k} = patch(ax, ...
+                        'Faces', F,...
+                        'Vertices', Vi,...
+                        'FaceColor', color(1:3),...
+                        'LineStyle', 'none',...
+                        'DisplayName', [linkName '_mesh'], ...
+                        'Visible', vis);
+                end
+                % Base and body visual patches
+                linkDisplayObjArray{i,1} = meshPatchCell;
+            end
+        end
+
+        function resetScene(obj, ax)
+            % PRIMARY axes
+            axis(ax, 'vis3d');
+            hFigure = ax.Parent;
+            pan(hFigure,'on');
+            rotate3d(hFigure,'on');
+            
+            ax.Visible = 'off';
+            daspect(ax, [1 1 1]);
+            
+            
+            % % estimate the size of workspace
+            % if ~robot.IsMaxReachUpToDate
+            %     robot.estimateWorkspace;
+            %     robot.IsMaxReachUpToDate = true;
             % end
+            % a = robot.EstimatedMaxReach; % updated by estimateWorkspace method
+            a = 3;
+
+            set(ax, 'xlim', [-a, a], 'ylim', [-a, a], 'zlim', [-a, a]);
+            
+            xlabel(ax, 'X');
+            ylabel(ax, 'Y');
+            zlabel(ax, 'Z');
+            
+            % set up view
+            view(ax, [135 8]);
+            set(ax, 'Projection', 'perspective');
+            ax.CameraViewAngle = 8.0;
+            ax.Tag = 'Primary';
+            grid(ax, 'on');
+            
+            % set up lighting
+            if isempty(findobj(ax,'Type','Light'))
+                light('Position',[a, 0, a],'Style','local','parent',ax);
+            end
+
+            ax.Visible = 'on';
+            
         end
     end
 

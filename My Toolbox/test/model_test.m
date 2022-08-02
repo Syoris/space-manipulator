@@ -7,15 +7,35 @@ sc.Name = 'spaceRobot';
 
 [robotSpart,robot_keys] = urdf2robot('ModelTest.urdf');
 %% Build Robot
+% Robot Parameters
+lBase = 1;
+l1 = 1;
+l2 = 0.5;
+
+% Colors
+materials = struct();
+materials.Blue = [0.5 0.7 1.0 1.0];
+materials.Orange = [1.0 0.423529411765 0.0392156862745 1.0];
+materials.Grey = [0.57 0.57 0.57 1.0];
+materials.Red = [1 0 0 1];
+
+% Base visual
+sc.Base.addVisual('Box', [lBase, lBase, lBase], trvec2tform([0 0 0]), materials.Grey);
+
 % Link 1
 scLink1 = Link('Link1');
 
 scJnt1 = Joint('jnt1', 'revolute');
 scJnt1.HomePosition = pi/4;
 scJnt1.Axis = [0 0 1];
-tform = trvec2tform([0.5, 0, 0]); % User defined, tform: Homogeneous transformation matrix
+tform = trvec2tform([lBase/2, 0, 0]); % User defined, tform: Homogeneous transformation matrix
 scJnt1.setFixedTransform(tform);
 scLink1.Joint = scJnt1;
+
+visT = eul2tform([0 pi/2 0]);
+visT(1:3, 4) = [l1/2 0 0]';
+scLink1.addVisual('Cylinder', [0.05, l1], visT, materials.Blue);
+scLink1.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
 
 % toolbox
 body1 = rigidBody('body1');
@@ -30,9 +50,15 @@ scLink2 = Link('Link2');
 scJnt2 = Joint('jnt2', 'revolute');
 scJnt2.HomePosition = -pi/4;
 scJnt2.Axis = [0 0 1];
-tform = trvec2tform([1, 0, 0]); % User defined, tform: Homogeneous transformation matrix
+tform = trvec2tform([l1, 0, 0]); % User defined, tform: Homogeneous transformation matrix
 scJnt2.setFixedTransform(tform);
 scLink2.Joint = scJnt2;
+
+visT = eul2tform([0 pi/2 0]);
+visT(1:3, 4) = [l2/2 0 0]';
+scLink2.addVisual('Cylinder', [0.05, l2], visT, materials.Blue);
+scLink2.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
+
 
 % toolbox
 body2 = rigidBody('body2');
@@ -43,16 +69,20 @@ body2.Joint = jnt2;
 
 % EE
 scEE = Link('endeffector');
-tform = trvec2tform([0.5, 0, 0]);
+tform = trvec2tform([l2, 0, 0]);
 setFixedTransform(scEE.Joint, tform);
+scEE.addVisual('Sphere', 0.1, trvec2tform([0 0 0]), materials.Red);
 
 % toolbox
 bodyEndEffector = rigidBody('endeffector');
 setFixedTransform(bodyEndEffector.Joint,tform);
+
+
 % Add Links
 sc.addLink(scLink1,'spacecraftBase'); % Add body1 to base
 sc.addLink(scLink2,'Link1'); % Add body2 to body1
 sc.addLink(scEE,'Link2');
+
 
 % toolbox
 robot.addBody(body1,'base'); % Add body1 to base
@@ -93,17 +123,17 @@ inertialFrame = [eye(3), zeros(3, 1); zeros(1, 3), 1];
 % end
 % hold off
 
-% sc.show('Frames', 'on', 'Visuals', 'on');
+sc.show('Frames', 'on', 'Visuals', 'on');
 
 
-% Toolbox
-tform = getTransform(robot,newConf,'body2','base'); % To check computed transform
-figure
-title("Toolbox")
-hold on
-show(robot, newConf);
-% plotTransforms(tform2trvec(tform), tform2quat(tform))
-hold off
+% % Toolbox
+% tform = getTransform(robot,newConf,'body2','base'); % To check computed transform
+% figure
+% title("Toolbox")
+% hold on
+% show(robot, newConf);
+% % plotTransforms(tform2trvec(tform), tform2quat(tform))
+% hold off
 
 % % Spart
 % R0 = eye(3);

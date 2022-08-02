@@ -131,28 +131,30 @@ function ax = show(obj, varargin)
         displayCollisions = strcmpi(collisions,'on');
         displayFrames = strcmpi(frames,'on');    
         
+        vizHelper = RobotVizHelper(obj);
+
         if isempty(parent)
             ax = newplot;
         else
             ax = newplot(parent);
         end
         
-        % if strcmp(ax.NextPlot, 'replace') || (isa(ax, 'matlab.ui.control.UIAxes') && ~ishold(ax))
-        %     % When hold is off, for axes or uiaxes, respectively
-        %     robotics.manip.internal.RigidBodyTreeVisualizationHelper.resetScene(obj, ax);
-        %     % Adjust axis limits according to robot position
-        %     ax.XLim = ax.XLim + basePosition(1);
-        %     ax.YLim = ax.YLim + basePosition(2);
-        %     ax.ZLim = ax.ZLim + basePosition(3);
-        % else % when hold is on
-        %     if preserve == false
-        %         % If preserve flag is false,
-        %         % remove previous drawn objects, if they could be found
-        %         delete(findall(ax,'type','hgtransform','Tag', obj.ShowTag));
-        %         delete(findall(ax,'type','patch','Tag', obj.ShowTag));
-        %         delete(findall(ax,'type','line','Tag', obj.ShowTag));
-        %     end
-        % end
+        if strcmp(ax.NextPlot, 'replace') || (isa(ax, 'matlab.ui.control.UIAxes') && ~ishold(ax))
+            % When hold is off, for axes or uiaxes, respectively
+            vizHelper.resetScene(ax);
+            % Adjust axis limits according to robot position
+            ax.XLim = ax.XLim + obj.BaseConfig.Position(1);
+            ax.YLim = ax.YLim + obj.BaseConfig.Position(2);
+            ax.ZLim = ax.ZLim + obj.BaseConfig.Position(3);
+        else % when hold is on
+            if preserve == false
+                % If preserve flag is false,
+                % remove previous drawn objects, if they could be found
+                % delete(findall(ax,'type','hgtransform','Tag', obj.ShowTag));
+                % delete(findall(ax,'type','patch','Tag', obj.ShowTag));
+                % delete(findall(ax,'type','line','Tag', obj.ShowTag));
+            end
+        end
         
         % converting the six-element vector of translations and
         % orientations ([x,y,z,yaw,pitch,roll]), respectively, to a
@@ -160,7 +162,6 @@ function ax = show(obj, varargin)
 
         tTree = obj.forwardKinematics;
 
-        vizHelper = RobotVizHelper(obj);
         [bodyDisplayObjArray, fmanager] = vizHelper.drawRobot(ax, tTree, displayFrames, displayVisuals);
 
 

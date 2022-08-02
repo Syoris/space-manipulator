@@ -29,8 +29,50 @@ classdef Link < handle
         
             obj.Children = cell(1, 0);
         
-            obj.Visuals = cell(0, 0);
+            obj.Visuals = {};
             
         end
+
+        function addVisual(obj, type, parameter, tform, color)
+            %addVisual Add visual to a body link
+            %   type: Geometry type (box, cylinder, sphere)
+            %   parameter: Geometry parameter. Depends on type.
+            %               box: [xl, yl, zl]
+            %               cylinder: [radius, length]
+            %               sphere: [radius]
+            %   tform: Homogeneous matrix to link frame
+            %   color: [r g b a]
+            
+            basicGeo = BasicGeometry();
+            if nargin > 3
+                basicGeo.Tform = tform;
+            end
+            if (nargin > 4) && ~isempty(color) % if color is specified, replace the default color
+                basicGeo.Color = color;
+            end
+
+            switch type
+                case 'Box'
+                    [F, V] = robotics.core.internal.PrimitiveMeshGenerator.boxMesh(parameter);
+                    scale = [1 1 1];
+                    basicGeo.SourceData = {'box', parameter};
+                case 'Cylinder'
+                    [F, V] = robotics.core.internal.PrimitiveMeshGenerator.cylinderMesh(parameter);
+                    scale = [1 1 1];
+                    basicGeo.SourceData = {'cylinder', parameter};
+                case 'Sphere'
+                    [F, V] = robotics.core.internal.PrimitiveMeshGenerator.sphereMesh(parameter);
+                    scale = [1 1 1];
+                    basicGeo.SourceData = {'sphere', parameter};
+            end
+
+            if ~isempty(basicGeo.SourceData)
+                basicGeo.Faces = F;
+                basicGeo.Vertices = V;
+                basicGeo.Scale=scale;
+                obj.Visuals{end+1} = basicGeo;
+            end
+        end
+            
     end
 end
