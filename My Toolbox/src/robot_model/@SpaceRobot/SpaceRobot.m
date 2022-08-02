@@ -407,8 +407,8 @@ classdef SpaceRobot < handle
     % Utilities
     methods %(Access = Private)
         function lId = findLinkIdxByName(obj, linkName)
-        % Returns idx of link with name 'linkName'. Returns 0 for the base.
-        % return -1 if name not found
+            % Returns idx of link with name 'linkName'. Returns 0 for the base.
+            % return -1 if name not found
             
             lId = -1;
 
@@ -428,7 +428,9 @@ classdef SpaceRobot < handle
         end
 
         function joint = findJointByName(obj, jntName)
-            for i=1:length(obj.Links)
+            % Return joint id corresponding to the name
+            
+            for i = 1:length(obj.Links)
                 joint = obj.Links{i}.Joint;
                 if strcmp(joint.Name, jntName)
                     return 
@@ -530,7 +532,7 @@ classdef SpaceRobot < handle
                 validateattributes(newConfig, {'struct'},...
                 {'nonempty'}, 'SpaceRobot', 'BaseConfig');
 
-%                 obj.BaseConfig = newConfig;
+                % obj.BaseConfig = newConfig;
                 obj.Base.BasePosition = newConfig.Position;
                 obj.Base.BaseRot = newConfig.Rot;
 
