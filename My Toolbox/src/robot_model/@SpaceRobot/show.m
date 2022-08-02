@@ -1,4 +1,3 @@
-%TODO
 function ax = show(obj, varargin)
 %SHOW Plot robot body frames
 %   SHOW(ROBOT) plots in MATLAB figure the body frames of
@@ -116,8 +115,7 @@ function ax = show(obj, varargin)
                 
     fast = parser.Results.FastUpdate;
     preserve = logical(parser.Results.PreservePlot);
-    config = parser.Results.Config;
-    position = parser.Results.Position;
+%     position = parser.Results.Position;
     parent = parser.Results.Parent;
     collisions = parser.Results.Collisions;
     visuals = parser.Results.Visuals;
@@ -160,9 +158,11 @@ function ax = show(obj, varargin)
         % orientations ([x,y,z,yaw,pitch,roll]), respectively, to a
         % homogeneous transformation matrix
 
-        tTree = sc.forwardKinematics;
-        
-        [bodyDisplayObjArray, fmanager] = drawRobot(obj, ax, tTree, displayFrames, displayVisuals);
+        tTree = obj.forwardKinematics;
+
+        vizHelper = RobotVizHelper(obj);
+        [bodyDisplayObjArray, fmanager] = vizHelper.drawRobot(ax, tTree, displayFrames, displayVisuals);
+
 
     else
         error("Fast not yet implemented")

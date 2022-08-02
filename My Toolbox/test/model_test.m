@@ -81,17 +81,19 @@ tTree = sc.forwardKinematics;
 
 inertialFrame = [eye(3), zeros(3, 1); zeros(1, 3), 1];
 
-figure
-hold on
-title("SpaceRobot")
-plotTransforms(tform2trvec(inertialFrame), tform2quat(inertialFrame), 'FrameSize', 0.1);
-linkNames = fieldnames(tTree);
-for i = 1:length(linkNames)
-    linkName = linkNames{i};
-    T = tTree.(linkName).Transform;
-    plotTransforms(tform2trvec(T), tform2quat(T), 'FrameSize', 0.1)
-end
-hold off
+% figure
+% hold on
+% title("SpaceRobot")
+% plotTransforms(tform2trvec(inertialFrame), tform2quat(inertialFrame), 'FrameSize', 0.1);
+% linkNames = fieldnames(tTree);
+% for i = 1:length(linkNames)
+%     linkName = linkNames{i};
+%     T = tTree.(linkName).Transform;
+%     plotTransforms(tform2trvec(T), tform2quat(T), 'FrameSize', 0.1)
+% end
+% hold off
+
+% sc.show('Frames', 'on', 'Visuals', 'on');
 
 
 % Toolbox

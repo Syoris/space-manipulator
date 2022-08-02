@@ -121,8 +121,6 @@ classdef SpaceRobot < handle
 
         show(obj, varargin)
         
-        [bodyDisplayObjArray, fmanager] = drawRobot(robot, ax, Ttree, displayFrames, displayVisuals)
-
         function parser = parseShowInputs(obj, varargin)
             %parseShowInputs Parse inputs to show method
             parser = inputParser;
@@ -146,77 +144,16 @@ classdef SpaceRobot < handle
             parser.parse(varargin{:});
         end
     end
-    
-
-    methods
-        tTree = forwardKinematics(obj)
-    end
 
     % Kinematics Methods
     methods
+        tTree = forwardKinematics(obj)
+
         % TODO
-        function T = getTransform(obj, linkName1, linkName2)
-        %getTransform Get the transform between two body frames
-        %   T1 = getTransform(ROBOT, BODYNAME1) computes a
-        %   transform T1 that converts points originally expressed in
-        %   BODYNAME1 frame to be expressed in the robot's base frame.
-        %
-        %   T2 = getTransform(ROBOT, Q, BODYNAME1, BODYNAME2) computes
-        %   a transform T2 that converts points originally expressed in
-        %   BODYNAME1 frame to be expressed in BODYNAME2.
-        
-            narginchk(2,3);
-            
-            Ttree = obj.forwardKinematics(qvec);
-            
-            % 2-argument case: getTransform(ROBOT, linkName1)
-            lId1 = findLinkIdxByName(obj, linkName1);
-            if lId1 == 0
-                T1 = eye(4);
-            else
-                T1 = Ttree{lId1};
-            end
-            
-            T2 = eye(4);
-            if nargin == 4
-                % 4-argument case: getTransform(ROBOT, linkName1, linkName2)
-                lId2 = findLinkIdxByName(obj, linkName2);
-                if lId2 == 0
-                    T2 = eye(4);
-                else
-                    T2 = Ttree{lId2};
-                end
-            end
+        T = getTransform(obj, linkName1, linkName2)
 
-            R = T2(1:3,1:3)';
-            p = -R*T2(1:3,4);
-            T = [R,p;[0 0 0 1]]*T1; % the first term is inv(T2)
-
-        end
-        
         % TODO
-        function Jac = geometricJacobian(obj, Q, endeffectorname)
-        %geometricJacobian Compute the geometric Jacobian
-        %   JAC = geometricJacobian(ROBOT, Q, ENDEFFECTORNAME) computes
-        %   the geometric Jacobian for the body ENDEFFECTORNAME in ROBOT
-        %   under the configuration Q. The Jacobian matrix JAC is of size
-        %   6xN, where N is the number of degrees of freedom. The
-        %   Jacobian maps joint-space velocity to the Cartesian space
-        %   end-effector velocity relative to the base coordinate frame.
-        %
-        %   Example:
-        %       % Load predefined robot models
-        %       load exampleRobots
-        %
-        %       % Get the Jacobian for right_wrist body in Baxter robot
-        %       % under a random configuration
-        %       jac = geometricJacobian(baxter,...
-        %                      baxter.randomConfiguration,'right_wrist');
-
-            Jac = obj.TreeInternal.geometricJacobian(Q, endeffectorname);
-            warning('Not yep implemented');
-        end
-    
+        Jac = geometricJacobian(obj, Q, endeffectorname)
     end
 
     % Dynamcics Methods
@@ -470,8 +407,8 @@ classdef SpaceRobot < handle
     % Utilities
     methods %(Access = Private)
         function lId = findLinkIdxByName(obj, linkName)
-            % Returns idx of link with name 'linkName'. Returns 0 for the base.
-            % return -1 if name not found
+        % Returns idx of link with name 'linkName'. Returns 0 for the base.
+        % return -1 if name not found
             
             lId = -1;
 
