@@ -1,7 +1,6 @@
 clc
 clearvars
 % Create Space Robot
-robot = rigidBodyTree;
 sc = SpaceRobot;
 sc.Name = 'spaceRobot';
 
@@ -37,13 +36,6 @@ visT(1:3, 4) = [l1/2 0 0]';
 scLink1.addVisual('Cylinder', [0.05, l1], visT, materials.Blue);
 scLink1.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
 
-% toolbox
-body1 = rigidBody('body1');
-jnt1 = rigidBodyJoint('jnt1','revolute');
-jnt1.HomePosition = pi/4;
-setFixedTransform(jnt1,tform);
-body1.Joint = jnt1;
-
 % Link 2
 scLink2 = Link('Link2');
 
@@ -59,35 +51,17 @@ visT(1:3, 4) = [l2/2 0 0]';
 scLink2.addVisual('Cylinder', [0.05, l2], visT, materials.Blue);
 scLink2.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
 
-
-% toolbox
-body2 = rigidBody('body2');
-jnt2 = rigidBodyJoint('jnt2','revolute');
-jnt2.HomePosition = -pi/4;
-setFixedTransform(jnt2, tform);
-body2.Joint = jnt2;
-
 % EE
 scEE = Link('endeffector');
 tform = trvec2tform([l2, 0, 0]);
 setFixedTransform(scEE.Joint, tform);
 scEE.addVisual('Sphere', 0.1, trvec2tform([0 0 0]), materials.Red);
 
-% toolbox
-bodyEndEffector = rigidBody('endeffector');
-setFixedTransform(bodyEndEffector.Joint,tform);
-
 
 % Add Links
 sc.addLink(scLink1,'spacecraftBase'); % Add body1 to base
 sc.addLink(scLink2,'Link1'); % Add body2 to body1
 sc.addLink(scEE,'Link2');
-
-
-% toolbox
-robot.addBody(body1,'base'); % Add body1 to base
-robot.addBody(body2,'body1'); % Add body2 to body1
-addBody(robot,bodyEndEffector,'body2');
 
 %% Config Test
 close all
@@ -102,38 +76,39 @@ newConf(2).JointPosition = qm(2);
 sc.JointsConfig = newConf;  % Alternative: sc.setJointsConfig = qm;
 
 baseConf = sc.BaseConfig;
-baseConf.Position = [0.25, 0.5, 0.1];
-baseConf.Rot = [0, pi/2, 0];
-
+baseConf.Position = [1.25, 1.5, 1.2];
+baseConf.Rot = [0, 0, 0];
 sc.BaseConfig = baseConf;  % sc.BaseConfig = [2 3 4; 0 pi/4 0];
 
-tTree = sc.forwardKinematics;
-
-inertialFrame = [eye(3), zeros(3, 1); zeros(1, 3), 1];
-
-% figure
-% hold on
-% title("SpaceRobot")
-% plotTransforms(tform2trvec(inertialFrame), tform2quat(inertialFrame), 'FrameSize', 0.1);
-% linkNames = fieldnames(tTree);
-% for i = 1:length(linkNames)
-%     linkName = linkNames{i};
-%     T = tTree.(linkName).Transform;
-%     plotTransforms(tform2trvec(T), tform2quat(T), 'FrameSize', 0.1)
-% end
-% hold off
-
-sc.show('Frames', 'on', 'Visuals', 'on');
+tTree = sc.forwardKinematics; % Compute kin tree
 
 
-% % Toolbox
-% tform = getTransform(robot,newConf,'body2','base'); % To check computed transform
-% figure
-% title("Toolbox")
-% hold on
-% show(robot, newConf);
-% % plotTransforms(tform2trvec(tform), tform2quat(tform))
-% hold off
+% Animation test
+nSamp = 100;
+x0 = baseConf.Position(1);
+y0 = baseConf.Position(2);
+z0 = baseConf.Position(3);
+theta0 = baseConf.Rot(2);
+
+xFin = x0 + 10;
+thetaFin = 2*pi;
+xArray = linspace(x0, xFin, nSamp);
+thetaArray = linspace(theta0, thetaFin, nSamp);
+
+baseConfArray = cell(nSamp, 1);
+for i = 1:nSamp
+    baseConfArray{i} = [xArray(i), y0, z0; 0 thetaArray(i) 0];
+end
+
+
+framesPerSecond = 50;
+r = rateControl(framesPerSecond);
+for i = 1:nSamp
+    sc.BaseConfig = baseConfArray{i};
+    sc.show('PreservePlot',false);
+    drawnow
+    waitfor(r);
+end
 
 % % Spart
 % R0 = eye(3);
