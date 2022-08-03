@@ -1,11 +1,8 @@
 %% 2 DoF Planar Manipulator
 clc
 close all
-%% Parameters
+clearvars
 
-lBase = 1;
-l1 = 1;
-l2 = 0.5;
 % Materials
 
 materials = struct();
@@ -13,55 +10,119 @@ materials.Blue = [0.5 0.7 1.0 1.0];
 materials.Orange = [1.0 0.423529411765 0.0392156862745 1.0];
 materials.Grey = [0.57 0.57 0.57 1.0];
 materials.Red = [1 0 0 1];
+%% Parameters
+% Base Parameters
+lBase = 1;
+mBase = 10;
+comBase = [0 0 0];
+intertiaBase = [9.3, 9.3, 9.3, 0, 0, 0];
+
+% Links Parameters
+nLinks = 3;
+linksVect = cell(1, nLinks);
+jointsVect = cell(1, nLinks);
+
+linkNames = {'Link1', 'Link2', 'endeffector'};
+jointNames = {'jnt1', 'jnt2', 'jnt_ee'};
+
+jointsAxis = [[0 0 1];
+              [0 0 1];
+              [0 0 0]];
+
+
+jointsHomePos = [pi/4, -pi/2, 0];
+
+linksLength = [1; 0.5];
+linksMass = [5; 2.5; 1];
+linksInertia = [1, 1, 1, 0, 0, 0; 
+                0.5, 0.5, 0.5, 0, 0, 0;
+                0.1, 0.1, 0.1, 0, 0, 0];
+
+jointsT = {trvec2tform([lBase/2, 0, 0]);
+           trvec2tform([linksLength(1), 0, 0]);
+           trvec2tform([linksLength(2), 0, 0])};
+
+linksCoM = [[linksLength(1)/2 0 0];
+            [linksLength(2)/2 0 0];
+            [0 0 0];];
+
+% Visuals
+baseVisual = struct('Geometry', 'Box', ...
+                    'Parameters', [lBase, lBase, lBase], ...
+                    'T', trvec2tform([0 0 0]), ...
+                    'Color', materials.Grey);
+
+linksVisual = cell(nLinks, 1);
+linksVisual{1}(end+1) = struct('Geometry', 'Cylinder', ...
+                               'Parameters', [0.05, linksLength(1)], ...
+                               'T', trvec2tform([linksLength(1)/2 0 0])*eul2tform([0 pi/2 0]), ...
+                               'Color', materials.Blue);
+linksVisual{1}(end+1) = struct('Geometry', 'Cylinder', ...
+                               'Parameters', [0.1, 0.1], ...
+                               'T', trvec2tform([0.0 0 0]), ...
+                               'Color', materials.Orange);
+
+linksVisual{2}(end+1) = struct('Geometry', 'Cylinder', ...
+                               'Parameters', [0.05, linksLength(2)], ...
+                               'T', trvec2tform([linksLength(2)/2 0 0])*eul2tform([0 pi/2 0]), ...
+                               'Color', materials.Blue);
+linksVisual{2}(end+1) = struct('Geometry', 'Cylinder', ...
+                               'Parameters', [0.1, 0.1], ...
+                               'T', trvec2tform([0.0 0 0]), ...
+                               'Color', materials.Orange);
+
+linksVisual{3}(end+1) = struct('Geometry', 'Sphere', ...
+                               'Parameters', 0.1, ...
+                               'T', trvec2tform([0.0 0 0]), ...
+                               'Color', materials.Red);
 
 %% Create Robot
-
 sc = SpaceRobot;
 sc.Name = 'spaceRobot';
 
 % Base visual
-sc.Base.addVisual('Box', [lBase, lBase, lBase], trvec2tform([0 0 0]), materials.Grey);
+sc.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
+                  baseVisual.T, baseVisual.Color);
+sc.Base.Mass = mBase;
+sc.Base.Inertia = intertiaBase;
 
-% Link 1
-scLink1 = Link('Link1');
+for i=1:nLinks
+    newLink = Link(linkNames{i});
+    if any(jointsAxis(i, :))
+        newJoint = Joint(jointNames{i}, 'revolute');
+        newJoint.Axis = jointsAxis(i, :);
+        newJoint.HomePosition = jointsHomePos(i);
+    else
+        newJoint = Joint(jointNames{i}, 'fixed');
+    end
+    
+    newJoint.setFixedTransform(jointsT{i});
+    newLink.Joint = newJoint;
+    newLink.Mass = linksMass(i);
+    newLink.Inertia = linksInertia(i, :);
+    newLink.CenterOfMass = linksCoM(i, :);
+    
+    if ~isempty(linksVisual{i})
+        for j=1:length(linksVisual{i})
+            vis = linksVisual{i}(j);
+            newLink.addVisual(vis.Geometry, vis.Parameters, ...
+                              vis.T, vis.Color);
+        end
+    end
 
-scJnt1 = Joint('jnt1', 'revolute');
-scJnt1.HomePosition = pi/4;
-scJnt1.Axis = [0 0 1];
-tform = trvec2tform([lBase/2, 0, 0]); % User defined, tform: Homogeneous transformation matrix
-scJnt1.setFixedTransform(tform);
-scLink1.Joint = scJnt1;
+    linksVect{i} = newLink;
+    jointsVect{i} = newJoint;
+end
 
-visT = eul2tform([0 pi/2 0]);
-visT(1:3, 4) = [l1/2 0 0]';
-scLink1.addVisual('Cylinder', [0.05, l1], visT, materials.Blue);
-scLink1.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
+for i = 1:length(linksVect)
+    if i==1
+        parent = sc.BaseName;
+    else
+        parent = linkNames(i-1);
+    end
 
-% Link 2
-scLink2 = Link('Link2');
-
-scJnt2 = Joint('jnt2', 'revolute');
-scJnt2.HomePosition = -pi/4;
-scJnt2.Axis = [0 0 1];
-tform = trvec2tform([l1, 0, 0]); % User defined, tform: Homogeneous transformation matrix
-scJnt2.setFixedTransform(tform);
-scLink2.Joint = scJnt2;
-
-visT = eul2tform([0 pi/2 0]);
-visT(1:3, 4) = [l2/2 0 0]';
-scLink2.addVisual('Cylinder', [0.05, l2], visT, materials.Blue);
-scLink2.addVisual('Cylinder', [0.1, 0.1], trvec2tform([0 0 0]), materials.Orange);
-
-% EE
-scEE = Link('endeffector');
-tform = trvec2tform([l2, 0, 0]);
-setFixedTransform(scEE.Joint, tform);
-scEE.addVisual('Sphere', 0.1, trvec2tform([0 0 0]), materials.Red);
-
-% Add Links
-sc.addLink(scLink1,'spacecraftBase'); % Add body1 to base
-sc.addLink(scLink2,'Link1'); % Add body2 to body1
-sc.addLink(scEE,'Link2');
-
+    sc.addLink(linksVect{i}, parent); % Add body1 to base
+end
+ 
 % Remove vars
 clearvars -except sc
