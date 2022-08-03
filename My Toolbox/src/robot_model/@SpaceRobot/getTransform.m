@@ -1,12 +1,12 @@
 function T = getTransform(obj, linkName1, linkName2)
-%getTransform Get the transform between two body frames
-%   T1 = getTransform(ROBOT, BODYNAME1) computes a
+%getTransform Get the transform between two link frames
+%   T1 = getTransform(ROBOT, linkName1) computes a
 %   transform T1 that converts points originally expressed in
-%   BODYNAME1 frame to be expressed in the robot's base frame.
+%   linkName1 frame to be expressed in the robot's base frame.
 %
-%   T2 = getTransform(ROBOT, BODYNAME1, BODYNAME2) computes
+%   T2 = getTransform(ROBOT, linkName1, linkName2) computes
 %   a transform T2 that converts points originally expressed in
-%   BODYNAME1 frame to be expressed in BODYNAME2.
+%   linkName1 frame to be expressed in linkName2.
 
     narginchk(2,3);
     

@@ -162,7 +162,9 @@ function ax = show(obj, varargin)
 
         tTree = obj.forwardKinematics;
 
-        [bodyDisplayObjArray, fmanager] = vizHelper.drawRobot(ax, tTree, displayFrames, displayVisuals);
+        % [ax bodyDisplayObjArray] = obj.simpleShow
+
+        [ax, linkDisplayObjArray, fmanager] = vizHelper.drawRobot(ax, tTree, displayFrames, displayVisuals);
 
 
     else

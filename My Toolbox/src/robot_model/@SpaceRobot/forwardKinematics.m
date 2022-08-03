@@ -8,7 +8,7 @@ function tTree = forwardKinematics(obj)
     
     % Base
     baseTransform = obj.Base.BaseToParentTransform; % TODO: Relative to inertial frame
-    tTree.(obj.BaseName) = struct('JointIdx', 0, 'Transform', baseTransform);
+    tTree.(obj.BaseName) = struct('LinkIdx', 0, 'Transform', baseTransform);
 
     for i = 1:n
         link = obj.Links{i};

@@ -5,7 +5,7 @@ classdef Link < handle
         Joint           % Link joint
         
         Mass            % Link mass
-        CenterOfMass    % CoM of link specified as 
+        CenterOfMass    % CoM of link specified as translation vector from frame origin [x, y, z]
         Inertia         % Link Inertia relative to the body frame. [Ixx Iyy Izz Iyz Ixz Ixy]. Unit: kilogram-meter-squared (kg*m^2)
         % T               % Homogeneous transformation matrix from parent joint [4x4].
         
@@ -74,5 +74,23 @@ classdef Link < handle
             end
         end
             
+    end
+
+    methods
+        function set.CenterOfMass(obj, com)
+            % Set CenterOfMass to com.
+            validateattributes(com, {'numeric'},...
+            {'nonempty', 'size', [1, 3]}, 'Link', 'CenterOfMass');
+
+            obj.CenterOfMass = com;
+        end
+
+        function set.Inertia(obj, inertia)
+            % Set CenterOfMass to com.
+            validateattributes(inertia, {'numeric'},...
+            {'nonempty', 'size', [1, 6]}, 'Link', 'Inertia');
+
+            obj.Inertia = inertia;
+        end
     end
 end

@@ -30,7 +30,7 @@ classdef RobotVizHelper < handle
 
         end
 
-        function [linkDisplayObjArray, fmanager] = drawRobot(obj, ax, Ttree, displayFrames, displayVisuals)
+        function [ax, linkDisplayObjArray, fmanager] = drawRobot(obj, ax, Ttree, displayFrames, displayVisuals)
             %drawRobotMemoryLess Display robot and output handles to the figure patches and lines
             %   This method draws the robot and provides a cell array
             %   output that contains the handles to the patches and lines

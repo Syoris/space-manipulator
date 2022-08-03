@@ -1,0 +1,21 @@
+function comPositions = getCoMPosition(obj)
+% getCoMPosition Computes the position of the CoM of all the links in the inertial frame
+
+tTree = obj.forwardKinematics();
+
+comPositions = struct;
+n = obj.NumLinks;
+
+% Base
+T = tTree.(obj.BaseName).Transform * trvec2tform(obj.Base.CenterOfMass);
+comPositions.(obj.BaseName) = struct('LinkIdx', 0, 'Transform', T);
+
+for i = 1:n
+    link = obj.Links{i};
+    
+    % Find transform to parent
+    T = tTree.(link.Name).Transform * trvec2tform(link.CenterOfMass);
+    comPositions.(link.Name) = struct('LinkIdx', link.Id, 'Transform', T);
+end
+
+end
