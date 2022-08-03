@@ -119,7 +119,7 @@ classdef SpaceRobot < handle
         
         showDetails(obj)
 
-        show(obj, varargin)
+        ax = show(obj, varargin)
         
         function parser = parseShowInputs(obj, varargin)
             %parseShowInputs Parse inputs to show method
@@ -149,8 +149,9 @@ classdef SpaceRobot < handle
     methods
         tTree = forwardKinematics(obj)
 
-        % TODO
         T = getTransform(obj, linkName1, linkName2)
+
+        comPositions = getCoMPosition(obj)
 
         % TODO
         Jac = geometricJacobian(obj, Q, endeffectorname)
