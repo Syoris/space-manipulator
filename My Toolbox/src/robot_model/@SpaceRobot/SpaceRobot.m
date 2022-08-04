@@ -156,6 +156,8 @@ classdef SpaceRobot < handle
         % TODO
         Jac = geometricJacobian(obj, Q, endeffectorname)
 
+        JacM = comJacobians(obj)
+
         AxisM = getAxisM(obj, linkId)
     end
 
