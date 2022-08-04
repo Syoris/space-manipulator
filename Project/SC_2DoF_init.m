@@ -33,10 +33,10 @@ jointsAxis = [[0 0 1];
 jointsHomePos = [pi/4, -pi/2, 0];
 
 linksLength = [1; 0.5];
-linksMass = [5; 2.5; 1];
-linksInertia = [1, 1, 1, 0, 0, 0; 
-                0.5, 0.5, 0.5, 0, 0, 0;
-                0.1, 0.1, 0.1, 0, 0, 0];
+linksMass = [5; 2.5; 0];
+linksInertia = [0.5, 0.5, 0.5, 0, 0, 0; 
+                0.1, 0.1, 0.1, 0, 0, 0;
+                0, 0, 0, 0, 0, 0];
 
 jointsT = {trvec2tform([lBase/2, 0, 0]);
            trvec2tform([linksLength(1), 0, 0]);
