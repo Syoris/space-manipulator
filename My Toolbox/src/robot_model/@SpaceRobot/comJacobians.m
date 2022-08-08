@@ -4,7 +4,14 @@ function JacM = comJacobians(obj)
 
     JacM = struct();
     tTree = obj.forwardKinematics();
+    
+    % Base
+    J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
+           zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
+    JacM.(obj.BaseName) = J_b;
 
+
+    % Links
     for i =1:obj.NumLinks
         % Build J_i1
         r0_b = tform2trvec(obj.Base.Children{1}.Joint.JointToParentTransform)'; % Position of first joint in base frame

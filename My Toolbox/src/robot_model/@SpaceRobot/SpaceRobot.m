@@ -163,41 +163,7 @@ classdef SpaceRobot < handle
 
     % Dynamcics Methods
     methods
-         % TODO
-        function H = massMatrix(obj, varargin)
-        %massMatrix Compute the mass matrix for given configuration
-        %   H = massMatrix(ROBOT) returns the joint-space mass
-        %   matrix, H, of ROBOT for ROBOT's home configuration.
-        %
-        %   H = massMatrix(ROBOT, Q) returns the joint-space mass
-        %   matrix, H, of ROBOT for the given configuration Q.
-        %
-        %   Joint configuration Q must be specified as a pNum-by-1 or
-        %   an 1-by-pNum vector, depending on the DataFormat property
-        %   of ROBOT, where pNum is the position number of ROBOT.
-        %
-        %   The returned mass matrix H is a positive-definite symmetric
-        %   matrix with size vNum-by-vNum, where vNum is the velocity
-        %   number of ROBOT (degrees of freedom).
-        %
-        %   Examples:
-        %       % Load example robot
-        %       load exampleRobots.mat
-        %
-        %       % Set lbr robot dynamics input data format to 'column'
-        %       lbr.DataFormat = 'column';
-        %
-        %       % Generate a random configuration for lbr
-        %       q = lbr.randomConfiguration
-        %
-        %       % Get the mass matrix at configuration q
-        %       H = massMatrix(lbr, q);
-
-%             narginchk(1,2);
-%             q = validateDynamicsFunctionInputs(obj.TreeInternal, false, varargin{:});
-%             H = robotics.manip.internal.RigidBodyTreeDynamics.massMatrix(obj.TreeInternal, q);
-            warning('Not yet implemented')
-        end
+        H = massMatrix(obj)
         
         % TODO
         function tau = inverseDynamics(obj, varargin)
@@ -407,6 +373,24 @@ classdef SpaceRobot < handle
 %             fext = externalForce(obj.TreeInternal, bodyName, wrench, varargin{:});
             warning('Not yet implemented')
         end
+
+        function inertiaM = getInertiaM(obj)
+        %getInertiaM Compute Inertia matrix of all the links in the inertial frame
+        %   I_inertial = R * I_link * R'
+            tTree = obj.forwardKinematics();
+
+            inertiaM = struct();
+            
+            % Base
+            rotM = tform2rotm(tTree.(obj.BaseName).Transform);
+            inertiaM.(obj.BaseName) = rotM*obj.Base.InertiaM*rotM';
+
+            for i=1:length(obj.LinkNames)
+                rotM = tform2rotm(tTree.(obj.LinkNames{i}).Transform);
+                inertiaM.(obj.LinkNames{i}) = rotM*obj.Links{i}.InertiaM*rotM';
+            end
+        end
+
     end
     
     % Utilities
@@ -450,7 +434,7 @@ classdef SpaceRobot < handle
         function set.JointsConfig(obj, newConfig)
             %set JointsConfig
 
-            validateattributes(newConfig, {'struct', 'numeric'},...
+            validateattributes(newConfig, {'struct', 'numeric', 'sym'},...
                 {'row'}, 'SpaceRobot', 'JointsConfig');
             
             if isa(newConfig,'struct')
@@ -543,7 +527,7 @@ classdef SpaceRobot < handle
 
             else
                 
-                validateattributes(newConfig, {'numeric'},...
+                validateattributes(newConfig, {'numeric', 'sym'},...
                 {'nonempty', 'size', [2, 3]}, 'SpaceRobot', 'BaseConfig');
                 
                 obj.Base.BasePosition = newConfig(1, :);

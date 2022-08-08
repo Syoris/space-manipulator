@@ -1,6 +1,6 @@
 %% Vizualisation Example
 clearvars
-run 'SC_2DoF_init.m'
+load 'SC_2DoF.mat'
 
 % Config Test
 close all
@@ -44,7 +44,7 @@ framesPerSecond = 50;
 r = rateControl(framesPerSecond);
 for i = 1:nSamp
     sc.BaseConfig = baseConfArray{i};
-    sc.show('PreservePlot',false);
+    sc.show('PreservePlot',false, 'Visuals', 'off');
     drawnow
     waitfor(r);
 end
