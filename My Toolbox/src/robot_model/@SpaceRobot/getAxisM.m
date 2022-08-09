@@ -27,8 +27,13 @@ function AxisM = getAxisM(obj, linkId, frame)
             else
                 [rotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name));
             end
+            ax = rotM*joint.Axis';
 
-            AxisM(:, count) = rotM*joint.Axis';
+            if isa(ax, 'sym') && count == 1
+                AxisM = sym(zeros(3, obj.NumActiveJoints));
+            end
+
+            AxisM(:, count) = ax;
             count = count + 1;
         end
 
