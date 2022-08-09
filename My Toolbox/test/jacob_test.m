@@ -18,6 +18,7 @@ q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm1_d; qm2_d];
 qm_dot = [qm1_d; qm2_d];
 
 q_val = [r0_S; zeros(3, 1); qm_S];
+q_dot_val = [u0_S; um_S];
 
 % qm=[pi/6; -pi/4];
 % R0=eye(3);  %Rotation from Base-spacecraft to inertial
@@ -60,18 +61,42 @@ end
 H = sc.massMatrix();
 
 % Spart comp
-fprintf('\n##### Mass Matrix #####\n')
+fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
 disp(H);
 fprintf('\n')
-disp(double(subs(H, q, q_val)));
+H_val = double(subs(H, q, q_val));
+disp(H_val);
 
 fprintf('--- SPART ---\n');
 disp(H_spart)
-return
-
 %% C - Non-Linear Effect 
+K = 6+sc.NumActiveJoints;
+C = sym(zeros(K));
 
+fprintf('Computing C...\n');
+for i=1:K
+    fprintf('\t i=%i\n', i);
+    for j=1:K
+        c_ij = 0;
 
+        for k=1:K         
 
+            c_ijk = 1/2 * ( diff(H(i, j), q(k)) + diff(H(i, k), q(j)) - diff(H(j, k), q(i)) ) * q_dot(k);
+            
+            c_ij = c_ij + c_ijk;
+        end
 
+        C(i, j) = c_ij;
+    end
+end
+
+fprintf('\n##### C Matrix #####\n')
+fprintf('--- Computed ---\n');
+disp(C);
+fprintf('\n')
+C_val = double(subs(C, [q; q_dot], [q_val; q_dot_val]));
+disp(C_val);
+
+fprintf('--- SPART ---\n');
+disp(C_spart)

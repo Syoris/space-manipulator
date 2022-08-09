@@ -15,8 +15,8 @@ r0_S=[0; 0; 0]; %Position of the base-spacecraft
 qm_S=[pi/6; -pi/4];
 
 %Velocities
-u0=zeros(6,1); %Base-spacecraft velocity
-um=[4;-1]*pi/180; %Joint velocities
+u0_S=zeros(6,1); %Base-spacecraft velocity
+um_S=[4;-1]*pi/180; %Joint velocities
 
 [RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0_S,qm_S,robotSpart);
 %End-Effector
@@ -40,7 +40,7 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 % [J0EE, JmEE]=Jacob(TEE(1:3,4),r0,rL,P0,pm,robotSpart.n_links_joints,robotSpart);
 
 %Velocities
-[t0,tm]=Velocities(Bij,Bi0,P0,pm,u0,um,robotSpart);
+[t0,tm]=Velocities(Bij,Bi0,P0,pm,u0_S,um_S,robotSpart);
 %% --- Inertia Matrices ---%
 %Inertias in inertial frames
 [I0,Im]=I_I(R0,RL,robotSpart);
@@ -56,6 +56,9 @@ H_spart = [[H0(4:6, 4:6), H0(4:6, 1:3); H0(1:3,4:6), H0(1:3, 1:3)], [H0m(4:6, :)
 
 %Generalized Convective Inertia matrix
 [C0, C0m, Cm0, Cm] = CIM(t0,tm,I0,Im,M0_tilde,Mm_tilde,Bij,Bi0,P0,pm,robotSpart);
+C_spart_ori = [C0, C0m; Cm0, Cm];
+C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :); C0m(1:3, :)]; 
+           [Cm0(:, 4:6), Cm0(:, 1:3)], Cm];
 return
 %% --- Inertia Matrix Test ---%
 H_test = zeros(6+2);
@@ -118,7 +121,7 @@ tauq0=zeros(6,1);
 tauqm=zeros(robotSpart.n_q,1);
 
 %Forward Dynamics
-[u0dot_FD,umdot_FD] = FD(tauq0,tauqm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,u0,um,robotSpart);
+[u0dot_FD,umdot_FD] = FD(tauq0,tauqm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,u0_S,um_S,robotSpart);
 
 %% --- Inverse Dynamics - Flying ---%
 
@@ -127,7 +130,7 @@ u0dot=zeros(6,1);
 umdot=zeros(robotSpart.n_q,1);
 
 %Accelerations
-[t0dot,tmdot]=Accelerations(t0,tm,P0,pm,Bi0,Bij,u0,um,u0dot,umdot,robotSpart);
+[t0dot,tmdot]=Accelerations(t0,tm,P0,pm,Bi0,Bij,u0_S,um_S,u0dot,umdot,robotSpart);
 
 %Inverse Dynamics - Flying base
 [tau0,taum] = ID(wF0,wFm,t0,tm,t0dot,tmdot,P0,pm,I0,Im,Bij,Bi0,robotSpart);
