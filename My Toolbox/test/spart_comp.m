@@ -13,7 +13,7 @@ end
 
 linkNames = fields(comPositions);
 for i=1:length(linkNames)
-    pose = comPositions.(linkNames{i}).Transform;
+    pose = comPositions.(linkNames{i});
     plot3(pose(1, 4), pose(2, 4), pose(3, 4),'bp', 'MarkerSize', 15);
 end
 

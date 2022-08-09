@@ -158,7 +158,9 @@ classdef SpaceRobot < handle
 
         JacM = comJacobians(obj)
 
-        AxisM = getAxisM(obj, linkId)
+        JacM = comJacobiansBase(obj)
+
+        AxisM = getAxisM(obj, linkId, frame)
     end
 
     % Dynamcics Methods
@@ -382,11 +384,11 @@ classdef SpaceRobot < handle
             inertiaM = struct();
             
             % Base
-            rotM = tform2rotm(tTree.(obj.BaseName).Transform);
+            rotM = tTree.(obj.BaseName)(1:3, 1:3);
             inertiaM.(obj.BaseName) = rotM*obj.Base.InertiaM*rotM';
 
             for i=1:length(obj.LinkNames)
-                rotM = tform2rotm(tTree.(obj.LinkNames{i}).Transform);
+                rotM = tTree.(obj.LinkNames{i})(1:3, 1:3);
                 inertiaM.(obj.LinkNames{i}) = rotM*obj.Links{i}.InertiaM*rotM';
             end
         end

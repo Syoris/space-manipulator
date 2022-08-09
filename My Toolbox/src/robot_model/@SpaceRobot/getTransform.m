@@ -13,12 +13,12 @@ function T = getTransform(obj, linkName1, linkName2)
     tTree = obj.forwardKinematics();
     
     % 2-argument case: getTransform(ROBOT, linkName1)
-    T1 = tTree.(linkName1).Transform;
+    T1 = tTree.(linkName1);
     
-    T2 = tTree.(obj.BaseName).Transform;
+    T2 = tTree.(obj.BaseName);
     % 4-argument case: getTransform(ROBOT, linkName1, linkName2)
     if nargin == 3
-        T2 = tTree.(linkName2).Transform;
+        T2 = tTree.(linkName2);
     end
     
     % Compute transform:

@@ -9,10 +9,10 @@ filename='SC_2DoF.urdf';
 %% --- Kinematics ---%
 %Base position
 R0=eye(3);  %Rotation from Base-spacecraft to inertial
-r0=[0.5;0.5;0]; %Position of the base-spacecraft
+r0=[0; 0; 0]; %Position of the base-spacecraft
 
 %Joint variables [rad]
-qm=[pi/6;-pi/4];
+qm=[pi/6; -pi/4];
 
 %Velocities
 u0=zeros(6,1); %Base-spacecraft velocity

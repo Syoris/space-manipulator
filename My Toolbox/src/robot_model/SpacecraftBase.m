@@ -19,7 +19,7 @@ classdef SpacecraftBase < Link
     methods        
         function updateTransform(obj)
             if ~isempty(obj.BaseRot)
-                rotM = eul2rotm(obj.BaseRot);
+                rotM = rpy2r(obj.BaseRot);
             else
                 rotM = eye(3);
             end

@@ -64,7 +64,7 @@ classdef Joint < handle
                 case 'fixed'
                     TJ = eye(4);
                 case 'revolute'
-                    TJ = axang2tform([obj.Axis, obj.Position]);
+                    TJ = angvec2tr(obj.Position, obj.Axis);
                 otherwise
                     error("Wrong Type")
             end
