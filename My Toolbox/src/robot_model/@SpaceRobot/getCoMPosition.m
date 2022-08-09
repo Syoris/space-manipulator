@@ -1,7 +1,7 @@
 function comPositions = getCoMPosition(obj)
 % getCoMPosition Computes the position of the CoM of all the links in the inertial frame
 
-tTree = obj.forwardKinematics();
+tTree = obj.Ttree;
 
 comPositions = struct;
 n = obj.NumLinks;

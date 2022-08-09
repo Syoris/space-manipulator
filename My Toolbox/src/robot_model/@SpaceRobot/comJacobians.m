@@ -3,7 +3,7 @@ function JacM = comJacobians(obj)
 %   JacM: struct with link name as fields
 
     JacM = struct();
-    tTree = obj.forwardKinematics();
+    tTree = obj.Ttree;
     
     % Base
     J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...

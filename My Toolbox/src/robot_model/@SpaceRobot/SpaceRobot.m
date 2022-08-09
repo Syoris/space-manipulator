@@ -1,17 +1,16 @@
 classdef SpaceRobot < handle
 %SpaceRobot Create a tree-structured robot
 %   ROBOT = SpaceRobot() creates a default model that contains no
-%   rigid bodies.
+%   link.
 %
-%   rigidBodyTree properties:
+%   SpaceRobot properties:
 %       NumLinks               - Number of linkss
 %       Bodies                 - Cell array of rigid bodies
 %       Base                   - Base of the robot
 %       BodyNames              - Cell array of Names of rigid bodies
 %       BaseName               - Name of robot base
-%       DataFormat             - Input/output data format
 %
-%   rigidBodyTree methods:
+%   SpaceRobot methods:
 %       getBody               - Get robot's body handle by name
 %       geometricJacobian     - Compute the geometric Jacobian
 %       getTransform          - Get transform between two body frames
@@ -60,10 +59,10 @@ classdef SpaceRobot < handle
         
         Base                        %  Base link of the robot, SpacecraftBase
         BaseName
-        BaseConfig
+        
+        Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
+        BaseConfig                  % Base current configuration (struct)
         JointsConfig                % Joints current configuration (struct)
-
-        % Con                       %  Structure with additional connectivity information.
     end
 
     properties(SetAccess = private)
@@ -379,7 +378,7 @@ classdef SpaceRobot < handle
         function inertiaM = getInertiaM(obj)
         %getInertiaM Compute Inertia matrix of all the links in the inertial frame
         %   I_inertial = R * I_link * R'
-            tTree = obj.forwardKinematics();
+            tTree = obj.Ttree;
 
             inertiaM = struct();
             
@@ -466,6 +465,8 @@ classdef SpaceRobot < handle
                 joint.Position = jntPosition;
             end
 
+            obj.forwardKinematics();
+
         end
 
         function Q = homeConfiguration(obj)
@@ -491,15 +492,17 @@ classdef SpaceRobot < handle
             %   See also showdetails, randomConfiguration
     
             % Q = obj.TreeInternal.homeConfiguration();
-                Q = obj.JointsConfig;
+            Q = obj.JointsConfig;
 
-                for i=1:length(Q)
-                    jntName = Q(i).JointName;
-                    joint = obj.findJointByName(jntName);
-                    
-                    Q(i).JointPosition = joint.HomePosition;
-                end
+            for i=1:length(Q)
+                jntName = Q(i).JointName;
+                joint = obj.findJointByName(jntName);
+                
+                Q(i).JointPosition = joint.HomePosition;
             end
+
+            obj.forwardKinematics();
+        end
         
         function baseConf = get.BaseConfig(obj)
             baseConf = struct;
@@ -535,6 +538,8 @@ classdef SpaceRobot < handle
                 obj.Base.BasePosition = newConfig(1, :);
                 obj.Base.BaseRot = newConfig(2, :);
             end
+
+            obj.forwardKinematics();
         end
     end
 

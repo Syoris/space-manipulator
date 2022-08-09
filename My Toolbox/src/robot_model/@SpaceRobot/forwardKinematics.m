@@ -29,4 +29,6 @@ function tTree = forwardKinematics(obj)
         % end
     
     end
+
+    obj.Ttree = tTree;
 end

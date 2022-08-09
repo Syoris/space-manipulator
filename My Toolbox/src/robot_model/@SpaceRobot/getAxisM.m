@@ -7,7 +7,7 @@ function AxisM = getAxisM(obj, linkId, frame)
 %   Rj: Rotation matrix from link frame to inertial frame
 %   Zj: Rotation axis in link frame
 
-    tTree = obj.forwardKinematics();
+    tTree = obj.Ttree;
     AxisM = zeros(3, obj.NumActiveJoints);
     count = 1; % Active joint count
     narginchk(2, 3);
