@@ -1,4 +1,4 @@
-function H = massMatrix(obj)
+function H = initMassMat(obj)
     %massMatrix Compute the mass matrix for given configuration
     %   H = massMatrix(ROBOT) returns the joint-space mass
     %   matrix, H, of ROBOT for ROBOT's current configuration.
@@ -16,10 +16,11 @@ function H = massMatrix(obj)
     %       % Load example robot
     %       load ____
     %       H = obj.massMatrix();
-    H = zeros(6+obj.NumActiveJoints);
+    H = sym(zeros(6+obj.NumActiveJoints));
 
-    % Base
     Jacobians = obj.comJacobiansBase();
+    
+    % Base    
     Jv_B = Jacobians.(obj.BaseName)(1:3, :); % Base speed jacobian
     Jw_B = Jacobians.(obj.BaseName)(4:6, :); % Base rotation jacobian
     inertias = obj.getInertiaM();
@@ -48,4 +49,6 @@ function H = massMatrix(obj)
             H = H + iv_1 + iv_2_2 + iv_3 + iw;
         end
     end
+
+    obj.Hsym = H;
 end

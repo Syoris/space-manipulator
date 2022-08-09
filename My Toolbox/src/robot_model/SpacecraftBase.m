@@ -2,6 +2,8 @@ classdef SpacecraftBase < Link
     properties
        BasePosition         % Base position wrt parent frame, [x, y, z]
        BaseRot              % Base rotation wrt parent frame, [r, p, y]
+       BaseTSpeed           % Base translational vel [x_dot, y_dot, z_dot]
+       BaseASpeed           % Base angular vel [wx, wy, wz]
 
     end
     properties(SetAccess=private)
@@ -42,9 +44,18 @@ classdef SpacecraftBase < Link
         end
 
         function set.BaseRot(obj, newRot)
-            obj.BaseRot  = newRot;
+            obj.BaseRot = newRot;
             obj.updateTransform;
         end
+
+        function set.BaseTSpeed(obj, newTSpeed)
+            obj.BaseTSpeed = newTSpeed;
+        end
+
+        function set.BaseASpeed(obj, newASpeed)
+            obj.BaseASpeed = newASpeed;
+        end
+
         
     end
 end

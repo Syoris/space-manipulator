@@ -1,12 +1,15 @@
 %% Computing of jacobians
 % To compare dynamic functions with the one obtained with SPART
+clc
 run 'SPART_example.m'
 load 'SC_2DoF.mat'
+
+sc.initMats();
 
 % Spacecraft State
 qm_val=[pi/6; -pi/4];
 r0_val = [0.5; 0.2; 1];
-delta0_val = [pi/2; pi/4; pi/6];
+delta0_val = [0; 0; 0];
 
 r0_dot_val = [0; 0; 0];
 w0_val = [0; 0; 0];
@@ -32,8 +35,11 @@ qm_dot = [qm1_d; qm2_d];
 q_val = [r0_val; delta0_val; qm_val];
 q_dot_val = [r0_dot_val; w0_val; qm_dot_val];
 
-sc.JointsConfig = qm';
-sc.BaseConfig = [r0'; 0, 0, 0];
+% 
+sc.JointsConfig = qm_val';
+sc.JointsSpeed = qm_dot_val';
+sc.BaseConfig = [r0_val'; delta0_val'];
+sc.BaseSpeed = [r0_dot_val'; w0_val'];
 
 % SPART
 filename='SC_2DoF.urdf';
@@ -78,7 +84,7 @@ for i=1:sc.NumLinks
 end
 
 %% H - Mass Matrix
-H = sc.massMatrix();
+H = sc.H;
 
 % Spart comp
 fprintf('\n##### H - Mass Matrix #####\n')
@@ -91,7 +97,6 @@ disp(H_val);
 fprintf('--- SPART ---\n');
 H_spart_val = double(subs(H_spart, q, q_val));
 disp(H_spart_val)
-
 %% C - Non-Linear Effect 
 % SPART
 %Inertias in inertial frames
@@ -112,25 +117,9 @@ C_spart_ori = [C0, C0m; Cm0, Cm];
 C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :); C0m(1:3, :)]; 
            [Cm0(:, 4:6), Cm0(:, 1:3)], Cm];
 
-% 
-K = 6+sc.NumActiveJoints;
-C = sym(zeros(K));
 
-fprintf('Computing C...\n');
-for i=1:K
-    fprintf('\t i=%i\n', i);
-    for j=1:K
-        c_ij = 0;
-
-        for k=1:K         
-            c_ijk = 1/2 * ( diff(H(i, j), q(k)) + diff(H(i, k), q(j)) - diff(H(j, k), q(i)) ) * q_dot(k);
-            
-            c_ij = c_ij + c_ijk;
-        end
-
-        C(i, j) = c_ij;
-    end
-end
+% TOOLBOX
+C = sc.C;
 
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
@@ -142,7 +131,6 @@ disp(C_val);
 fprintf('--- SPART ---\n');
 disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 return
-
 %% C Matrix Check
 % Skew Sym
 H2 = subs(H, q(1:6), q_val(1:6));

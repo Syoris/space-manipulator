@@ -62,12 +62,21 @@ classdef SpaceRobot < handle
         
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
         BaseConfig                  % Base current configuration (struct)
+        BaseSpeed                   % Base current speed (struct)
         JointsConfig                % Joints current configuration (struct)
+        JointsSpeed                 % Joints current speed (struct)
 
         H                           % Mass Matrix
+        Hsym                           
+        C                           % Non-Linear Velocity Matrix
+        Csym                           
+        Q                           % Generalized force Matrix
+        Qsym
     end
 
     properties(SetAccess = private)
+        q
+        q_dot
     end
     
     % Robot Representation methods
@@ -109,15 +118,45 @@ classdef SpaceRobot < handle
             obj.LinkNames = LinkNames;
             obj.BaseName = BaseName;
             obj.Base = SpacecraftBase(BaseName);
-            % obj.JointsConfig = struct('JointName', '', 'JointPosition', 0);
             obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
-            
-            % obj.Joints = Joints; 
-            % obj.Con = Con;    
+            obj.JointsSpeed = repmat(struct('JointName','', 'JointSpeed', 0), 1, obj.NumActiveJoints);
+
+            obj.q = [];
+            obj.q_dot = [];
+            obj.H = [];
+            obj.Hsym = [];
+            obj.C = [];
+            obj.Csym = [];
+            obj.Q = [];
+            obj.Qsym = [];
         end
         
         addLink(obj, linkIn, parentName)
         
+        function initMats(obj)
+            fprintf('--- Initializing Matrices ---\n');
+            
+            syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
+            syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz'
+
+            qm = sym('qm',[obj.NumActiveJoints, 1],'real');
+            qm_dot = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
+
+            obj.q = [Rx; Ry; Rz; r; p; y; qm];
+            obj.q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot];
+
+            obj.JointsConfig = qm';
+            obj.JointsSpeed = qm_dot';
+            obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
+            obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
+            
+            fprintf('\t Computing H Matrix\n');
+            obj.initMassMat();
+            
+            obj.initCMat();
+
+        end
+
         showDetails(obj)
 
         ax = show(obj, varargin)
@@ -166,8 +205,10 @@ classdef SpaceRobot < handle
 
     % Dynamcics Methods
     methods
-        H = massMatrix(obj)
+        H = initMassMat(obj)
         
+        C = initCMat(obj)
+
         % TODO
         function tau = inverseDynamics(obj, varargin)
         %inverseDynamics Compute required joint torques for desired motion.
@@ -471,6 +512,21 @@ classdef SpaceRobot < handle
 
         end
 
+        function set.JointsSpeed(obj, newConfig)
+            %set newConfig: (1xN) real vector
+
+            validateattributes(newConfig, {'numeric', 'sym'},...
+                {'row'}, 'SpaceRobot', 'JointsSpeed');
+            
+
+            if length(newConfig) ~= obj.NumActiveJoints
+                error("Invalid config: Missing values")
+            end
+            for i=1:length(newConfig)
+                obj.JointsSpeed(i).JointSpeed = newConfig(i);
+            end
+        end
+
         function Q = homeConfiguration(obj)
             %homeConfiguration Return the home configuration for robot
             %   Q = homeConfiguration(ROBOT) returns the home
@@ -512,6 +568,12 @@ classdef SpaceRobot < handle
             baseConf.Rot = obj.Base.BaseRot;
         end
 
+        function baseSpeed = get.BaseSpeed(obj)
+            baseSpeed = struct;
+            baseSpeed.TSpeed = obj.Base.BaseTSpeed;
+            baseSpeed.ASpeed = obj.Base.BaseASpeed;
+        end
+
         function set.BaseConfig(obj, newConfig)
             % Set new base config
             % Can set by passing either a struct or array in the form [x, y, z; r, p, y]
@@ -542,6 +604,37 @@ classdef SpaceRobot < handle
             end
 
             obj.forwardKinematics();
+        end
+
+        function set.BaseSpeed(obj, newConfig)
+            % Set new base config
+            % Can set by passing either a struct or array in the form [x, y, z; r, p, y]
+            %
+            %
+            % Ex:
+            %   newConfig = sc.BaseConfig
+            %   newConfig.BasePosition = [1, 2, 3]
+            %   sc.BaseConfig = newConfig
+            %
+            %   sc.BaseConfig = [1, 2, 3; pi/2, 0, 0]
+                
+            validateattributes(newConfig, {'numeric', 'sym'},...
+                {'nonempty', 'size', [2, 3]}, 'SpaceRobot', 'BaseSpeed');
+                
+            obj.Base.BaseTSpeed = newConfig(1, :);
+            obj.Base.BaseASpeed = newConfig(2, :);
+        end
+
+        function H = get.H(obj)
+        % get.H Get Mass Matrix at current config
+            q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+            H = double(subs(obj.Hsym, obj.q, q_val));
+        end
+
+        function C = get.C(obj)
+            % get.C Get C Matrix at current config
+                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+                C = subs(obj.Csym, obj.q, q_val);
         end
     end
 
