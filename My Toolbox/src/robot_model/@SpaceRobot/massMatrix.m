@@ -35,7 +35,6 @@ function H = massMatrix(obj)
         
         % Compute for active joints
         if joint.Q_id ~= -1   
-            disp(link.Name)
             Jv_i = Jacobians.(link.Name)(1:3, :);
             Jw_i = Jacobians.(link.Name)(4:6, :);
             I_i = inertias.(link.Name);

@@ -11,7 +11,7 @@ function JacM = comJacobiansBase(obj)
            zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
     JacM.(obj.BaseName) = J_b;
 
-    r0_b = tform2trvec(obj.Base.Children{1}.Joint.JointToParentTransform)'; % Position of first joint in base frame
+    [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform);
 
     % Links
     for i =1:obj.NumLinks

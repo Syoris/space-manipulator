@@ -5,6 +5,20 @@ run 'SPART_example.m'
 load 'SC_2DoF.mat'
 
 % Initial condition
+syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y' 'qm1' 'qm2'
+syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz' 'qm1_d' 'qm2_d'
+
+r0= [Rx;Ry;Rz];
+delta0 = [r;p;y];
+qm= [qm1; qm2];
+
+q = [r0; delta0; qm];
+
+q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm1_d; qm2_d];
+qm_dot = [qm1_d; qm2_d];
+
+q_val = [r0_S; zeros(3, 1); qm_S];
+
 % qm=[pi/6; -pi/4];
 % R0=eye(3);  %Rotation from Base-spacecraft to inertial
 % r0=[0; 0; 0]; %Position of the base-spacecraft
@@ -12,63 +26,52 @@ load 'SC_2DoF.mat'
 sc.JointsConfig = qm';
 sc.BaseConfig = [r0'; 0, 0, 0];
 
-% %% Jacobians
-% comPoses = sc.getCoMPosition();
-% Jacobians = sc.comJacobians();
-% for i=1:sc.NumLinks
-%     linkName = sc.LinkNames{i};
-%     J_i = Jacobians.(linkName);
-%     
-%     fprintf('\n##### Link %i #####\n', i);
-%     fprintf('Mine:\n')
-%     disp(J_i);
-%     fprintf('SPART:\n')
-%     disp(J_S{i});
-%    
-% %     fprintf('--- J_%i1', i)
-% %     J_i(1:3, 4:6)
-% %     J_S{i}(1:3, 4:6)
-% % 
-% %     fprintf('--- J_%i2', i)
-% %     J_i(1:3, 7:7+sc.NumActiveJoints-1)
-% %     J_S{i}(1:3, 7:7+sc.NumActiveJoints-1)
-% % 
-% %     % J_i3
-% %     fprintf('--- J_%i3', i)
-% %     J_i(4:6, 7:7+sc.NumActiveJoints-1)
-% %     J_S{i}(4:6, 7:7+sc.NumActiveJoints-1)
-% end
+%% Jacobians
+comPoses = sc.getCoMPosition();
+Jacobians = sc.comJacobians();
+for i=1:sc.NumLinks
+    linkName = sc.LinkNames{i};
+    J_i = Jacobians.(linkName);
+    
+    fprintf('\n##### Link %i #####\n', i);
+    fprintf('Mine:\n')
+    disp(J_i);
+    fprintf('\n')
+    disp(double(subs(J_i, q, q_val)));
 
-%% Mass Matrix
+    fprintf('SPART:\n')
+    disp(J_S{i});
+   
+%     fprintf('--- J_%i1', i)
+%     J_i(1:3, 4:6)
+%     J_S{i}(1:3, 4:6)
+% 
+%     fprintf('--- J_%i2', i)
+%     J_i(1:3, 7:7+sc.NumActiveJoints-1)
+%     J_S{i}(1:3, 7:7+sc.NumActiveJoints-1)
+% 
+%     % J_i3
+%     fprintf('--- J_%i3', i)
+%     J_i(4:6, 7:7+sc.NumActiveJoints-1)
+%     J_S{i}(4:6, 7:7+sc.NumActiveJoints-1)
+end
 
-H = sc.massMatrix;
+%% H - Mass Matrix
+H = sc.massMatrix();
 
 % Spart comp
 fprintf('\n##### Mass Matrix #####\n')
-fprintf('--- Computed ---');
-H
+fprintf('--- Computed ---\n');
+disp(H);
+fprintf('\n')
+disp(double(subs(H, q, q_val)));
 
-fprintf('--- SPART ---');
-H_spart
+fprintf('--- SPART ---\n');
+disp(H_spart)
 return
 
-%% CoM Positions in Base
-sc.BaseConfig = [0.5, 1, 0; 0, 0, 0];
-comPoses = sc.getCoMPosition();
+%% C - Non-Linear Effect 
 
-rk = zeros(3, 1, sc.NumActiveJoints);
-
-T_I_B = sc.Base.BaseToParentTransform; % Transform of base to I
-R_temp = T_I_B(1:3,1:3)';
-T_B_I = [R_temp, -R_temp*T_I_B(1:3,4) ;[0 0 0 1]]; % Inverse
-
-for i=1:sc.NumActiveJoints
-    T_I_i = comPoses.(sc.LinkNames{i}); % Transform of i to I
-    
-    T_B_i = T_B_I * T_I_i;
-
-    rk(:, :, i) = T_B_i(1:3, 4);
-end
 
 
 

@@ -9,28 +9,28 @@ filename='SC_2DoF.urdf';
 %% --- Kinematics ---%
 %Base position
 R0=eye(3);  %Rotation from Base-spacecraft to inertial
-r0=[0.5; 1; 0.2]; %Position of the base-spacecraft
+r0_S=[0; 0; 0]; %Position of the base-spacecraft
 
 %Joint variables [rad]
-qm=[pi/2; -pi/3];
+qm_S=[pi/6; -pi/4];
 
 %Velocities
 u0=zeros(6,1); %Base-spacecraft velocity
 um=[4;-1]*pi/180; %Joint velocities
 
-[RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0,qm,robotSpart);
+[RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0_S,qm_S,robotSpart);
 %End-Effector
 % TEE=[RL(1:3,1:3,end),rL(1:3,end);zeros(1,3),1]*T_Ln_EE;
 
 %% --- Differential Kinematics ---%
 %Differential kinematics
-[Bij,Bi0,P0,pm]=DiffKinematics(R0,r0,rL,e,g,robotSpart);
+[Bij,Bi0,P0,pm]=DiffKinematics(R0,r0_S,rL,e,g,robotSpart);
 
 %Jacobians
-[J00, Jm0]=Jacob(r0,r0,rL,P0,pm,0,robotSpart);
-[J01, Jm1]=Jacob(rL(1:3,1),r0,rL,P0,pm,1,robotSpart);
-[J02, Jm2]=Jacob(rL(1:3,2),r0,rL,P0,pm,2,robotSpart);
-[J03, Jm3]=Jacob(rL(1:3,3),r0,rL,P0,pm,3,robotSpart);
+[J00, Jm0]=Jacob(r0_S,r0_S,rL,P0,pm,0,robotSpart);
+[J01, Jm1]=Jacob(rL(1:3,1),r0_S,rL,P0,pm,1,robotSpart);
+[J02, Jm2]=Jacob(rL(1:3,2),r0_S,rL,P0,pm,2,robotSpart);
+[J03, Jm3]=Jacob(rL(1:3,3),r0_S,rL,P0,pm,3,robotSpart);
 J_S = {[[J01(4:6, 4:6), J01(4:6, 1:3); J01(1:3, 4:6), J01(1:3, 1:3)], [Jm1(4:6, :); Jm1(1:3, :)]]; 
        [[J02(4:6, 4:6), J02(4:6, 1:3); J02(1:3, 4:6), J02(1:3, 1:3)], [Jm2(4:6, :); Jm2(1:3, :)]];
        [[J03(4:6, 4:6), J03(4:6, 1:3); J03(1:3, 4:6), J03(1:3, 1:3)], [Jm3(4:6, :); Jm3(1:3, :)]]};

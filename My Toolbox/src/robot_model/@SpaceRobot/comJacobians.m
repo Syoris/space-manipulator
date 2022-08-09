@@ -10,34 +10,40 @@ function JacM = comJacobians(obj)
            zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
     JacM.(obj.BaseName) = J_b;
 
+    [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform); % Position of first joint in base frame
+    [rotM_IB, ~] = tr2rt(tTree.(obj.BaseName)); % Position of first joint in Inertial
+    r0_I = rotM_IB*r0_b;
 
     % Links
     for i =1:obj.NumLinks
         % Build J_i1
-        r0_b = tform2trvec(obj.Base.Children{1}.Joint.JointToParentTransform)'; % Position of first joint in base frame
-        r0_I = tform2rotm(tTree.(obj.BaseName))*r0_b;
         J_1_t1 = zeros(3, 1);
 
         for k=2:i
-            prevLinkLenght = obj.Links{k}.Joint.JointToParentTransform;
-            prevLinkRotM = tTree.(obj.Links{k}.Parent.Name);
-            J_1_t1 = J_1_t1 + tform2rotm(prevLinkRotM)*tform2trvec(prevLinkLenght)';
+            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
+            [prevLinkRotM, ~] = tr2rt(tTree.(obj.Links{k}.Parent.Name)); % Transform of previous joint to Base
+
+            J_1_t1 = J_1_t1 + prevLinkRotM*prevLinkLenght;
         end
         
-        J_1_t2 = tform2rotm(tTree.(obj.LinkNames{i}))*obj.Links{i}.CenterOfMass';
+        [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to Base
+        J_1_t2 = linkRotM*obj.Links{i}.CenterOfMass';
         
         J_i1 = -skew(r0_I + J_1_t1 + J_1_t2);
 
         % J_i2
         J_2_t1 = zeros(3, obj.NumActiveJoints);
         for k=2:i
-            prevLinkLenght = obj.Links{k}.Joint.JointToParentTransform;
-            prevLinkRotM = tTree.(obj.Links{k}.Parent.Name);
-            res = skew(tform2rotm(prevLinkRotM)*tform2trvec(prevLinkLenght)')*obj.getAxisM(k-1);
+            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
+            [prevLinkRotM, ~] = tr2rt(tTree.(obj.Links{k}.Parent.Name)); % Transform of previous joint to Base
+
+            res = skew(prevLinkRotM*prevLinkLenght) * obj.getAxisM(k-1);
+
             J_2_t1 = J_2_t1 + res;
         end
         
-        J_2_t2 = skew(tform2rotm(tTree.(obj.LinkNames{i}))*obj.Links{i}.CenterOfMass')*obj.getAxisM(i);
+        [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to Base
+        J_2_t2 = skew(linkRotM * obj.Links{i}.CenterOfMass')*obj.getAxisM(i);
         
         J_i2 = - J_2_t1 - J_2_t2;
 

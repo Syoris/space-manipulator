@@ -63,6 +63,8 @@ classdef SpaceRobot < handle
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
         BaseConfig                  % Base current configuration (struct)
         JointsConfig                % Joints current configuration (struct)
+
+        H                           % Mass Matrix
     end
 
     properties(SetAccess = private)
