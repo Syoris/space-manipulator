@@ -71,12 +71,12 @@ classdef SpaceRobot < handle
     properties % , GetAccess = private)
         q
         q_dot
-    end
-
-    properties(SetAccess = private , GetAccess = private)
         Hsym      
         Csym                           
         Qsym
+    end
+
+    properties(SetAccess = private , GetAccess = private)
     end
     
     % Robot Representation methods

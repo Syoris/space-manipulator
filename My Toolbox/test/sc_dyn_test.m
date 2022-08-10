@@ -230,3 +230,16 @@ toc
 
 
 fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
+
+%% --- Inverse Dynamics ---
+%Accelerations
+u0dot=zeros(6,1);
+umdot=zeros(robotSpart.n_q,1);
+
+%Accelerations
+[t0dot,tmdot]=Accelerations(t0,tm,P0,pm,Bi0,Bij,q_dot_val(1:6),qm_dot_val,u0dot,umdot,robotSpart);
+
+%Inverse Dynamics - Flying base
+[tau0,taum] = ID(wF0,wFm,t0,tm,t0dot,tmdot,P0,pm,I0,Im,Bij,Bi0,robotSpart);
+
+
