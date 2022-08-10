@@ -123,6 +123,11 @@ for i = 1:length(linksVect)
 
     sc.addLink(linksVect{i}, parent); % Add body1 to base
 end
- 
+
+%% Initialize Matrices
+sc.initMats();
+
+%%
 % Remove vars
 clearvars -except sc
+save 'Project/Models/SC_2DoF.mat' sc

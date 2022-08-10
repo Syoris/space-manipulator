@@ -150,10 +150,10 @@ classdef SpaceRobot < handle
             obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
             obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
             
-            fprintf('\t Computing H Matrix\n');
-            obj.initMassMat();
             
-            obj.initCMat();
+            % obj.initMassMat();
+            
+            % obj.initCMat();
 
         end
 
@@ -512,18 +512,24 @@ classdef SpaceRobot < handle
 
         end
 
-        function set.JointsSpeed(obj, newConfig)
-            %set newConfig: (1xN) real vector
+        function set.JointsSpeed(obj, newSpeed)
+            %set newSpeed: (1xN) real vector or struct
 
-            validateattributes(newConfig, {'numeric', 'sym'},...
+            validateattributes(newSpeed, {'struct', 'numeric', 'sym'},...
                 {'row'}, 'SpaceRobot', 'JointsSpeed');
             
-
-            if length(newConfig) ~= obj.NumActiveJoints
-                error("Invalid config: Missing values")
-            end
-            for i=1:length(newConfig)
-                obj.JointsSpeed(i).JointSpeed = newConfig(i);
+            if isa(newSpeed,'struct')
+                if length(newSpeed) ~= obj.NumActiveJoints
+                    error("Invalid config: Missing values")
+                end
+                obj.JointsSpeed = newSpeed;
+            else
+                if length(newSpeed) ~= obj.NumActiveJoints
+                    error("Invalid config: Missing values")
+                end
+                for i=1:length(newSpeed)
+                    obj.JointsSpeed(i).JointSpeed = newSpeed(i);
+                end
             end
         end
 
@@ -634,7 +640,8 @@ classdef SpaceRobot < handle
         function C = get.C(obj)
             % get.C Get C Matrix at current config
                 q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
-                C = subs(obj.Csym, obj.q, q_val);
+                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsConfig.JointPosition]]';
+                C = double(subs(obj.Csym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
         end
     end
 

@@ -1,7 +1,6 @@
 %% Computing of jacobians
 % To compare dynamic functions with the one obtained with SPART
 clc
-run 'SPART_example.m'
 load 'SC_2DoF.mat'
 
 sc.initMats();
@@ -144,8 +143,12 @@ N_spart = H_d - 2*subs(C_spart, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
 N_val = double(subs(N, q_dot(7:8), q_dot_val(7:8)));
 N_spart_val = double(subs(N_spart, q_dot(7:8), q_dot_val(7:8)));
 
+fprintf('--- Skew Symmetric Check ---\n')
+disp(N_val)
+
 % Validity
 % h_ijk computing
+K = sc.NumActiveJoints + 6;
 h = sym(zeros(K, K, K));
 for i=1:K
     fprintf('\t i=%i\n', i);

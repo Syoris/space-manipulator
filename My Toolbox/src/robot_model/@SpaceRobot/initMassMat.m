@@ -16,6 +16,9 @@ function H = initMassMat(obj)
     %       % Load example robot
     %       load ____
     %       H = obj.massMatrix();
+
+    fprintf('\t Computing H Matrix\n');
+    
     H = sym(zeros(6+obj.NumActiveJoints));
 
     Jacobians = obj.comJacobiansBase();

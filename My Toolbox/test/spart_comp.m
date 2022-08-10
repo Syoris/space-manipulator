@@ -1,4 +1,5 @@
 %% Spart/Own comp
+% To plot SPART robot and SpaceRobot to compare models
 close all
 
 comPositions = sc.getCoMPosition();
