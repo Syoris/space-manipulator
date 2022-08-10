@@ -2,6 +2,7 @@
 % To compare dynamic functions with the one obtained with SPART
 clc
 if ~exist('sc', 'var')
+    fprintf("Loading SpaceRobot...\n")
     load 'SC_2DoF.mat'
 end    
 
@@ -23,7 +24,7 @@ syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz' 'qm1_d' 'qm2_d'
 R0_val = rpy2r(delta0_val');
 r0= [Rx;Ry;Rz];
 delta0 = [r;p;y];
-R0 = rpy2r(delta0');
+R0 = rpy2r(transpose(delta0));
 qm= [qm1(t); qm2(t)];
 
 q = [r0; delta0; qm];

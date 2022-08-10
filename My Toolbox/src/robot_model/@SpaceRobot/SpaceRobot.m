@@ -147,9 +147,9 @@ classdef SpaceRobot < handle
             obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
             obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
             
-            obj.initMassMat();
-            
+            obj.initMassMat();    
             obj.initCMat();
+            obj.initQMat();
         end
 
         showDetails(obj)
@@ -200,9 +200,11 @@ classdef SpaceRobot < handle
 
     % Dynamcics Methods
     methods
-        H = initMassMat(obj)
+        initMassMat(obj)
+
+        initCMat(obj)
         
-        C = initCMat(obj)
+        initQMat(obj)
 
         function H = getH(obj)
         % get.H Get Mass Matrix at current config
@@ -215,6 +217,13 @@ classdef SpaceRobot < handle
                 q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
                 q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
                 C = double(subs(obj.Csym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
+        end
+
+        function Q = getQ(obj)
+            % get.Q Get Q Matrix at current config
+                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
+                Q = double(subs(obj.Qsym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
         end
 
         nOk = isNSkewSym(obj)

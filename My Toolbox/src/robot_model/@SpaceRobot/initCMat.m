@@ -1,4 +1,4 @@
-function C = initCMat(obj)
+function initCMat(obj)
 % nlMatrix  Compute the non-linear velocity term matrix using Christoffel symbols of the first kind.
 
     K = 6+obj.NumActiveJoints;
