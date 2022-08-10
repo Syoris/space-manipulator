@@ -1,4 +1,4 @@
-function initMassMat(obj)
+function initMassMat(obj, d, simpM)
     %massMatrix Compute the mass matrix for given configuration
     %   H = massMatrix(ROBOT) returns the joint-space mass
     %   matrix, H, of ROBOT for ROBOT's current configuration.
@@ -17,8 +17,8 @@ function initMassMat(obj)
     %       load ____
     %       H = obj.massMatrix();
 
-    fprintf('\t Computing H Matrix\n');
-
+    d.Message = sprintf('Computing H Matrix...');
+    
     H = sym(zeros(6+obj.NumActiveJoints));
 
     Jacobians = obj.comJacobiansBase();
@@ -28,8 +28,8 @@ function initMassMat(obj)
     Jw_B = Jacobians.(obj.BaseName)(4:6, :); % Base rotation jacobian
     inertias = obj.getInertiaM();
 
-    bV = obj.Base.Mass*(Jv_B'*Jv_B);
-    bW = Jw_B'*inertias.(obj.BaseName)*Jw_B;
+    bV = obj.Base.Mass*(Jv_B.'*Jv_B);
+    bW = Jw_B.'*inertias.(obj.BaseName)*Jw_B;
 
     H = H + bV + bW;
 
@@ -43,15 +43,22 @@ function initMassMat(obj)
             Jw_i = Jacobians.(link.Name)(4:6, :);
             I_i = inertias.(link.Name);
             
-            iv_1 = link.Mass*(Jv_B'*Jv_B);
-            iv_2 = 2*link.Mass*(Jv_B'*Jv_i);
-            iv_2_2 = link.Mass*( Jv_B'*Jv_i + Jv_i'*Jv_B);
-            iv_3 = link.Mass*(Jv_i'*Jv_i);
-            iw = Jw_i' * I_i * Jw_i;
+            iv_1 = link.Mass*(Jv_B.'*Jv_B);
+            iv_2 = link.Mass*( Jv_B.'*Jv_i + Jv_i.'*Jv_B);
+            iv_3 = link.Mass*(Jv_i.'*Jv_i);
+            iw = Jw_i.' * I_i * Jw_i;
             
-            H = H + iv_1 + iv_2_2 + iv_3 + iw;
+            H = H + iv_1 + iv_2 + iv_3 + iw;
         end
     end
 
     obj.Hsym = H;
+    if simpM
+        for i=1:size(H, 1)
+            for j=1:size(H, 1)
+                d.Message = sprintf('Simplifying H... (%i, %i)', i, j);
+                obj.Hsym(i, j) = simplify(obj.Hsym(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+            end
+        end
+    end
 end

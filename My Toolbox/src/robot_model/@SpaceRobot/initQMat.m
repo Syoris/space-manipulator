@@ -1,4 +1,6 @@
-function initQMat(obj)
+function initQMat(obj, d)
+    d.Message = sprintf('Computing Q...');
+
     Q = sym(zeros(obj.NumActiveJoints + 6, obj.NumActiveJoints + 6));
     Q(7:end, 7:end) = eye(obj.NumActiveJoints);
 
