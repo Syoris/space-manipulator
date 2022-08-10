@@ -1,9 +1,9 @@
 %% Computing of jacobians
 % To compare dynamic functions with the one obtained with SPART
 clc
-load 'SC_2DoF.mat'
-
-sc.initMats();
+if ~exist('sc', 'var')
+    load 'SC_2DoF.mat'
+end    
 
 % Spacecraft State
 qm_val=[pi/6; -pi/4];
@@ -83,20 +83,7 @@ for i=1:sc.NumLinks
 end
 
 %% H - Mass Matrix
-H = sc.H;
-
-% Spart comp
-fprintf('\n##### H - Mass Matrix #####\n')
-fprintf('--- Computed ---\n');
-% disp(H);
-% fprintf('\n')
-H_val = double(subs(H, q, q_val));
-disp(H_val);
-
-fprintf('--- SPART ---\n');
-H_spart_val = double(subs(H_spart, q, q_val));
-disp(H_spart_val)
-%% C - Non-Linear Effect 
+% SPART
 % SPART
 %Inertias in inertial frames
 [I0,Im]=I_I(R0,RL,robotSpart);
@@ -116,73 +103,85 @@ C_spart_ori = [C0, C0m; Cm0, Cm];
 C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :); C0m(1:3, :)]; 
            [Cm0(:, 4:6), Cm0(:, 1:3)], Cm];
 
+% Comparison
+H = sc.getH();
 
-% TOOLBOX
-C = sc.C;
+fprintf('\n##### H - Mass Matrix #####\n')
+fprintf('--- Computed ---\n');
+% disp(H);
+% fprintf('\n')
+H_val = double(subs(H, q, q_val));
+disp(H_val);
+
+fprintf('--- SPART ---\n');
+H_spart_val = double(subs(H_spart, q, q_val));
+disp(H_spart_val)
+%% C - Non-Linear Effect 
+C = sc.getC();
 
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
 disp(C);
-fprintf('\n')
-C_val = double(subs(C, [q; q_dot], [q_val; q_dot_val]));
-disp(C_val);
 
 fprintf('--- SPART ---\n');
 disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
-return
-%% C Matrix Check
-% Skew Sym
-H2 = subs(H, q(1:6), q_val(1:6));
-H_d = diff(H2, t);
-H_d = subs(H_d, [diff(qm1(t), t), diff(qm2(t), t)], [qm1_d, qm2_d]);
-H_d = subs(H_d, q(7:8), q_val(7:8));
 
-N = H_d - 2*subs(C, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
-N_spart = H_d - 2*subs(C_spart, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
+% C Matrix Check
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
 
-N_val = double(subs(N, q_dot(7:8), q_dot_val(7:8)));
-N_spart_val = double(subs(N_spart, q_dot(7:8), q_dot_val(7:8)));
-
-fprintf('--- Skew Symmetric Check ---\n')
-disp(N_val)
-
-% Validity
-% h_ijk computing
-K = sc.NumActiveJoints + 6;
-h = sym(zeros(K, K, K));
-for i=1:K
-    fprintf('\t i=%i\n', i);
-    for j=1:K
-
-        for k=1:K         
-            h_ijk = ( diff(H(i, j), q(k)) - 0.5*diff(H(j, k), q(i)) ) * q_dot(k);
-            h(i, j, k) = h_ijk;
-        end
-    end
-end
-
-% Check C Matrix
-fprintf('--- C Matrix Check ---')
-for i =1:K
-    t1 = 0;
-    t1_spart = 0;
-    t2 = 0;
-
-    for j=1:K   
-        t1 = t1 + C(i, j)*q_dot(j);
-        t1_spart = t1_spart + C_spart(i, j)*q_dot(j);
-
-        for k=1:K
-            t2 = t2 + h(i, j, k)*q_dot(j);
-        end
-    end
-
-    t1 = double(subs(t1, [q; q_dot], [q_val; q_dot_val]));
-    t1_spart = double(subs(t1_spart, [q; q_dot], [q_val; q_dot_val]));
-    t2 = double(subs(t2, [q; q_dot], [q_val; q_dot_val]));
-
-    fprintf(['\nRow %i:\n ' ...
-             '\t-Computed: %f\n' ...
-             '\t-SPART: %f\n' ...
-             '\t-Check: %f\n'], i, t1, t1_spart, t2);
-end
+% % Skew Sym
+% H2 = subs(H, q(1:6), q_val(1:6));
+% H_d = diff(H2, t);
+% H_d = subs(H_d, [diff(qm1(t), t), diff(qm2(t), t)], [qm1_d, qm2_d]);
+% H_d = subs(H_d, q(7:8), q_val(7:8));
+% 
+% N = H_d - 2*subs(C, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
+% N_spart = H_d - 2*subs(C_spart, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
+% 
+% N_val = double(subs(N, q_dot(7:8), q_dot_val(7:8)));
+% N_spart_val = double(subs(N_spart, q_dot(7:8), q_dot_val(7:8)));
+% 
+% fprintf('--- Skew Symmetric Check ---\n')
+% disp(N_val)
+% 
+% % Validity
+% % h_ijk computing
+% K = sc.NumActiveJoints + 6;
+% h = sym(zeros(K, K, K));
+% for i=1:K
+%     fprintf('\t i=%i\n', i);
+%     for j=1:K
+% 
+%         for k=1:K         
+%             h_ijk = ( diff(H(i, j), q(k)) - 0.5*diff(H(j, k), q(i)) ) * q_dot(k);
+%             h(i, j, k) = h_ijk;
+%         end
+%     end
+% end
+% 
+% % Check C Matrix
+% fprintf('--- C Matrix Check ---')
+% for i =1:K
+%     t1 = 0;
+%     t1_spart = 0;
+%     t2 = 0;
+% 
+%     for j=1:K   
+%         t1 = t1 + C(i, j)*q_dot(j);
+%         t1_spart = t1_spart + C_spart(i, j)*q_dot(j);
+% 
+%         for k=1:K
+%             t2 = t2 + h(i, j, k)*q_dot(j);
+%         end
+%     end
+% 
+%     t1 = double(subs(t1, [q; q_dot], [q_val; q_dot_val]));
+%     t1_spart = double(subs(t1_spart, [q; q_dot], [q_val; q_dot_val]));
+%     t2 = double(subs(t2, [q; q_dot], [q_val; q_dot_val]));
+% 
+%     fprintf(['\nRow %i:\n ' ...
+%              '\t-Computed: %f\n' ...
+%              '\t-SPART: %f\n' ...
+%              '\t-Check: %f\n'], i, t1, t1_spart, t2);
+% end

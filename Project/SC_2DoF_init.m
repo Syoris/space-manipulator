@@ -125,9 +125,17 @@ for i = 1:length(linksVect)
 end
 
 %% Initialize Matrices
-sc.initMats();
+sc.initMats(); % Can be very long
 
+sc.homeConfig();
+sc.showDetails();
+% sc.show();              
+
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
+
+fprintf('SpaceRobot Initialization Completed\n')
 %%
 % Remove vars
 clearvars -except sc
-save 'Project/Models/SC_2DoF.mat' sc
+save 'Project/Models/SC_2DoF.mat'
