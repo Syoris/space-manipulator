@@ -1,14 +1,13 @@
-function initCMat(obj)
+function initCMat(obj, d, simpC)
 % nlMatrix  Compute the non-linear velocity term matrix using Christoffel symbols of the first kind.
 
     K = 6+obj.NumActiveJoints;
     C = sym(zeros(K));
     H = obj.Hsym;
-    fprintf('\t Computing C Matrix');
-    fprintf('\t Progress: ')
+
     for i=1:K
-        fprintf('.')
         for j=1:K
+            d.Message = sprintf('Computing C... (%i, %i)', i, j);
             c_ij = 0;
 
             for k=1:K         
@@ -20,8 +19,16 @@ function initCMat(obj)
             C(i, j) = c_ij;
         end
     end
-    fprintf('\n')
 
     obj.Csym = C;
+
+    if simpC
+        for i=1:size(C, 1)
+            for j=1:size(C, 1)
+                d.Message = sprintf('Simplifying C... (%i, %i)', i, j);
+                obj.Csym(i, j) = simplify(obj.Csym(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+            end
+        end
+    end
 
 end

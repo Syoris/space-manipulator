@@ -1,10 +1,7 @@
 %% Space Robot Dynamics
 % To compare dynamic functions with the one obtained with SPART
 clc
-if ~exist('sc', 'var')
-    fprintf("Loading SpaceRobot...\n")
-    load 'SC_2DoF.mat'
-end    
+load 'SC_2DoF.mat'
 
 % Spacecraft State
 qm_val=[pi/6; -pi/4];
@@ -83,7 +80,7 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 %     disp(double(subs(J_S{i}, q, q_val)));
 % end
 
-%% H - Mass Matrix
+%% --- H - Mass Matrix ---
 % SPART
 %Inertias in inertial frames
 [I0,Im]=I_I(R0,RL,robotSpart);
@@ -104,31 +101,34 @@ C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :)
            [Cm0(:, 4:6), Cm0(:, 1:3)], Cm];
 
 % Comparison
-H = sc.getH();
-
 fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
-% disp(H);
-% fprintf('\n')
-H_val = double(subs(H, q, q_val));
-disp(H_val);
+tic
+H = sc.getH();
+disp(H);
+toc
 
 fprintf('--- SPART ---\n');
+tic
 H_spart_val = double(subs(H_spart, q, q_val));
 disp(H_spart_val)
-%% C - Non-Linear Effect 
-C = sc.getC();
-
+toc
+%% --- C - Non-Linear Effect ---
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
+tic
+C = sc.getC();
 disp(C);
+toc
 
 fprintf('--- SPART ---\n');
+tic
 disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
+toc
 
-% C Matrix Check
-assert(sc.isNSkewSym());
-assert(sc.isCOk(true));
+% % C Matrix Check
+% assert(sc.isNSkewSym());
+% assert(sc.isCOk(true));
 
 % % Skew Sym
 % H2 = subs(H, q(1:6), q_val(1:6));
@@ -212,23 +212,21 @@ Im = double(subs(Im, [q, q_dot], [q_val, q_dot_val]));
 Bij = double(subs(Bij, [q, q_dot], [q_val, q_dot_val]));
 Bi0 = double(subs(Bi0, [q, q_dot], [q_val, q_dot_val]));
 
-%Forward Dynamics
-[u0dot_FD,umdot_FD] = FD(tauq0,tau_qm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,q_dot_val(1:6),qm_dot_val,robotSpart);
-
-
-% TOOLBOX
-F = [f0;n0;tau_qm];
-q_ddot = sc.forwardDynamics(F);
 
 
 fprintf("\n### Foward Dynamics ###\n")
 fprintf('-- Computed --\n')
+tic
+F = [f0;n0;tau_qm];
+q_ddot = sc.forwardDynamics(F);
 disp(q_ddot)
+toc
 
 fprintf('-- SPART -- \n')
+tic
+[u0dot_FD,umdot_FD] = FD(tauq0,tau_qm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,q_dot_val(1:6),qm_dot_val,robotSpart);
 disp([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD])
+toc
+
 
 fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
-
-
-

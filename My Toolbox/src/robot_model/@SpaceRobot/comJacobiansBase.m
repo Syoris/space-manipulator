@@ -4,7 +4,6 @@ function JacM = comJacobiansBase(obj)
 %   r_i_dot = J_i * q_dot,  r_i_dot: ith Link CoM speed in base frame
 
     JacM = struct();
-    tTree = obj.Ttree;
     
     % Base
     J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...

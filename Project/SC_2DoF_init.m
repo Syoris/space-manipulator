@@ -125,7 +125,7 @@ for i = 1:length(linksVect)
 end
 
 %% Initialize Matrices
-sc.initMats(); % Can be very long
+sc.initMats(true, true); % Can be very long
 
 sc.homeConfig();
 sc.showDetails();

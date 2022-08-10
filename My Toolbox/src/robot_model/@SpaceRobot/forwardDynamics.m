@@ -9,15 +9,9 @@ function q_ddot = forwardDynamics(obj, F)
     %       tau_m: Joint torques (Nx1)
 
     % TODO: Possibility to specify q_dot and q
-    tic
     H = obj.getH();
-    toc
-    tic
     C = obj.getC();
-    toc
-    tic
     Q = obj.getQ();
-    toc
 
     q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
 

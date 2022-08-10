@@ -130,9 +130,23 @@ classdef SpaceRobot < handle
         
         addLink(obj, linkIn, parentName)
         
-        function initMats(obj)
-            fprintf('--- Initializing Matrices ---\n');
-            
+        function initMats(obj, simpM, simpC)
+            % simpM: Simplify Mass Matrix. Takes a while
+            % simpC: Simplify C Matrix. Takes a while
+            if nargin == 1
+                simpM = false;
+                simpC = false;
+            end
+            if nargin == 2
+                simpC = false;
+            end
+
+            fig = uifigure;
+            d = uiprogressdlg(fig,'Title','Matrices Initialization',...
+                'Message','Initializing Matrices', ...
+                'Indeterminate','on');
+            drawnow
+
             syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
             syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz'
 
@@ -147,9 +161,13 @@ classdef SpaceRobot < handle
             obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
             obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
             
-            obj.initMassMat();    
-            obj.initCMat();
-            obj.initQMat();
+            obj.initMassMat(d, simpM);    
+            obj.initCMat(d, simpC);
+            obj.initQMat(d);
+
+            d.Message = sprintf('Done');
+
+            close(d);
         end
 
         showDetails(obj)
@@ -200,11 +218,11 @@ classdef SpaceRobot < handle
 
     % Dynamcics Methods
     methods
-        initMassMat(obj)
+        initMassMat(obj, d, simpM)
 
-        initCMat(obj)
+        initCMat(obj, d, simpC)
         
-        initQMat(obj)
+        initQMat(obj, d)
 
         function H = getH(obj)
         % get.H Get Mass Matrix at current config
