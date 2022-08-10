@@ -27,7 +27,7 @@ classdef SpacecraftBase < Link
             end
             
             if ~isempty(obj.BasePosition)
-                trans = obj.BasePosition';
+                trans = transpose(obj.BasePosition);
             else
                 trans = zeros(3, 1);
             end

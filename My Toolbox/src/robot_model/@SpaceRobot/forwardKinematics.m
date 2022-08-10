@@ -1,6 +1,6 @@
 function tTree = forwardKinematics(obj)
     % Compute forwardKinematics of the robot. Output an array of the homogenous 
-    % transformation matrix of inertial from to link: T_inertial_linkI
+    % transformation matrix of inertial frame to link: T_inertial_linkI
 
     n = obj.NumLinks;
     % Ttree = repmat({eye(4)}, 1, n);

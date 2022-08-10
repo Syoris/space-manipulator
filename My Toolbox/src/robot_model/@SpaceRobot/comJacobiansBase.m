@@ -27,7 +27,7 @@ function JacM = comJacobiansBase(obj)
         
         [linkRotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name)); % Transform of link to Base
 
-        J_1_t2 = linkRotM*obj.Links{i}.CenterOfMass';
+        J_1_t2 = linkRotM*obj.Links{i}.CenterOfMass.';
         
         J_i1 = -skew(r0_b + J_1_t1 + J_1_t2);
 
@@ -43,7 +43,7 @@ function JacM = comJacobiansBase(obj)
         end
         
         [linkRotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name)); % Transform of link to Base
-        J_2_t2 = skew(linkRotM*obj.Links{i}.CenterOfMass')*obj.getAxisM(i, 'base');
+        J_2_t2 = skew(linkRotM*obj.Links{i}.CenterOfMass.')*obj.getAxisM(i, 'base');
         
         J_i2 = - J_2_t1 - J_2_t2;
 

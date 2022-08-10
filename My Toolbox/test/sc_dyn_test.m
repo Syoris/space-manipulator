@@ -1,4 +1,4 @@
-%% Computing of jacobians
+%% Space Robot Dynamics
 % To compare dynamic functions with the one obtained with SPART
 clc
 if ~exist('sc', 'var')
@@ -45,7 +45,7 @@ sc.BaseSpeed = [r0_dot_val'; w0_val'];
 filename='SC_2DoF.urdf';
 [robotSpart,robot_keys] = urdf2robot(filename);
 
-%% Jacobians
+%% --- Jacobians ---
 % SPART
 [RJ,RL,rJ,rL,e,g]=Kinematics(R0,r0,qm,robotSpart);
 %Differential kinematics
@@ -65,26 +65,25 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 [t0,tm]=Velocities(Bij,Bi0,P0,pm, [r0_dot_val; w0_val], qm_dot, robotSpart);
 
 
-% Toolbox
-comPoses = sc.getCoMPosition();
-Jacobians = sc.comJacobians();
-for i=1:sc.NumLinks
-    linkName = sc.LinkNames{i};
-    J_i = Jacobians.(linkName);
-    
-    fprintf('\n##### Link %i #####\n', i);
-    fprintf('Mine:\n')
-%     disp(J_i);
-    fprintf('\n')
-    disp(double(subs(J_i, q, q_val)));
-
-    fprintf('SPART:\n')
-%     disp(J_S{i});
-    disp(double(subs(J_S{i}, q, q_val)));
-end
+% % Toolbox
+% comPoses = sc.getCoMPosition();
+% Jacobians = sc.comJacobians();
+% for i=1:sc.NumLinks
+%     linkName = sc.LinkNames{i};
+%     J_i = Jacobians.(linkName);
+%     
+%     fprintf('\n##### Link %i #####\n', i);
+%     fprintf('Mine:\n')
+% %     disp(J_i);
+%     fprintf('\n')
+%     disp(double(subs(J_i, q, q_val)));
+% 
+%     fprintf('SPART:\n')
+% %     disp(J_S{i});
+%     disp(double(subs(J_S{i}, q, q_val)));
+% end
 
 %% H - Mass Matrix
-% SPART
 % SPART
 %Inertias in inertial frames
 [I0,Im]=I_I(R0,RL,robotSpart);
@@ -186,3 +185,50 @@ assert(sc.isCOk(true));
 %              '\t-SPART: %f\n' ...
 %              '\t-Check: %f\n'], i, t1, t1_spart, t2);
 % end
+
+%% --- Forward Dyn ---
+% FORCES
+f0 = [0; 0; 0]; % Force on baseC
+n0 = [0; 0; 0.1]; % Torque on base
+tau_qm=[0; 0]; % Joints torque
+
+% SPART
+%Gravity
+g=9.8; %[m s-2]
+
+%External forces (includes gravity and assumes z is the vertical direction)
+wF0=[n0; f0];
+wFm=[zeros(6,robotSpart.n_links_joints)];
+
+%Joint torques
+tauq0=zeros(6,1);
+
+t0 = double(subs(t0, [q, q_dot], [q_val, q_dot_val]));
+tm = double(subs(tm, [q, q_dot], [q_val, q_dot_val]));
+P0 = double(subs(P0, [q, q_dot], [q_val, q_dot_val]));
+pm = double(subs(pm, [q, q_dot], [q_val, q_dot_val]));
+I0 = double(subs(I0, [q, q_dot], [q_val, q_dot_val]));
+Im = double(subs(Im, [q, q_dot], [q_val, q_dot_val]));
+Bij = double(subs(Bij, [q, q_dot], [q_val, q_dot_val]));
+Bi0 = double(subs(Bi0, [q, q_dot], [q_val, q_dot_val]));
+
+%Forward Dynamics
+[u0dot_FD,umdot_FD] = FD(tauq0,tau_qm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,q_dot_val(1:6),qm_dot_val,robotSpart);
+
+
+% TOOLBOX
+F = [f0;n0;tau_qm];
+q_ddot = sc.forwardDynamics(F);
+
+
+fprintf("\n### Foward Dynamics ###\n")
+fprintf('-- Computed --\n')
+disp(q_ddot)
+
+fprintf('-- SPART -- \n')
+disp([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD])
+
+fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
+
+
+

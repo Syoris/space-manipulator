@@ -28,8 +28,8 @@ function initMassMat(obj)
     Jw_B = Jacobians.(obj.BaseName)(4:6, :); % Base rotation jacobian
     inertias = obj.getInertiaM();
 
-    bV = obj.Base.Mass*(Jv_B'*Jv_B);
-    bW = Jw_B'*inertias.(obj.BaseName)*Jw_B;
+    bV = obj.Base.Mass*(Jv_B.'*Jv_B);
+    bW = Jw_B.'*inertias.(obj.BaseName)*Jw_B;
 
     H = H + bV + bW;
 
@@ -43,11 +43,11 @@ function initMassMat(obj)
             Jw_i = Jacobians.(link.Name)(4:6, :);
             I_i = inertias.(link.Name);
             
-            iv_1 = link.Mass*(Jv_B'*Jv_B);
-            iv_2 = 2*link.Mass*(Jv_B'*Jv_i);
-            iv_2_2 = link.Mass*( Jv_B'*Jv_i + Jv_i'*Jv_B);
-            iv_3 = link.Mass*(Jv_i'*Jv_i);
-            iw = Jw_i' * I_i * Jw_i;
+            iv_1 = link.Mass*(Jv_B.'*Jv_B);
+            iv_2 = 2*link.Mass*(Jv_B.'*Jv_i);
+            iv_2_2 = link.Mass*( Jv_B.'*Jv_i + Jv_i.'*Jv_B);
+            iv_3 = link.Mass*(Jv_i.'*Jv_i);
+            iw = Jw_i.' * I_i * Jw_i;
             
             H = H + iv_1 + iv_2_2 + iv_3 + iw;
         end

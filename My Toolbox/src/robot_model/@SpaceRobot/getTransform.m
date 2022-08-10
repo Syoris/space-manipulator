@@ -25,7 +25,7 @@ function T = getTransform(obj, linkName1, linkName2)
     %   T_1_2: frame 2 represented in frame 1
     %   T_b_1, T_b_2: Frames i repsrented in base frame
     %   T_1_2 = T_b_1^-1 * T_b_2
-    R = T2(1:3,1:3)';
+    R = T2(1:3,1:3).';
     p = -R*T2(1:3,4);
     T = [R,p;[0 0 0 1]]*T1; % the first term is inv(T2)
 
