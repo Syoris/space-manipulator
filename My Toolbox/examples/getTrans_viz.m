@@ -1,3 +1,4 @@
+% Plot Transform between different links
 clearvars
 run 'SC_2DoF_init.m'
 
@@ -9,7 +10,7 @@ tTree = sc.forwardKinematics();
 T_1_2 = sc.getTransform('Link2', 'Link1'); % To represent frame 2 wrt frame 1
 T_b_2 = sc.getTransform('Link2'); % To represent frame 2 wrt base
 T_2_b = sc.getTransform('spacecraftBase', 'Link2'); % To represent base wrt frame 2
-T_i_2 = tTree.('spacecraftBase').Transform*T_b_2; % frame wrt inertial frame
+T_i_2 = tTree.('spacecraftBase')*T_b_2; % frame wrt inertial frame
 T_1_ee = sc.getTransform('endeffector', 'Link1'); % To represent ee wrt frame 1
 
 figure

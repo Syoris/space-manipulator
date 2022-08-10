@@ -16,6 +16,10 @@ classdef Link < handle
         Visuals
     end
 
+    properties(SetAccess=private)
+        InertiaM        % Link inertia matrix in body frame
+    end
+
     methods
         function obj = Link(linkName)
             obj.Name = linkName;
@@ -91,6 +95,12 @@ classdef Link < handle
             {'nonempty', 'size', [1, 6]}, 'Link', 'Inertia');
 
             obj.Inertia = inertia;
+        end
+
+        function inertiaM = get.InertiaM(obj)
+            inertiaM = [obj.Inertia(1), obj.Inertia(6), obj.Inertia(5);
+                        obj.Inertia(6), obj.Inertia(2), obj.Inertia(4);
+                        obj.Inertia(5), obj.Inertia(4), obj.Inertia(3)];
         end
     end
 end

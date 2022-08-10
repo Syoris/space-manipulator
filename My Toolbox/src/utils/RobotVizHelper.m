@@ -80,7 +80,7 @@ classdef RobotVizHelper < handle
 
             % Draw base frame
             [F, V, C] = obj.bodyFrameMesh(obj.r*0.6, obj.l*1.3, obj.NumTessellation, false);
-            V = Ttree.(obj.robot.BaseName).Transform*[V'; ones(1,length(V)) ];
+            V = Ttree.(obj.robot.BaseName)*[V'; ones(1,length(V)) ];
             V = V(1:3,:)';
             
             hasVisuals = ~isempty(obj.robot.Base.Visuals);
@@ -118,7 +118,7 @@ classdef RobotVizHelper < handle
                 linkName = obj.robot.LinkNames{i};
                 
                 % Update link meshes position
-                Vi = Ttree.(linkName).Transform*[Vi'; ones(1,length(Vi)) ];
+                Vi = Ttree.(linkName)*[Vi'; ones(1,length(Vi)) ];
                 Vi = Vi(1:3,:)';
                 
                 hasVisuals = ~isempty(obj.robot.Links{i}.Visuals);
@@ -137,11 +137,11 @@ classdef RobotVizHelper < handle
                 if pId == 0
                     % If the parent is the base, the transform of the
                     % parent is the origin
-                    Tparent = Ttree.(obj.robot.BaseName).Transform;
+                    Tparent = Ttree.(obj.robot.BaseName);
                 else
-                    Tparent = Ttree.(obj.robot.LinkNames{pId}).Transform;
+                    Tparent = Ttree.(obj.robot.LinkNames{pId});
                 end
-                Tcurr = Ttree.(obj.robot.LinkNames{i}).Transform;
+                Tcurr = Ttree.(obj.robot.LinkNames{i});
 
                 p = [Tparent(1:3,4)'; Tcurr(1:3,4)']; % Line starting and final points
                 
@@ -192,7 +192,7 @@ classdef RobotVizHelper < handle
                     visGeom = obj.robot.Links{i}.Visuals;
                     linkName = obj.robot.LinkNames{i};
                 end
-                T = Ttree.(linkName).Transform;
+                T = Ttree.(linkName);
 
                 % Draw all visuals of current link
                 meshPatchCell = cell(length(visGeom),1);

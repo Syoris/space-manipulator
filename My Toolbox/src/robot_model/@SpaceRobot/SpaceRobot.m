@@ -1,17 +1,16 @@
 classdef SpaceRobot < handle
 %SpaceRobot Create a tree-structured robot
 %   ROBOT = SpaceRobot() creates a default model that contains no
-%   rigid bodies.
+%   link.
 %
-%   rigidBodyTree properties:
+%   SpaceRobot properties:
 %       NumLinks               - Number of linkss
 %       Bodies                 - Cell array of rigid bodies
 %       Base                   - Base of the robot
 %       BodyNames              - Cell array of Names of rigid bodies
 %       BaseName               - Name of robot base
-%       DataFormat             - Input/output data format
 %
-%   rigidBodyTree methods:
+%   SpaceRobot methods:
 %       getBody               - Get robot's body handle by name
 %       geometricJacobian     - Compute the geometric Jacobian
 %       getTransform          - Get transform between two body frames
@@ -60,13 +59,24 @@ classdef SpaceRobot < handle
         
         Base                        %  Base link of the robot, SpacecraftBase
         BaseName
-        BaseConfig
+        
+        Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
+        BaseConfig                  % Base current configuration (struct)
+        BaseSpeed                   % Base current speed (struct)
         JointsConfig                % Joints current configuration (struct)
-
-        % Con                       %  Structure with additional connectivity information.
+        JointsSpeed                 % Joints current speed (struct)
     end
 
-    properties(SetAccess = private)
+    % TODO: Change get and set to private
+    properties % , GetAccess = private)
+        q
+        q_dot
+    end
+
+    properties(SetAccess = private , GetAccess = private)
+        Hsym      
+        Csym                           
+        Qsym
     end
     
     % Robot Representation methods
@@ -108,15 +118,40 @@ classdef SpaceRobot < handle
             obj.LinkNames = LinkNames;
             obj.BaseName = BaseName;
             obj.Base = SpacecraftBase(BaseName);
-            % obj.JointsConfig = struct('JointName', '', 'JointPosition', 0);
             obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
-            
-            % obj.Joints = Joints; 
-            % obj.Con = Con;    
+            obj.JointsSpeed = repmat(struct('JointName','', 'JointSpeed', 0), 1, obj.NumActiveJoints);
+
+            obj.q = [];
+            obj.q_dot = [];
+            obj.Hsym = [];
+            obj.Csym = [];
+            obj.Qsym = [];
         end
         
         addLink(obj, linkIn, parentName)
         
+        function initMats(obj)
+            fprintf('--- Initializing Matrices ---\n');
+            
+            syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
+            syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz'
+
+            qm = sym('qm',[obj.NumActiveJoints, 1],'real');
+            qm_dot = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
+
+            obj.q = [Rx; Ry; Rz; r; p; y; qm];
+            obj.q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot];
+
+            obj.JointsConfig = qm';
+            obj.JointsSpeed = qm_dot';
+            obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
+            obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
+            
+            obj.initMassMat();    
+            obj.initCMat();
+            obj.initQMat();
+        end
+
         showDetails(obj)
 
         ax = show(obj, varargin)
@@ -155,46 +190,46 @@ classdef SpaceRobot < handle
 
         % TODO
         Jac = geometricJacobian(obj, Q, endeffectorname)
+
+        JacM = comJacobians(obj)
+
+        JacM = comJacobiansBase(obj)
+
+        AxisM = getAxisM(obj, linkId, frame)
     end
 
     % Dynamcics Methods
     methods
-         % TODO
-        function H = massMatrix(obj, varargin)
-        %massMatrix Compute the mass matrix for given configuration
-        %   H = massMatrix(ROBOT) returns the joint-space mass
-        %   matrix, H, of ROBOT for ROBOT's home configuration.
-        %
-        %   H = massMatrix(ROBOT, Q) returns the joint-space mass
-        %   matrix, H, of ROBOT for the given configuration Q.
-        %
-        %   Joint configuration Q must be specified as a pNum-by-1 or
-        %   an 1-by-pNum vector, depending on the DataFormat property
-        %   of ROBOT, where pNum is the position number of ROBOT.
-        %
-        %   The returned mass matrix H is a positive-definite symmetric
-        %   matrix with size vNum-by-vNum, where vNum is the velocity
-        %   number of ROBOT (degrees of freedom).
-        %
-        %   Examples:
-        %       % Load example robot
-        %       load exampleRobots.mat
-        %
-        %       % Set lbr robot dynamics input data format to 'column'
-        %       lbr.DataFormat = 'column';
-        %
-        %       % Generate a random configuration for lbr
-        %       q = lbr.randomConfiguration
-        %
-        %       % Get the mass matrix at configuration q
-        %       H = massMatrix(lbr, q);
+        initMassMat(obj)
 
-%             narginchk(1,2);
-%             q = validateDynamicsFunctionInputs(obj.TreeInternal, false, varargin{:});
-%             H = robotics.manip.internal.RigidBodyTreeDynamics.massMatrix(obj.TreeInternal, q);
-            warning('Not yet implemented')
-        end
+        initCMat(obj)
         
+        initQMat(obj)
+
+        function H = getH(obj)
+        % get.H Get Mass Matrix at current config
+            q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+            H = double(subs(obj.Hsym, obj.q, q_val));
+        end
+
+        function C = getC(obj)
+            % get.C Get C Matrix at current config
+                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
+                C = double(subs(obj.Csym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
+        end
+
+        function Q = getQ(obj)
+            % get.Q Get Q Matrix at current config
+                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
+                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
+                Q = double(subs(obj.Qsym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
+        end
+
+        nOk = isNSkewSym(obj)
+
+        cOk = isCOk(obj, verbose)
+
         % TODO
         function tau = inverseDynamics(obj, varargin)
         %inverseDynamics Compute required joint torques for desired motion.
@@ -403,6 +438,24 @@ classdef SpaceRobot < handle
 %             fext = externalForce(obj.TreeInternal, bodyName, wrench, varargin{:});
             warning('Not yet implemented')
         end
+
+        function inertiaM = getInertiaM(obj)
+        %getInertiaM Compute Inertia matrix of all the links in the inertial frame
+        %   I_inertial = R * I_link * R'
+            tTree = obj.Ttree;
+
+            inertiaM = struct();
+            
+            % Base
+            rotM = tTree.(obj.BaseName)(1:3, 1:3);
+            inertiaM.(obj.BaseName) = rotM*obj.Base.InertiaM*rotM';
+
+            for i=1:length(obj.LinkNames)
+                rotM = tTree.(obj.LinkNames{i})(1:3, 1:3);
+                inertiaM.(obj.LinkNames{i}) = rotM*obj.Links{i}.InertiaM*rotM';
+            end
+        end
+
     end
     
     % Utilities
@@ -446,7 +499,7 @@ classdef SpaceRobot < handle
         function set.JointsConfig(obj, newConfig)
             %set JointsConfig
 
-            validateattributes(newConfig, {'struct', 'numeric'},...
+            validateattributes(newConfig, {'struct', 'numeric', 'sym'},...
                 {'row'}, 'SpaceRobot', 'JointsConfig');
             
             if isa(newConfig,'struct')
@@ -476,10 +529,34 @@ classdef SpaceRobot < handle
                 joint.Position = jntPosition;
             end
 
+            obj.forwardKinematics();
+
         end
 
-        function Q = homeConfiguration(obj)
-            %homeConfiguration Return the home configuration for robot
+        function set.JointsSpeed(obj, newSpeed)
+            %set newSpeed: (1xN) real vector or struct
+
+            validateattributes(newSpeed, {'struct', 'numeric', 'sym'},...
+                {'row'}, 'SpaceRobot', 'JointsSpeed');
+            
+            if isa(newSpeed,'struct')
+                if length(newSpeed) ~= obj.NumActiveJoints
+                    error("Invalid config: Missing values")
+                end
+                obj.JointsSpeed = newSpeed;
+            else
+                if length(newSpeed) ~= obj.NumActiveJoints
+                    error("Invalid config: Missing values")
+                end
+                for i=1:length(newSpeed)
+                    obj.JointsSpeed(i).JointSpeed = newSpeed(i);
+                end
+            end
+        end
+
+        function homeConfig(obj)
+            %homeConfiguration Set robot to home configuration
+            %
             %   Q = homeConfiguration(ROBOT) returns the home
             %   configuration of ROBOT as predefined in the robot model.
             %   The configuration Q is returned as an array of structs.
@@ -501,20 +578,33 @@ classdef SpaceRobot < handle
             %   See also showdetails, randomConfiguration
     
             % Q = obj.TreeInternal.homeConfiguration();
-                Q = obj.JointsConfig;
+            HomeConf = obj.JointsConfig;
 
-                for i=1:length(Q)
-                    jntName = Q(i).JointName;
-                    joint = obj.findJointByName(jntName);
-                    
-                    Q(i).JointPosition = joint.HomePosition;
-                end
+            for i=1:length(HomeConf)
+                jntName = HomeConf(i).JointName;
+                joint = obj.findJointByName(jntName);
+                
+                HomeConf(i).JointPosition = joint.HomePosition;
             end
+
+            obj.JointsConfig = [HomeConf.JointPosition];
+            obj.JointsSpeed = [zeros(1, obj.NumActiveJoints)];
+            obj.BaseConfig = [0, 0, 0; 0, 0, 0];
+            obj.BaseSpeed = [0, 0, 0; 0, 0, 0];
+
+            obj.forwardKinematics();
+        end
         
         function baseConf = get.BaseConfig(obj)
             baseConf = struct;
             baseConf.Position = obj.Base.BasePosition;
             baseConf.Rot = obj.Base.BaseRot;
+        end
+
+        function baseSpeed = get.BaseSpeed(obj)
+            baseSpeed = struct;
+            baseSpeed.TSpeed = obj.Base.BaseTSpeed;
+            baseSpeed.ASpeed = obj.Base.BaseASpeed;
         end
 
         function set.BaseConfig(obj, newConfig)
@@ -539,12 +629,33 @@ classdef SpaceRobot < handle
 
             else
                 
-                validateattributes(newConfig, {'numeric'},...
+                validateattributes(newConfig, {'numeric', 'sym'},...
                 {'nonempty', 'size', [2, 3]}, 'SpaceRobot', 'BaseConfig');
                 
                 obj.Base.BasePosition = newConfig(1, :);
                 obj.Base.BaseRot = newConfig(2, :);
             end
+
+            obj.forwardKinematics();
+        end
+
+        function set.BaseSpeed(obj, newConfig)
+            % Set new base config
+            % Can set by passing either a struct or array in the form [x, y, z; r, p, y]
+            %
+            %
+            % Ex:
+            %   newConfig = sc.BaseSpeed
+            %   newConfig.BaseTSpeed = [1, 2, 3]
+            %   sc.BaseSpeed = newConfig
+            %
+            %   sc.BaseSpeed = [1, 2, 3; pi/2, 0, 0]
+                
+            validateattributes(newConfig, {'numeric', 'sym'},...
+                {'nonempty', 'size', [2, 3]}, 'SpaceRobot', 'BaseSpeed');
+                
+            obj.Base.BaseTSpeed = newConfig(1, :);
+            obj.Base.BaseASpeed = newConfig(2, :);
         end
     end
 

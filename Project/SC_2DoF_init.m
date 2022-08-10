@@ -33,10 +33,10 @@ jointsAxis = [[0 0 1];
 jointsHomePos = [pi/4, -pi/2, 0];
 
 linksLength = [1; 0.5];
-linksMass = [5; 2.5; 1];
-linksInertia = [1, 1, 1, 0, 0, 0; 
-                0.5, 0.5, 0.5, 0, 0, 0;
-                0.1, 0.1, 0.1, 0, 0, 0];
+linksMass = [5; 2.5; 0];
+linksInertia = [0.5, 0.5, 0.5, 0, 0, 0; 
+                0.1, 0.1, 0.1, 0, 0, 0;
+                0, 0, 0, 0, 0, 0];
 
 jointsT = {trvec2tform([lBase/2, 0, 0]);
            trvec2tform([linksLength(1), 0, 0]);
@@ -123,6 +123,19 @@ for i = 1:length(linksVect)
 
     sc.addLink(linksVect{i}, parent); % Add body1 to base
 end
- 
+
+%% Initialize Matrices
+sc.initMats(); % Can be very long
+
+sc.homeConfig();
+sc.showDetails();
+% sc.show();              
+
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
+
+fprintf('SpaceRobot Initialization Completed\n')
+%%
 % Remove vars
 clearvars -except sc
+save 'Project/Models/SC_2DoF.mat'

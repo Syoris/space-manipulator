@@ -160,7 +160,7 @@ function ax = show(obj, varargin)
         % orientations ([x,y,z,yaw,pitch,roll]), respectively, to a
         % homogeneous transformation matrix
 
-        tTree = obj.forwardKinematics;
+        tTree = obj.Ttree;
 
         % [ax bodyDisplayObjArray] = obj.simpleShow
 

@@ -48,6 +48,8 @@ function addLink(obj, linkIn, parentName)
         linkIn.Joint.Position = linkIn.Joint.HomePosition;
         linkIn.Joint.Q_id = obj.NumActiveJoints;
         obj.JointsConfig(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
-            'JointPosition', linkIn.Joint.Position);                 
+            'JointPosition', linkIn.Joint.Position);      
+        obj.JointsSpeed(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
+            'JointSpeed', 0);      
     end
 end
