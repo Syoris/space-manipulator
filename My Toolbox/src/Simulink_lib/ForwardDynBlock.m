@@ -5,8 +5,8 @@ classdef ForwardDynBlock < matlab.System
     % to define a System object with discrete state.
 
     properties(Nontunable)
-        SpaceRobotStruct = 0;
-        SpaceRobot
+        spaceRobotStruct = 0;
+        spaceRobot = SpaceRobot();
     end
     
     methods
@@ -21,17 +21,18 @@ classdef ForwardDynBlock < matlab.System
     methods(Access = protected)
         function setupImpl(obj)
             % Perform one-time calculations, such as computing constants
-            disp(obj.SpaceRobotStruct);
-            obj.SpaceRobot = SpaceRobot();
+            obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
         function q_ddot = stepImpl(obj, q, q_dot, f0, n0, taum)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.
-            q_ddot = 5;
+            obj.spaceRobot.q = q;
+            obj.spaceRobot.q_dot = q_dot;
+            
+            F = [f0; n0; taum];
 
-%             jointAccel(:) = cast(robotics.manip.internal.RigidBodyTreeDynamics.forwardDynamicsCRB(...
-%                 obj.TreeInternal, double(q), double(qDot), double(tau), double(fext)),'like',q);
+            q_ddot = obj.spaceRobot.forwardDynamics(F);
         end
 
         function resetImpl(~)
@@ -69,8 +70,9 @@ classdef ForwardDynBlock < matlab.System
         
         function out = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-%             out = [obj.SpaceRobot.NumActiveJoints 1];
-            out = [1 1];
+%             out = [obj.spaceRobot.NumActiveJoints 1];
+
+            out = [obj.spaceRobotStruct.N+6 1];
         end
 
         function out = getOutputDataTypeImpl(obj)
@@ -109,5 +111,5 @@ classdef ForwardDynBlock < matlab.System
             flag = true;
         end
     end
-    
+
 end

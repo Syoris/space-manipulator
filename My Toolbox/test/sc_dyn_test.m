@@ -1,7 +1,7 @@
 %% Space Robot Dynamics
 % To compare dynamic functions with the one obtained with SPART
 clc
-% load 'SC_2DoF.mat'
+load 'SC_2DoF.mat'
 
 % Spacecraft State
 qm_val=[pi/6; -pi/4];
@@ -125,8 +125,8 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-assert(sc.isNSkewSym());
-assert(sc.isCOk(true));
+% assert(sc.isNSkewSym());
+% assert(sc.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
 f0 = [0; 0; 0]; % Force on baseC

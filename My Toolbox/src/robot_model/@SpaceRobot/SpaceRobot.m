@@ -93,57 +93,68 @@ classdef SpaceRobot < handle
     methods
         function obj = SpaceRobot(varargin)
             if nargin==1
-                % TODO: Init from struct, urdf file, DH params
-                % if isa(varargin{1}, 'struct')
-                %     structModel = varargin{1};
-                % elseif isa(varargin{1}, 'string') || isa(varargin{1}, 'char')
-                %     [structModel, structKeys] = urdf2robot(varargin{1});
-                % else
-                %     error("Error creating SpaceRobot: Invalid robot model specified")
-                % end
+                % TODO: Init urdf file, DH params
 
-                % Name = structModel.name;
-                % NumJoints = structModel.n_q; 
-                % Links = structModel.links;                   
-                % NumLinks = length(Links);
-                % Joints = structModel.joints;           
-                % Base = structModel.base_link;
-                % Con = structModel.con;
-                error("[SpaceRobot] Constructor from DH or urdf not yet implemented")                                
+                % From Struct
+                if isa(varargin{1}, 'struct')                    
+                    structModel = varargin{1};
+
+                    Name = structModel.Name;
+                    Base = structModel.Base;
+                    Links = structModel.Links;
+                    Ttree_symb = structModel.Ttree_symb;
+                    CoMJacobsBase_symb = structModel.CoMJacobsBase_symb;
+                    H_symb = structModel.H_symb;
+                    C_symb = structModel.C_symb;
+                    Q_symb = structModel.Q_symb;
+                else
+                    error("Error creating SpaceRobot: Invalid robot model specified")
+                end
+
+                     
             else
                 Name = "";
-                NumLinks = 0;
-                NumActiveJoints = 0;
-                Links = cell(1, 0);                   
-                LinkNames = cell(1, 0);
-                BaseName = 'spacecraftBase';
-                % Joints = {};           
-                % Con = {};   
+                Base = SpacecraftBase('spacecraftBase');
+                Links = cell(1, 0);    
+                Ttree_symb = [];
+                CoMJacobsBase_symb = [];
+                H_symb = [];
+                C_symb = [];
+                Q_symb = [];
+                qm_symb = [];
+                qm_dot_symb = [];
             end
+            
+            obj.Name = Name;
+            obj.Base = Base;
+            obj.Links = Links;
+            obj.Ttree_symb = Ttree_symb;
+            obj.CoMJacobsBase_symb = CoMJacobsBase_symb;
+            obj.H_symb = H_symb;
+            obj.C_symb = C_symb;
+            obj.Q_symb = Q_symb;
 
-            obj.Name = Name; 
-            obj.NumLinks = NumLinks; 
-            obj.NumActiveJoints = NumActiveJoints; 
-            obj.Links = Links; 
-            obj.LinkNames = LinkNames;
-            obj.BaseName = BaseName;
-            obj.Base = SpacecraftBase(BaseName);
 
             % Config
             syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
             syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz'
             
-            obj.q_symb = [Rx; Ry; Rz; r; p; y];
-            obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz];
+            qm_symb = sym(zeros(obj.NumActiveJoints, 1));
+            qm_dot_symb = sym(zeros(obj.NumActiveJoints, 1));
+            for i=1:obj.NumActiveJoints
+                jnt = obj.findJointByConfigId(i);
+                qm_symb(i) = jnt.SymbVar;
+                qm_dot_symb(i) = sprintf('qm_dot%i', i);
+            end
 
-            obj.H_symb = [];
-            obj.C_symb = [];
-            obj.Q_symb = [];
+            obj.q_symb = [Rx; Ry; Rz; r; p; y; qm_symb];
+            obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
             
-            %TODO: REMOVE
-            % obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
-            % obj.JointsSpeed = repmat(struct('JointName','', 'JointSpeed', 0), 1, obj.NumActiveJoints);
-
+            
+            % obj.BaseName = BaseName;
+            % obj.LinkNames = LinkNames;
+            % obj.NumLinks = NumLinks; 
+            % obj.NumActiveJoints = NumActiveJoints; 
         end
         
         addLink(obj, linkIn, parentName)
@@ -337,6 +348,35 @@ classdef SpaceRobot < handle
 
     % Setter/Getters
     methods
+%         LinkNames
+%         NumLinks
+%         NumActiveJoints
+
+        % Properties
+        function BaseName = get.BaseName(obj)
+            BaseName = obj.Base.Name;
+        end
+
+        function LinkNames = get.LinkNames(obj)
+            LinkNames = cell(1, obj.NumLinks);
+            for i = 1:obj.NumLinks
+                LinkNames{i} = obj.Links{i}.Name;
+            end
+        end
+
+        function NumLinks = get.NumLinks(obj)
+            NumLinks = length(obj.Links);
+        end
+
+        function NumActiveJoints = get.NumActiveJoints(obj)
+            NumActiveJoints = 0;
+            for i=1:obj.NumLinks
+                if ~strcmp(obj.Links{i}.Joint.Type, 'fixed')
+                    NumActiveJoints = NumActiveJoints + 1;
+                end 
+            end
+            
+        end
         % Config related
         function qm = get.qm(obj)
             qm = zeros(obj.NumActiveJoints, 1);

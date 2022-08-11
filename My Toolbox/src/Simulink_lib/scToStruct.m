@@ -1,13 +1,14 @@
-function scStruct = scToStruct(SpaceRobot)
+function scStruct = scToStruct(spaceRobot)
     scStruct = struct;
 
-    scStruct.Name = SpaceRobot.Name;
-    scStruct.Base = SpaceRobot.Base;
-    scStruct.Links = SpaceRobot.Links;
-    scStruct.H_symb = SpaceRobot.H_symb;
-    scStruct.Ttree_symb = SpaceRobot.Ttree_symb;
-    scStruct.CoMJacobsBase_symb = SpaceRobot.CoMJacobsBase_symb;
-    scStruct.H_symb = SpaceRobot.H_symb;
-    scStruct.C_symb = SpaceRobot.C_symb;
-    scStruct.Q_symb = SpaceRobot.Q_symb;
+    scStruct.Name = spaceRobot.Name;
+    scStruct.Base = spaceRobot.Base;
+    scStruct.Links = spaceRobot.Links;
+    scStruct.N = spaceRobot.NumActiveJoints;
+    scStruct.H_symb = spaceRobot.H_symb;
+    scStruct.Ttree_symb = spaceRobot.Ttree_symb;
+    scStruct.CoMJacobsBase_symb = spaceRobot.CoMJacobsBase_symb;
+    scStruct.H_symb = spaceRobot.H_symb;
+    scStruct.C_symb = spaceRobot.C_symb;
+    scStruct.Q_symb = spaceRobot.Q_symb;
 end
