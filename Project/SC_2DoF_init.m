@@ -85,6 +85,7 @@ sc.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
                   baseVisual.T, baseVisual.Color);
 sc.Base.Mass = mBase;
 sc.Base.Inertia = intertiaBase;
+sc.Base.HomeConf = [0.5; 0.5; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 
 for i=1:nLinks
     newLink = Link(linkNames{i});
@@ -124,10 +125,12 @@ for i = 1:length(linksVect)
     sc.addLink(linksVect{i}, parent); % Add body1 to base
 end
 
+sc.homeConfig();
 %% Initialize Matrices
+return
 sc.initMats(true, true); % Can be very long
 
-sc.homeConfig();
+
 sc.showDetails();
 % sc.show();              
 

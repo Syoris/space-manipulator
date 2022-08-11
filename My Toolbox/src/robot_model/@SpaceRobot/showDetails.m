@@ -1,3 +1,4 @@
+%TODO: Show joint config var
 function showDetails(obj)
 %showdetails Display details of the robot
 %   showdetails(ROBOT) displays details of each body in the
