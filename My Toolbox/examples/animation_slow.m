@@ -4,20 +4,17 @@ load 'SC_2DoF.mat'
 
 % Config Test
 close all
-qm = [pi/4, -pi/2];
+qm = [pi/4; -pi/2];
 
 % SpaceRobot
-homeConf = sc.homeConfiguration; % Get home config
-newConf = homeConf;
-newConf(1).JointPosition = qm(1);
-newConf(2).JointPosition = qm(2);
+sc.homeConf();  % Go to home config
+homeConf = sc.Config; % Get home current config
 
-sc.JointsConfig = newConf;  % Alternative: sc.setJointsConfig = qm;
+sc.qm = qm;  % Alternative: sc.setJointsConfig = qm;
 
-baseConf = sc.BaseConfig;
-baseConf.Position = [1.25, 1.5, 1.2];
-baseConf.Rot = [0, 0, 0];
-sc.BaseConfig = baseConf;  % sc.BaseConfig = [2 3 4; 0 pi/4 0];
+sc.Base.R = [1.25; 1.5; 1.2];
+sc.Base.Phi = [0, 0, 0];
+% sc.q0 = [2; 3; 4; 0; pi/4; 0];
 
 tTree = sc.forwardKinematics; % Compute kin tree
 
@@ -36,14 +33,14 @@ thetaArray = linspace(theta0, thetaFin, nSamp);
 
 baseConfArray = cell(nSamp, 1);
 for i = 1:nSamp
-    baseConfArray{i} = [xArray(i), y0, z0; 0 thetaArray(i) 0];
+    baseConfArray{i} = [xArray(i); y0; z0; 0; thetaArray(i); 0];
 end
 
 
 framesPerSecond = 50;
 r = rateControl(framesPerSecond);
 for i = 1:nSamp
-    sc.BaseConfig = baseConfArray{i};
+    sc.q0 = baseConfArray{i};
     sc.show('PreservePlot',false, 'Visuals', 'off');
     drawnow
     waitfor(r);

@@ -33,10 +33,7 @@ q_val = [r0_val; delta0_val; qm_val];
 q_dot_val = [r0_dot_val; w0_val; qm_dot_val];
 
 % 
-sc.JointsConfig = qm_val';
-sc.JointsSpeed = qm_dot_val';
-sc.BaseConfig = [r0_val'; delta0_val'];
-sc.BaseSpeed = [r0_dot_val'; w0_val'];
+sc.q = q_val;
 
 % SPART
 filename='SC_2DoF.urdf';

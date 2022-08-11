@@ -6,10 +6,9 @@ classdef SpacecraftBase < Link
        Omega                % Base angular vel                  [wx; wy; wz]
 
        HomeConf             % Base home config                  [Rx; Ry; Rz; r; p; y]
-    end
 
-    properties(SetAccess=private)
-        BaseToParentTransform
+       BaseToParentTransform_symb       % Transform from base to inertial frame in symbolic. Initialize in SpaceRobot.initMats().
+       BaseToParentTransform            % Transform from base to inertial frame
     end
 
     methods
@@ -21,6 +20,8 @@ classdef SpacecraftBase < Link
             obj.Omega = [0; 0; 0];
 
             obj.HomeConf = zeros(6, 1);
+
+            obj.BaseToParentTransform_symb = 
         end
     end
 

@@ -110,8 +110,26 @@ function ax = show(obj, varargin)
 %       end
 %
 %   See also showdetails
+%parseShowInputs Parse inputs to show method
+    parser = inputParser;
+    parser.StructExpand = false;
+    parser.addParameter('Parent', [], ...
+        @(x)robotics.internal.validation.validateAxesHandle(x));
+    parser.addParameter('PreservePlot', true, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+    parser.addParameter('FastUpdate', false, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+    parser.addParameter('Visuals', 'on', ...
+        @(x)any(validatestring(x, {'on', 'off'})));
+    parser.addParameter('Collisions', 'off', ...
+        @(x)any(validatestring(x, {'on', 'off'})));
+    parser.addParameter('Frames', 'on', ...
+        @(x)any(validatestring(x, {'on', 'off'})));
+    parser.addParameter('Position', [0,0,0,0], ...
+        @(x)(validateattributes(x, {'numeric'}, ...
+        {'nonempty', 'real', 'nonnan', 'finite', 'vector', 'numel', 4})));
 
-    parser = obj.parseShowInputs(varargin{:});
+    parser.parse(varargin{:});
                 
     fast = parser.Results.FastUpdate;
     preserve = logical(parser.Results.PreservePlot);
@@ -143,9 +161,9 @@ function ax = show(obj, varargin)
             % When hold is off, for axes or uiaxes, respectively
             vizHelper.resetScene(ax);
             % Adjust axis limits according to robot position
-            ax.XLim = ax.XLim + obj.BaseConfig.Position(1);
-            ax.YLim = ax.YLim + obj.BaseConfig.Position(2);
-            ax.ZLim = ax.ZLim + obj.BaseConfig.Position(3);
+            ax.XLim = ax.XLim + obj.Base.R(1);
+            ax.YLim = ax.YLim + obj.Base.R(2);
+            ax.ZLim = ax.ZLim + obj.Base.R(3);
         else % when hold is on
             if preserve == false
                 % If preserve flag is false,

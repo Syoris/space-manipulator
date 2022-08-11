@@ -56,11 +56,6 @@ function addLink(obj, linkIn, parentName)
         obj.q_symb = [obj.q_symb(1:6); qm_symb];
         obj.q_dot_symb = [obj.q_dot_symb(1:6); qm_dot_symb];
 
-        linkIn.Joint.SymbVar = qm_symb(end);
-        
-        % obj.JointsConfig(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
-        %     'JointPosition', linkIn.Joint.Position);      
-        % obj.JointsSpeed(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
-        %     'JointSpeed', 0);      
+        linkIn.Joint.SymbVar = qm_symb(end);  
     end
 end

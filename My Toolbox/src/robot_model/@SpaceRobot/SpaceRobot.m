@@ -79,14 +79,18 @@ classdef SpaceRobot < handle
     % TODO: SetAccess = private
     properties % , SetAccess = private)
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
+        Ttree_symb                  % Symbolic version of Ttree    
+
+        CoMJacobsBase_symb          % Jacobians of link CoM wrt to base frame
+        Jacobs_symb                 % Jacobians of link joints
 
         Config                      % Struc with info about current config
         q_symb                      % Symbolic version of q
         q_dot_symb                  % Symbolic version of q_dot
 
-        Hsym                        % Mass Matrix, symbolic form
-        Csym                        % NL Matrix, symbolic form
-        Qsym                        % Generlized forces matrix, symbolic form
+        H_symb                      % Mass Matrix, symbolic form
+        C_symb                      % NL Matrix, symbolic form
+        Q_symb                      % Generlized forces matrix, symbolic form
     end
 
     % TODO: Set and Get to private
@@ -147,49 +151,61 @@ classdef SpaceRobot < handle
 %             obj.qm_dot = [];
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz];
 
-            obj.Hsym = [];
-            obj.Csym = [];
-            obj.Qsym = [];
+            obj.H_symb = [];
+            obj.C_symb = [];
+            obj.Q_symb = [];
             
             %TODO: REMOVE
-            obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
-            obj.JointsSpeed = repmat(struct('JointName','', 'JointSpeed', 0), 1, obj.NumActiveJoints);
+            % obj.JointsConfig = repmat(struct('JointName','', 'JointPosition', 0), 1, obj.NumActiveJoints);
+            % obj.JointsSpeed = repmat(struct('JointName','', 'JointSpeed', 0), 1, obj.NumActiveJoints);
 
         end
         
         addLink(obj, linkIn, parentName)
         
-        function initMats(obj, simpM, simpC)
-            % simpM: Simplify Mass Matrix. Takes a while
-            % simpC: Simplify C Matrix. Takes a while
-            if nargin == 1
-                simpM = false;
-                simpC = false;
-            end
-            if nargin == 2
-                simpC = false;
-            end
+        function initMats(obj, varargin)
+            % Initilize H, C and Q Matrices
+            %      'simpH'         - To simplify mass matrix. Takes a long time but makes 
+            %                        computing much faster after.
+            %                        Default: false
+            %
+            %      'simpC'          - To simplify mass matrix. Takes a long time but makes 
+            %                        computing much faster after.
+            %                        Default: false
+            
+            % Pars inputs
+            parser = inputParser;
+            parser.StructExpand = false;
 
+            parser.addParameter('simpH', false, ...
+                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+            parser.addParameter('simpC', false, ...
+                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+
+            parser.parse(varargin{:});
+                
+            simpH = parser.Results.simpH;
+            simpC = parser.Results.simpC;
+            
+            % Start UI
             fig = uifigure;
             d = uiprogressdlg(fig,'Title','Matrices Initialization',...
                 'Message','Initializing Matrices', ...
                 'Indeterminate','on');
             drawnow
 
+            % qm = sym('qm',[obj.NumActiveJoints, 1],'real');
+            % qm_dot = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
+
+            % obj.q = [Rx; Ry; Rz; r; p; y; qm];
+            % obj.q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot];
+
+            % obj.JointsConfig = qm';
+            % obj.JointsSpeed = qm_dot';
+            % obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
+            % obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
             
-
-            qm = sym('qm',[obj.NumActiveJoints, 1],'real');
-            qm_dot = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
-
-            obj.q = [Rx; Ry; Rz; r; p; y; qm];
-            obj.q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot];
-
-            obj.JointsConfig = qm';
-            obj.JointsSpeed = qm_dot';
-            obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
-            obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
-            
-            obj.initMassMat(d, simpM);    
+            obj.initMassMat(d, simpH);    
             obj.initCMat(d, simpC);
             obj.initQMat(d);
 
@@ -201,29 +217,6 @@ classdef SpaceRobot < handle
         showDetails(obj)
 
         ax = show(obj, varargin)
-        
-        function parser = parseShowInputs(obj, varargin)
-            %parseShowInputs Parse inputs to show method
-            parser = inputParser;
-            parser.StructExpand = false;
-            parser.addParameter('Parent', [], ...
-                @(x)robotics.internal.validation.validateAxesHandle(x));
-            parser.addParameter('PreservePlot', true, ...
-                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
-            parser.addParameter('FastUpdate', false, ...
-                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
-            parser.addParameter('Visuals', 'on', ...
-                @(x)any(validatestring(x, {'on', 'off'})));
-            parser.addParameter('Collisions', 'off', ...
-                @(x)any(validatestring(x, {'on', 'off'})));
-            parser.addParameter('Frames', 'on', ...
-                @(x)any(validatestring(x, {'on', 'off'})));
-            parser.addParameter('Position', [0,0,0,0], ...
-                @(x)(validateattributes(x, {'numeric'}, ...
-                {'nonempty', 'real', 'nonnan', 'finite', 'vector', 'numel', 4})));
-            
-            parser.parse(varargin{:});
-        end
     end
 
     % Kinematics Methods
@@ -254,22 +247,17 @@ classdef SpaceRobot < handle
 
         function H = getH(obj)
         % get.H Get Mass Matrix at current config
-            q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
-            H = double(subs(obj.Hsym, obj.q, q_val));
+            H = double(subs(obj.H_symb, obj.q_symb, obj.q));
         end
 
         function C = getC(obj)
             % get.C Get C Matrix at current config
-                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
-                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
-                C = double(subs(obj.Csym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
+            C = double(subs(obj.C_symb, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot]));
         end
 
         function Q = getQ(obj)
             % get.Q Get Q Matrix at current config
-                q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
-                q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
-                Q = double(subs(obj.Qsym, [obj.q; obj.q_dot], [q_val; q_dot_val]));
+            Q = double(subs(obj.Q_symb, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot]));
         end
 
         nOk = isNSkewSym(obj)
@@ -453,13 +441,10 @@ classdef SpaceRobot < handle
                 Config.(joint.ChildLink.Name).Theta = joint.Position;
                 Config.(joint.ChildLink.Name).Theta_dot = joint.Speed;
             end
-
-
         end
 
         function homeConfig(obj)
             %homeConfiguration Set robot to home configuration with zero joint speeds
-
             obj.q_dot = zeros(6+obj.NumActiveJoints, 1);
         
             for i=1:obj.NumActiveJoints
@@ -469,8 +454,6 @@ classdef SpaceRobot < handle
 
             obj.q0 = obj.Base.HomeConf; % And updates Ttree
         end
-        
-        
     end
 
 end

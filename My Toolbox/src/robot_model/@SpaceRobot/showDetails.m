@@ -11,7 +11,7 @@ function showDetails(obj)
 %
 %   See also show
     fprintf('--------------------\n');
-    fprintf('Robot: (%d links)\n\n', int32(obj.NumLinks));
+    fprintf('%s: (%d links)\n\n', obj.Name, int32(obj.NumLinks));
     
     widMaxBodyName = 10;
     widMaxJointName = 10;
@@ -23,17 +23,20 @@ function showDetails(obj)
             max(widMaxJointName, length(obj.Links{i}.Joint.Name)+5);
     end
     
-    fprintf('%4s   %*s   %*s   %*s   %*s(Idx)   Children Name(s)\n', ...
+    fprintf('%4s    %*s   %*s   %*s   %*s  %*s(Idx)   Children Name(s)\n', ...
         'Idx', ...
         widMaxBodyName, 'Link Name',...
         widMaxJointName, 'Joint Name',...
         widMaxJointName, 'Joint Type',...
+        12, 'ConfigSymb', ...
         widMaxBodyName+2, 'Parent Name' );
-    fprintf('%4s   %*s   %*s   %*s   %*s-----   ----------------\n', ...
+    
+    fprintf('%4s    %*s   %*s   %*s   %*s  %*s-----   ----------------\n', ...
         '---', ...
         widMaxBodyName, '---------',...
         widMaxJointName, '----------',...
         widMaxJointName, '----------',...
+        12, '----------',...
         widMaxBodyName+2, '-----------');
     
     for i = 1:obj.NumLinks
@@ -41,11 +44,13 @@ function showDetails(obj)
         jointname = obj.Links{i}.Joint.Name;
         jointtype = obj.Links{i}.Joint.Type;
         linkName = obj.Links{i}.Name;
+        linkVar = obj.Links{i}.Joint.SymbVar;
         
         fprintf('%4d', i);
         fprintf('   %*s', widMaxBodyName, linkName);
         fprintf('   %*s', widMaxJointName, jointname);
         fprintf('   %*s', widMaxJointName, jointtype);
+        fprintf(' %*s', 12, linkVar);
         
         
         pid = obj.Links{i}.ParentId;
@@ -65,7 +70,7 @@ function showDetails(obj)
         end
         widID = max(1, widID);
         
-        fprintf('%*s(%*d)   ', widMaxBodyName+8-widID, parent.Name, widID, int32(pid));
+        fprintf('   %*s(%*d)   ', widMaxBodyName+8-widID, parent.Name, widID, int32(pid));
         
         childrenList = obj.Links{i}.Children;
         for j = 1:length(childrenList)

@@ -13,7 +13,5 @@ function q_ddot = forwardDynamics(obj, F)
     C = obj.getC();
     Q = obj.getQ();
 
-    q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
-
-    q_ddot = H^-1*(Q*F - C*q_dot_val);
+    q_ddot = H^-1*(Q*F - C*obj.q_dot);
 end

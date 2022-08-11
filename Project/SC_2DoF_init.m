@@ -2,6 +2,8 @@
 clc
 close all
 clearvars
+fprintf("Initilizing 2DoF Space Robot\n")
+tic
 
 % Materials
 
@@ -127,9 +129,7 @@ end
 
 sc.homeConfig();
 %% Initialize Matrices
-return
-sc.initMats(true, true); % Can be very long
-
+sc.initMats('simpH', true, 'simpC', true); % Can be very long
 
 sc.showDetails();
 % sc.show();              
@@ -138,7 +138,9 @@ assert(sc.isNSkewSym());
 assert(sc.isCOk(true));
 
 fprintf('SpaceRobot Initialization Completed\n')
+toc
 %%
 % Remove vars
+fprintf('Saving robot\n')
 clearvars -except sc
 save 'Project/Models/SC_2DoF.mat'

@@ -2,9 +2,9 @@
 clearvars
 run 'SC_2DoF_init.m'
 
-sc.BaseConfig = [1 1 1; 0 0 0];
+sc.q0 = [1; 1; 1; 0; 0; 0];
 
-sc.JointsConfig = [pi/4, -pi/2];  % Alternative: sc.setJointsConfig = qm;
+sc.qm = [pi/4; -pi/2];  % Alternative: sc.setJointsConfig = qm;
 tTree = sc.forwardKinematics();
 
 T_1_2 = sc.getTransform('Link2', 'Link1'); % To represent frame 2 wrt frame 1

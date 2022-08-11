@@ -4,9 +4,9 @@ run 'SC_2DoF_init.m'
 
 % Config Test
 close all
-qm = [pi/4, -pi/2];
-sc.JointsConfig = qm;
-sc.BaseConfig = [2 3 4; 0 pi/4 0];
+qm = [pi/4; -pi/2];
+sc.qm = qm;
+sc.q0 = [2; 3; 4; 0; pi/4; 0];
 
 comPositions = sc.getCoMPosition();
 

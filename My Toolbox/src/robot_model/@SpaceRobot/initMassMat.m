@@ -1,4 +1,4 @@
-function initMassMat(obj, d, simpM)
+function initMassMat(obj, d, simpH)
     %massMatrix Compute the mass matrix for given configuration
     %   H = massMatrix(ROBOT) returns the joint-space mass
     %   matrix, H, of ROBOT for ROBOT's current configuration.
@@ -52,12 +52,12 @@ function initMassMat(obj, d, simpM)
         end
     end
 
-    obj.Hsym = H;
-    if simpM
+    obj.H_symb = H;
+    if simpH
         for i=1:size(H, 1)
             for j=1:size(H, 1)
                 d.Message = sprintf('Simplifying H... (%i, %i)', i, j);
-                obj.Hsym(i, j) = simplify(obj.Hsym(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+                obj.H_symb(i, j) = simplify(obj.H_symb(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
             end
         end
     end
