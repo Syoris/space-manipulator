@@ -66,14 +66,6 @@ classdef SpaceRobot < handle
         q_dot                       % Robot speed config (6+N x 1): [q0_dot; qm_d0t]                       
         q0_dot                      % Base speed config (6x1): [Rx_dot; Ry_dot; Rz_dot; wx; wy; wz]
         qm_dot                      % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot] 
-        
-        % TODO: REMOVE
-        BaseConfig                  % Base current config (struct)
-        BaseSpeed                   % Base current speed (struct)
-        JointsConfig                % Joints current config (struct)
-        JointsSpeed                 % Joints current speed (struct)
-        
-        % Matrices
     end
     
     % TODO: SetAccess = private
@@ -141,14 +133,7 @@ classdef SpaceRobot < handle
             syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
             syms 'Rx_d' 'Ry_d' 'Rz_d' 'wx' 'wy' 'wz'
             
-%             obj.q = zeros(6, 1);
-%             obj.q0 = [];
-%             obj.qm = [];
             obj.q_symb = [Rx; Ry; Rz; r; p; y];
-
-%             obj.q_dot = [];
-%             obj.q0_dot = [];
-%             obj.qm_dot = [];
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz];
 
             obj.H_symb = [];

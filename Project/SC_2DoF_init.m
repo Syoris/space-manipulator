@@ -139,8 +139,7 @@ assert(sc.isCOk(true));
 
 fprintf('SpaceRobot Initialization Completed\n')
 toc
-%%
-% Remove vars
+%% Save Robot
 fprintf('Saving robot\n')
 clearvars -except sc
 save 'Project/Models/SC_2DoF.mat'
