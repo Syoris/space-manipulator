@@ -26,13 +26,10 @@ classdef ForwardDynBlock < matlab.System
 
         function q_ddot = stepImpl(obj, q, q_dot, f0, n0, taum)
             % Implement algorithm. Calculate y as a function of input u and
-            % discrete states.
-            obj.spaceRobot.q = q;
-            obj.spaceRobot.q_dot = q_dot;
-            
+            % discrete states.            
             F = [f0; n0; taum];
 
-            q_ddot = obj.spaceRobot.forwardDynamics(F);
+            q_ddot = obj.spaceRobot.forwardDynamics(F, q, q_dot);
         end
 
         function resetImpl(~)
@@ -70,8 +67,6 @@ classdef ForwardDynBlock < matlab.System
         
         function out = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-%             out = [obj.spaceRobot.NumActiveJoints 1];
-
             out = [obj.spaceRobotStruct.N+6 1];
         end
 

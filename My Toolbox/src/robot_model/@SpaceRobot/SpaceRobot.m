@@ -240,26 +240,38 @@ classdef SpaceRobot < handle
         
         initQMat(obj, d)
 
-        function H = getH(obj)
+        function H = getH(obj, q, q_dot)
         % get.H Get Mass Matrix at current config
-            H = double(subs(obj.H_symb, obj.q_symb, obj.q));
+            if nargin==1
+                q = obj.q;
+            end
+
+            H = double(subs(obj.H_symb, obj.q_symb, q));
         end
 
-        function C = getC(obj)
+        function C = getC(obj, q, q_dot)
             % get.C Get C Matrix at current config
-            C = double(subs(obj.C_symb, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot]));
+            if nargin==1
+                q = obj.q;
+                q_dot = obj.q_dot
+            end
+            C = double(subs(obj.C_symb, [obj.q_symb; obj.q_dot_symb], [q; q_dot]));
         end
 
-        function Q = getQ(obj)
-            % get.Q Get Q Matrix at current config
-            Q = double(subs(obj.Q_symb, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot]));
+        function Q = getQ(obj, q, q_dot)
+            % get.Q Get Q Matrix at current config            
+            if nargin==1
+                q = obj.q;
+                q_dot = obj.q_dot;
+            end
+            Q = double(subs(obj.Q_symb, [obj.q_symb; obj.q_dot_symb], [q; q_dot]));
         end
 
         nOk = isNSkewSym(obj)
 
         cOk = isCOk(obj, verbose)
 
-        q_ddot = forwardDynamics(obj, F)
+        q_ddot = forwardDynamics(obj, F, q, q_dot)
 
         tau = inverseDynamics(obj, varargin)
         
