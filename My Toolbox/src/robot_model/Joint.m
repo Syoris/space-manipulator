@@ -70,6 +70,19 @@ classdef Joint < handle
             T = obj.JointToParentTransform*TJ;
         end
 
+        function T = transformLink2ParentSymb(obj)
+            % Find current config to initial config transform
+            switch(obj.Type)
+                case 'fixed'
+                    TJ = eye(4);
+                case 'revolute'
+                    TJ = angvec2tr(obj.SymbVar, obj.Axis);
+                otherwise
+                    error("Wrong Type")
+            end
+            T = obj.JointToParentTransform*TJ;
+        end
+
     end
 
     % Setter/Getter

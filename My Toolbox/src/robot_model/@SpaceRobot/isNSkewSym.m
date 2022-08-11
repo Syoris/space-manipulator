@@ -20,13 +20,13 @@ function nOk = isNSkewSym(obj)
 
     H_dt = diff(H_t, t);
     H_dt = subs(H_dt, qm_diff, obj.q_dot_symb(7:end));
-    % H_dt = subs(H_dt, obj.q_symb(7:end), obj.q(7:end));
+    H_dt = subs(H_dt, qm_t, obj.q(7:end));
     
     N = H_dt - 2*subs(obj.C_symb, [obj.q_symb; obj.q_dot_symb(1:6)], [obj.q; obj.q_dot(1:6)]);
-    N_val = round(double(subs(N, obj.q_dot_sym(7:end), obj.q_dot(7:8))), 3);
+    N_val = round(double(subs(N, obj.q_dot_symb(7:end), obj.q_dot(7:8))), 3);
 
     fprintf('N skew-symmetric: ')
-    if(N_val == -(N_val'))
+    if(N_val == -transpose(N_val))
         fprintf('OK\n')
         nOk = true;
     else

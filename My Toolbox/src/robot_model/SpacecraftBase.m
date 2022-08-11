@@ -21,7 +21,7 @@ classdef SpacecraftBase < Link
 
             obj.HomeConf = zeros(6, 1);
 
-            obj.BaseToParentTransform_symb = 
+            obj.BaseToParentTransform_symb = sym(zeros(3, 3));
         end
     end
 

@@ -1,15 +1,25 @@
-function JacM = comJacobiansBase(obj)
-%comJacobians Compute the Jacobian of all the link CoM in base frame.
-%   JacM: struct with link name as fields
-%   r_i_dot = J_i * q_dot,  r_i_dot: ith Link CoM speed in base frame
+function JacM = comJacobiansBase(obj, varargin)
+    %comJacobians Compute the Jacobian of all the link CoM in base frame.
+    %   JacM: struct with link name as fields
+    %   r_i_dot = J_i * q_dot,  r_i_dot: ith Link CoM speed in base frame
+    %       'symbolic'      - Compute tree in symbolic form
+    %                           Default: false
+
+    parser = inputParser;
+    parser.StructExpand = false;
+
+    parser.addParameter('symbolic', false, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+    parser.parse(varargin{:});
+    symbolic = parser.Results.symbolic;
 
     JacM = struct();
     
     % Base
     J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
-           zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
+    zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
+    J_b = sym(J_b);
     JacM.(obj.BaseName) = J_b;
-
     [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform);
 
     % Links
@@ -53,4 +63,15 @@ function JacM = comJacobiansBase(obj)
         JacM.(obj.LinkNames{i}) = J_i;
     end
 
+    f = fields(JacM);
+    for i=1:length(f)
+        if symbolic
+            JacM.(f{i}) = simplify(JacM.(f{i}));
+        else
+            JacM.(f{i}) = double(subs(JacM.(f{i}), obj.q_symb, obj.q));
+        end
+    end
+    if symbolic
+        obj.CoMJacobsBase_symb = JacM;
+    end
 end

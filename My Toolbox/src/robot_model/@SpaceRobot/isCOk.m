@@ -25,7 +25,7 @@ function cOk = isCOk(obj, verbose)
         for j=1:K
     
             for k=1:K         
-                h_ijk = ( diff(Hmat(i, j), obj.q(k)) - 0.5*diff(Hmat(j, k), obj.q(i)) ) * obj.q_dot(k);
+                h_ijk = ( diff(Hmat(i, j), obj.q_symb(k)) - 0.5*diff(Hmat(j, k), obj.q_symb(i)) ) * obj.q_dot_symb(k);
                 h(i, j, k) = h_ijk;
             end
         end

@@ -10,7 +10,7 @@ function tTree = forwardKinematics(obj, varargin)
     parser.addParameter('symbolic', false, ...
         @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
     parser.parse(varargin{:});
-    symbolic = parser.Results.symbolic
+    symbolic = parser.Results.symbolic;
 
     n = obj.NumLinks;
     % Ttree = repmat({eye(4)}, 1, n);
@@ -33,8 +33,26 @@ function tTree = forwardKinematics(obj, varargin)
 
             tTree.(obj.Links{i}.Name) = linkT;
         end
+    
+    % Symbolic computation
     else
-        
+        % Base
+        baseTransform = obj.Base.BaseToParentTransform_symb;
+        tTree.(obj.BaseName) = baseTransform;
+
+        for i = 1:n
+            link = obj.Links{i};
+            
+            % Find transform to parent
+            TLink2Parent = link.Joint.transformLink2ParentSymb; % Taking into account current config 
+
+            % Find transform to inertial frame
+            parentT = tTree.(obj.Links{i}.Parent.Name);
+            linkT = parentT * TLink2Parent;
+
+            tTree.(obj.Links{i}.Name) = simplify(linkT);
+        end
+
         obj.Ttree_symb = tTree;
     end
 end

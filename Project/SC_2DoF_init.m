@@ -2,7 +2,7 @@
 clc
 close all
 clearvars
-fprintf("Initilizing 2DoF Space Robot\n")
+fprintf("------ Initializing 2DoF Space Robot ------\n")
 tic
 
 % Materials

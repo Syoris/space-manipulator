@@ -164,7 +164,7 @@ classdef SpaceRobot < handle
         addLink(obj, linkIn, parentName)
         
         function initMats(obj, varargin)
-            % Initilize H, C and Q Matrices
+            % Initialize H, C and Q Matrices
             %      'simpH'         - To simplify mass matrix. Takes a long time but makes 
             %                        computing much faster after.
             %                        Default: false
@@ -192,26 +192,25 @@ classdef SpaceRobot < handle
             d = uiprogressdlg(fig,'Title','Matrices Initialization',...
                 'Message','Initializing Matrices', ...
                 'Indeterminate','on');
-            drawnow
+            fig.Position(3:4) = [410, 110];
+            drawnow;
 
-            % qm = sym('qm',[obj.NumActiveJoints, 1],'real');
-            % qm_dot = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
-
-            % obj.q = [Rx; Ry; Rz; r; p; y; qm];
-            % obj.q_dot = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot];
-
-            % obj.JointsConfig = qm';
-            % obj.JointsSpeed = qm_dot';
-            % obj.BaseConfig = [Rx, Ry, Rz; r, p, y];
-            % obj.BaseSpeed = [Rx_d, Ry_d, Rz_d; wx, wy, wz];
+            obj.Base.BaseToParentTransform_symb = [rpy2r(obj.q_symb(4:6).'), obj.q_symb(1:3); zeros(1, 3), 1];
             
+            d.Message = sprintf('Computing Symbolic Forward Kin...');
+            obj.forwardKinematics('symbolic', true);
+
+            d.Message = sprintf('Computing Symbolic CoM Jacobians...');
+            obj.comJacobiansBase('symbolic', true);
+            
+
             obj.initMassMat(d, simpH);    
             obj.initCMat(d, simpC);
             obj.initQMat(d);
 
             d.Message = sprintf('Done');
 
-            close(d);
+            close(fig);
         end
 
         showDetails(obj)
@@ -221,7 +220,7 @@ classdef SpaceRobot < handle
 
     % Kinematics Methods
     methods
-        tTree = forwardKinematics(obj)
+        tTree = forwardKinematics(obj, varargin)
 
         T = getTransform(obj, linkName1, linkName2)
 
@@ -232,7 +231,7 @@ classdef SpaceRobot < handle
 
         JacM = comJacobians(obj)
 
-        JacM = comJacobiansBase(obj)
+        JacM = comJacobiansBase(obj, varargin)
 
         AxisM = getAxisM(obj, linkId, frame)
     end
@@ -268,10 +267,22 @@ classdef SpaceRobot < handle
 
         tau = inverseDynamics(obj, varargin)
         
-        function inertiaM = getInertiaM(obj)
+        function inertiaM = getInertiaM(obj, varargin)
         %getInertiaM Compute Inertia matrix of all the links in the inertial frame
         %   I_inertial = R * I_link * R'
-            tTree = obj.Ttree;
+            parser = inputParser;
+            parser.StructExpand = false;
+
+            parser.addParameter('symbolic', false, ...
+                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+            parser.parse(varargin{:});
+            symbolic = parser.Results.symbolic;
+            
+            if symbolic
+                tTree = obj.Ttree_symb;
+            else
+                tTree = obj.Ttree;
+            end
 
             inertiaM = struct();
             
@@ -365,7 +376,6 @@ classdef SpaceRobot < handle
             for i=1:obj.NumActiveJoints
                 obj.findJointByConfigId(i).Position = qm(i);
             end
-            obj.forwardKinematics();
         end
 
         function set.q0(obj, q0)
@@ -373,7 +383,6 @@ classdef SpaceRobot < handle
 
             obj.Base.R = q0(1:3);
             obj.Base.Phi = q0(4:6);
-            obj.forwardKinematics();
         end
 
         function set.q(obj, q)
@@ -454,6 +463,17 @@ classdef SpaceRobot < handle
 
             obj.q0 = obj.Base.HomeConf; % And updates Ttree
         end
+
+        function tTree = get.Ttree(obj)
+            tTree = obj.Ttree_symb;
+
+            f = fields(obj.Ttree_symb);
+            for i=1:length(f)
+                tTree.(f{i}) = double(subs(tTree.(f{i}), obj.q_symb, obj.q));
+            end
+
+        end
+
     end
 
 end

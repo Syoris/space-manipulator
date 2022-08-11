@@ -21,12 +21,12 @@ function initMassMat(obj, d, simpH)
     
     H = sym(zeros(6+obj.NumActiveJoints));
 
-    Jacobians = obj.comJacobiansBase();
+    Jacobians = obj.CoMJacobsBase_symb;
     
     % Base    
     Jv_B = Jacobians.(obj.BaseName)(1:3, :); % Base speed jacobian
     Jw_B = Jacobians.(obj.BaseName)(4:6, :); % Base rotation jacobian
-    inertias = obj.getInertiaM();
+    inertias = obj.getInertiaM('symbolic', true);
 
     bV = obj.Base.Mass*(Jv_B.'*Jv_B);
     bW = Jw_B.'*inertias.(obj.BaseName)*Jw_B;
