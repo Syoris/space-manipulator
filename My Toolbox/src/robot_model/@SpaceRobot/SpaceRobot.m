@@ -79,10 +79,14 @@ classdef SpaceRobot < handle
         Config                      % Struc with info about current config
         q_symb                      % Symbolic version of q
         q_dot_symb                  % Symbolic version of q_dot
-
+        
+        matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         H_symb                      % Mass Matrix, symbolic form
         C_symb                      % NL Matrix, symbolic form
         Q_symb                      % Generlized forces matrix, symbolic form
+        H
+        C
+        Q
     end
 
     % TODO: Set and Get to private
@@ -118,9 +122,9 @@ classdef SpaceRobot < handle
                 Links = cell(1, 0);    
                 Ttree_symb = [];
                 CoMJacobsBase_symb = [];
-                H_symb = [];
-                C_symb = [];
-                Q_symb = [];
+                H_symb = sym([]);
+                C_symb = sym([]);
+                Q_symb = sym([]);
                 qm_symb = [];
                 qm_dot_symb = [];
             end
@@ -150,11 +154,8 @@ classdef SpaceRobot < handle
             obj.q_symb = [Rx; Ry; Rz; r; p; y; qm_symb];
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
             
-            
-            % obj.BaseName = BaseName;
-            % obj.LinkNames = LinkNames;
-            % obj.NumLinks = NumLinks; 
-            % obj.NumActiveJoints = NumActiveJoints; 
+            % Create function handle
+            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
         end
         
         addLink(obj, linkIn, parentName)
@@ -203,6 +204,9 @@ classdef SpaceRobot < handle
             obj.initMassMat(d, simpH);    
             obj.initCMat(d, simpC);
             obj.initQMat(d);
+            
+            d.Message = sprintf('Creating function...');
+            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
 
             d.Message = sprintf('Done');
 
@@ -240,31 +244,12 @@ classdef SpaceRobot < handle
         
         initQMat(obj, d)
 
-        function H = getH(obj, q, q_dot)
-        % get.H Get Mass Matrix at current config
-            if nargin==1
-                q = obj.q;
-            end
-
-            H = double(subs(obj.H_symb, obj.q_symb, q));
-        end
-
-        function C = getC(obj, q, q_dot)
-            % get.C Get C Matrix at current config
-            if nargin==1
-                q = obj.q;
-                q_dot = obj.q_dot
-            end
-            C = double(subs(obj.C_symb, [obj.q_symb; obj.q_dot_symb], [q; q_dot]));
-        end
-
-        function Q = getQ(obj, q, q_dot)
-            % get.Q Get Q Matrix at current config            
+        function [H, C, Q] = getMats(obj, q, q_dot)
             if nargin==1
                 q = obj.q;
                 q_dot = obj.q_dot;
             end
-            Q = double(subs(obj.Q_symb, [obj.q_symb; obj.q_dot_symb], [q; q_dot]));
+            [H, C, Q] = obj.matFuncHandle(q, q_dot);
         end
 
         nOk = isNSkewSym(obj)
@@ -360,10 +345,6 @@ classdef SpaceRobot < handle
 
     % Setter/Getters
     methods
-%         LinkNames
-%         NumLinks
-%         NumActiveJoints
-
         % Properties
         function BaseName = get.BaseName(obj)
             BaseName = obj.Base.Name;
@@ -389,6 +370,32 @@ classdef SpaceRobot < handle
             end
             
         end
+        
+        % Matrices
+        function H = get.H(obj)
+        % get.H Get Mass Matrix at current config
+            [H, ~, ~] = obj.matFuncHandle(obj.q, obj.q_dot);
+        end
+
+        function C = get.C(obj)
+            % get.C Get C Matrix at current config
+            [~, C, ~] = obj.matFuncHandle(obj.q, obj.q_dot);
+        end
+
+        function Q = get.Q(obj)
+            % get.Q Get Q Matrix at current config            
+            [~, ~, Q] = obj.matFuncHandle(obj.q, obj.q_dot);
+        end
+        
+        function tTree = get.Ttree(obj)
+            tTree = obj.Ttree_symb;
+
+            f = fields(obj.Ttree_symb);
+            for i=1:length(f)
+                tTree.(f{i}) = double(subs(tTree.(f{i}), obj.q_symb, obj.q));
+            end
+        end
+
         % Config related
         function qm = get.qm(obj)
             qm = zeros(obj.NumActiveJoints, 1);
@@ -429,7 +436,6 @@ classdef SpaceRobot < handle
             obj.qm = q(7:end);
         end
 
-
         function qm_dot = get.qm_dot(obj)
             qm_dot = zeros(obj.NumActiveJoints, 1);
             
@@ -468,8 +474,6 @@ classdef SpaceRobot < handle
             obj.qm_dot = q_dot(7:end);
         end
         
-
-        % config
         function Config = get.Config(obj)
             Config = struct();
 
@@ -501,15 +505,6 @@ classdef SpaceRobot < handle
             obj.q0 = obj.Base.HomeConf; % And updates Ttree
         end
 
-        function tTree = get.Ttree(obj)
-            tTree = obj.Ttree_symb;
-
-            f = fields(obj.Ttree_symb);
-            for i=1:length(f)
-                tTree.(f{i}) = double(subs(tTree.(f{i}), obj.q_symb, obj.q));
-            end
-
-        end
 
     end
 

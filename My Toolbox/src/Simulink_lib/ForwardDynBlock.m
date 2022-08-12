@@ -87,16 +87,17 @@ classdef ForwardDynBlock < matlab.System
     end
 
     methods(Access = protected, Static)
-        function header = getHeaderImpl
-            %getHeaderImpl Define header panel for System block dialog
-            header = matlab.system.display.Header(mfilename("class"));
+       function header = getHeaderImpl
+           header = matlab.system.display.Header(mfilename('class'), ...
+               'Title','Forward Dynamics Block',...
+               'Text','System object of SpaceRobot forward dynamics');
         end
 
         function group = getPropertyGroupsImpl
             %getPropertyGroupsImpl Define property section(s) for System block dialog
             mainGroup = matlab.system.display.SectionGroup(...
-                'Title','Initial conditions', ...
-                'PropertyList',{'TreeStruct'});
+                'Title','Parameters', ...
+                'PropertyList',{'spaceRobotStruct'});
             
             group = mainGroup;
         end

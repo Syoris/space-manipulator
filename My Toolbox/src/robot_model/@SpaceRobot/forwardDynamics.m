@@ -9,14 +9,11 @@ function q_ddot = forwardDynamics(obj, F, q, q_dot)
     %       tau_m: Joint torques (Nx1)
 
     if nargin > 2
-        H = obj.getH(q, q_dot);
-        C = obj.getC(q, q_dot);
-        Q = obj.getQ(q, q_dot);
+        [H, C, Q] = obj.getMats(q, q_dot);
     else
-        H = obj.getH();
-        C = obj.getC();
-        Q = obj.getQ();
+        [H, C, Q] = obj.getMats();
+        q_dot = obj.q_dot;
     end
 
-    q_ddot = H^-1*(Q*F - C*obj.q_dot);
+    q_ddot = H^-1*(Q*F - C*q_dot);
 end

@@ -102,8 +102,7 @@ C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :)
 fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-H = sc.getH();
-disp(H);
+disp(sc.H);
 toc
 
 fprintf('--- SPART ---\n');
@@ -115,8 +114,7 @@ toc
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-C = sc.getC();
-disp(C);
+disp(sc.C);
 toc
 
 fprintf('--- SPART ---\n');
@@ -125,8 +123,8 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-% assert(sc.isNSkewSym());
-% assert(sc.isCOk(true));
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
 f0 = [0; 0; 0]; % Force on baseC
