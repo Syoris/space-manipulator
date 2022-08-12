@@ -33,10 +33,8 @@ q_val = [r0_val; delta0_val; qm_val];
 q_dot_val = [r0_dot_val; w0_val; qm_dot_val];
 
 % 
-sc.JointsConfig = qm_val';
-sc.JointsSpeed = qm_dot_val';
-sc.BaseConfig = [r0_val'; delta0_val'];
-sc.BaseSpeed = [r0_dot_val'; w0_val'];
+sc.q = q_val;
+sc.q_dot = q_dot_val;
 
 % SPART
 filename='SC_2DoF.urdf';
@@ -63,22 +61,22 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 
 
 % % Toolbox
-% comPoses = sc.getCoMPosition();
-% Jacobians = sc.comJacobians();
-% for i=1:sc.NumLinks
-%     linkName = sc.LinkNames{i};
-%     J_i = Jacobians.(linkName);
-%     
-%     fprintf('\n##### Link %i #####\n', i);
-%     fprintf('Mine:\n')
-% %     disp(J_i);
-%     fprintf('\n')
-%     disp(double(subs(J_i, q, q_val)));
-% 
-%     fprintf('SPART:\n')
-% %     disp(J_S{i});
-%     disp(double(subs(J_S{i}, q, q_val)));
-% end
+comPoses = sc.getCoMPosition();
+Jacobians = sc.comJacobians();
+for i=1:sc.NumLinks
+    linkName = sc.LinkNames{i};
+    J_i = Jacobians.(linkName);
+    
+    fprintf('\n##### Link %i #####\n', i);
+    fprintf('Mine:\n')
+%     disp(J_i);
+    fprintf('\n')
+    disp(double(subs(J_i, q, q_val)));
+
+    fprintf('SPART:\n')
+%     disp(J_S{i});
+    disp(double(subs(J_S{i}, q, q_val)));
+end
 
 %% --- H - Mass Matrix ---
 % SPART
@@ -104,8 +102,7 @@ C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :)
 fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-H = sc.getH();
-disp(H);
+disp(sc.H);
 toc
 
 fprintf('--- SPART ---\n');
@@ -117,8 +114,7 @@ toc
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-C = sc.getC();
-disp(C);
+disp(sc.C);
 toc
 
 fprintf('--- SPART ---\n');
@@ -127,65 +123,8 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-% assert(sc.isNSkewSym());
-% assert(sc.isCOk(true));
-
-% % Skew Sym
-% H2 = subs(H, q(1:6), q_val(1:6));
-% H_d = diff(H2, t);
-% H_d = subs(H_d, [diff(qm1(t), t), diff(qm2(t), t)], [qm1_d, qm2_d]);
-% H_d = subs(H_d, q(7:8), q_val(7:8));
-% 
-% N = H_d - 2*subs(C, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
-% N_spart = H_d - 2*subs(C_spart, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
-% 
-% N_val = double(subs(N, q_dot(7:8), q_dot_val(7:8)));
-% N_spart_val = double(subs(N_spart, q_dot(7:8), q_dot_val(7:8)));
-% 
-% fprintf('--- Skew Symmetric Check ---\n')
-% disp(N_val)
-% 
-% % Validity
-% % h_ijk computing
-% K = sc.NumActiveJoints + 6;
-% h = sym(zeros(K, K, K));
-% for i=1:K
-%     fprintf('\t i=%i\n', i);
-%     for j=1:K
-% 
-%         for k=1:K         
-%             h_ijk = ( diff(H(i, j), q(k)) - 0.5*diff(H(j, k), q(i)) ) * q_dot(k);
-%             h(i, j, k) = h_ijk;
-%         end
-%     end
-% end
-% 
-% % Check C Matrix
-% fprintf('--- C Matrix Check ---')
-% for i =1:K
-%     t1 = 0;
-%     t1_spart = 0;
-%     t2 = 0;
-% 
-%     for j=1:K   
-%         t1 = t1 + C(i, j)*q_dot(j);
-%         t1_spart = t1_spart + C_spart(i, j)*q_dot(j);
-% 
-%         for k=1:K
-%             t2 = t2 + h(i, j, k)*q_dot(j);
-%         end
-%     end
-% 
-%     t1 = double(subs(t1, [q; q_dot], [q_val; q_dot_val]));
-%     t1_spart = double(subs(t1_spart, [q; q_dot], [q_val; q_dot_val]));
-%     t2 = double(subs(t2, [q; q_dot], [q_val; q_dot_val]));
-% 
-%     fprintf(['\nRow %i:\n ' ...
-%              '\t-Computed: %f\n' ...
-%              '\t-SPART: %f\n' ...
-%              '\t-Check: %f\n'], i, t1, t1_spart, t2);
-% end
-
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
 f0 = [0; 0; 0]; % Force on baseC
@@ -227,7 +166,6 @@ tic
 [u0dot_FD,umdot_FD] = FD(tauq0,tau_qm,wF0,wFm,t0,tm,P0,pm,I0,Im,Bij,Bi0,q_dot_val(1:6),qm_dot_val,robotSpart);
 disp([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD])
 toc
-
 
 fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
 

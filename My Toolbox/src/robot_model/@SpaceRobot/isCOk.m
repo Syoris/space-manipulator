@@ -11,12 +11,8 @@ function cOk = isCOk(obj, verbose)
     end
 
     cOk = true;
-    
-    q_val = [obj.BaseConfig.Position, obj.BaseConfig.Rot, [obj.JointsConfig.JointPosition]]';
-    q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
 
-
-    Hmat = obj.Hsym;
+    Hmat = obj.H_symb;
     K = obj.NumActiveJoints + 6;
     h = sym(zeros(K, K, K));
     if verbose
@@ -29,7 +25,7 @@ function cOk = isCOk(obj, verbose)
         for j=1:K
     
             for k=1:K         
-                h_ijk = ( diff(Hmat(i, j), obj.q(k)) - 0.5*diff(Hmat(j, k), obj.q(i)) ) * obj.q_dot(k);
+                h_ijk = ( diff(Hmat(i, j), obj.q_symb(k)) - 0.5*diff(Hmat(j, k), obj.q_symb(i)) ) * obj.q_dot_symb(k);
                 h(i, j, k) = h_ijk;
             end
         end
@@ -43,7 +39,7 @@ function cOk = isCOk(obj, verbose)
         fprintf('\n-- C Matrix Check --') 
     end
     
-    Cmat = obj.Csym;
+    Cmat = obj.C_symb;
 
     for i =1:K
         t1 = 0;
@@ -56,8 +52,8 @@ function cOk = isCOk(obj, verbose)
             end
         end
     
-        t1 = round(double(subs(t1, [obj.q; obj.q_dot], [q_val; q_dot_val])), 3);
-        t2 = round(double(subs(t2, [obj.q; obj.q_dot], [q_val; q_dot_val])), 3);
+        t1 = round(double(subs(t1, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot])), 3);
+        t2 = round(double(subs(t2, [obj.q_symb; obj.q_dot_symb], [obj.q; obj.q_dot])), 3);
         
         if verbose
             fprintf(['\nRow %i:\n ' ...

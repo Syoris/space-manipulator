@@ -10,7 +10,7 @@ function T = getTransform(obj, linkName1, linkName2)
 
     narginchk(2,3);
     
-    tTree = obj.Ttree;
+    tTree = obj.Ttree_symb;
     
     % 2-argument case: getTransform(ROBOT, linkName1)
     T1 = tTree.(linkName1);

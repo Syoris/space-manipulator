@@ -40,6 +40,7 @@ function addLink(obj, linkIn, parentName)
     
     linkIn.ParentId = pId;
     linkIn.Parent = parent;
+    linkIn.Joint.ParentLink = parent;
     parent.Children{end+1} = linkIn;
 
     % Add active joints to config and set joints to HomePosition
@@ -47,9 +48,14 @@ function addLink(obj, linkIn, parentName)
         obj.NumActiveJoints = obj.NumActiveJoints + 1;
         linkIn.Joint.Position = linkIn.Joint.HomePosition;
         linkIn.Joint.Q_id = obj.NumActiveJoints;
-        obj.JointsConfig(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
-            'JointPosition', linkIn.Joint.Position);      
-        obj.JointsSpeed(obj.NumActiveJoints) = struct('JointName',linkIn.Joint.Name, ...
-            'JointSpeed', 0);      
+        
+        % Add to symbolic vector
+        qm_symb = sym('qm',[obj.NumActiveJoints, 1],'real');
+        qm_dot_symb = sym('qm_dot',[obj.NumActiveJoints, 1],'real');
+
+        obj.q_symb = [obj.q_symb(1:6); qm_symb];
+        obj.q_dot_symb = [obj.q_dot_symb(1:6); qm_dot_symb];
+
+        linkIn.Joint.SymbVar = qm_symb(end);  
     end
 end

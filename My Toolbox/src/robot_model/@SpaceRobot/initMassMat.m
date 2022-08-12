@@ -1,4 +1,4 @@
-function initMassMat(obj, d, simpM)
+function initMassMat(obj, d, simpH)
     %massMatrix Compute the mass matrix for given configuration
     %   H = massMatrix(ROBOT) returns the joint-space mass
     %   matrix, H, of ROBOT for ROBOT's current configuration.
@@ -21,12 +21,12 @@ function initMassMat(obj, d, simpM)
     
     H = sym(zeros(6+obj.NumActiveJoints));
 
-    Jacobians = obj.comJacobiansBase();
+    Jacobians = obj.CoMJacobsBase_symb;
     
     % Base    
     Jv_B = Jacobians.(obj.BaseName)(1:3, :); % Base speed jacobian
     Jw_B = Jacobians.(obj.BaseName)(4:6, :); % Base rotation jacobian
-    inertias = obj.getInertiaM();
+    inertias = obj.getInertiaM('symbolic', true);
 
     bV = obj.Base.Mass*(Jv_B.'*Jv_B);
     bW = Jw_B.'*inertias.(obj.BaseName)*Jw_B;
@@ -52,12 +52,12 @@ function initMassMat(obj, d, simpM)
         end
     end
 
-    obj.Hsym = H;
-    if simpM
+    obj.H_symb = H;
+    if simpH
         for i=1:size(H, 1)
             for j=1:size(H, 1)
                 d.Message = sprintf('Simplifying H... (%i, %i)', i, j);
-                obj.Hsym(i, j) = simplify(obj.Hsym(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+                obj.H_symb(i, j) = simplify(obj.H_symb(i, j), 'IgnoreAnalyticConstraints',true,'Seconds',10);
             end
         end
     end

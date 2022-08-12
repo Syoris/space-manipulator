@@ -81,6 +81,11 @@ classdef Link < handle
     end
 
     methods
+        function set.Joint(obj, joint)
+            obj.Joint = joint;
+            joint.ChildLink = obj;
+        end
+
         function set.CenterOfMass(obj, com)
             % Set CenterOfMass to com.
             validateattributes(com, {'numeric'},...

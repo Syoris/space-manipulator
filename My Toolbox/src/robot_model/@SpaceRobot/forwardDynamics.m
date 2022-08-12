@@ -1,4 +1,4 @@
-function q_ddot = forwardDynamics(obj, F)
+function q_ddot = forwardDynamics(obj, F, q, q_dot)
     %forwardDynamics Compute resultant joint acceleration given joint torques and states
     %   QDDOT = forwardDynamics(ROBOT) computes the resultant joint
     %   accelerations due to joint speed and applied torque
@@ -8,12 +8,12 @@ function q_ddot = forwardDynamics(obj, F)
     %       n0: Torque applied to base, in base frame (3x1)
     %       tau_m: Joint torques (Nx1)
 
-    % TODO: Possibility to specify q_dot and q
-    H = obj.getH();
-    C = obj.getC();
-    Q = obj.getQ();
+    if nargin > 2
+        [H, C, Q] = obj.getMats(q, q_dot);
+    else
+        [H, C, Q] = obj.getMats();
+        q_dot = obj.q_dot;
+    end
 
-    q_dot_val = [obj.BaseSpeed.TSpeed, obj.BaseSpeed.ASpeed, [obj.JointsSpeed.JointSpeed]]';
-
-    q_ddot = H^-1*(Q*F - C*q_dot_val);
+    q_ddot = H^-1*(Q*F - C*q_dot);
 end

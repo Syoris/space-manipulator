@@ -7,24 +7,21 @@ classdef Joint < handle
         Q_id                        % Active joint id (-1 if fixed)
         
         % Config
+        SymbVar                         % Configuration symbolic variable associated with joint   
         Position                    % Current Joint Positition
+        Speed                       % Current Joint Speed
+        
         PositionLimits              % Position limits of the joint. Specified as [min max].
         HomePosition                % Joint home position
 
         % Kin
         ParentLink
         ChildLink
-        Axis
-        
-        % Might add later
-        % T1                          %  Homogeneous transformation matrix from parent link [4x4].
-        
-
+        Axis        
     end
 
     properties(SetAccess = private)
         JointToParentTransform      % Transfrom from joints to parent link
-%         ChildToJointTransform
     end
 
     methods
@@ -46,16 +43,18 @@ classdef Joint < handle
 
             obj.Id = 0;
             obj.Q_id = -1;
+            obj.SymbVar = '';
             obj.PositionLimits = [-pi, pi];
 
             obj.ParentLink = '';
             obj.ChildLink = '';
             obj.Axis = [0 0 1];
+            
             obj.HomePosition = 0;
             obj.Position = 0;
+            obj.Speed = 0;
+            
             obj.JointToParentTransform = eye(4);
-
-%             obj.T1 = eye(4);
         end
         
         function T = transformLink2Parent(obj)
@@ -65,6 +64,19 @@ classdef Joint < handle
                     TJ = eye(4);
                 case 'revolute'
                     TJ = angvec2tr(obj.Position, obj.Axis);
+                otherwise
+                    error("Wrong Type")
+            end
+            T = obj.JointToParentTransform*TJ;
+        end
+
+        function T = transformLink2ParentSymb(obj)
+            % Find current config to initial config transform
+            switch(obj.Type)
+                case 'fixed'
+                    TJ = eye(4);
+                case 'revolute'
+                    TJ = angvec2tr(obj.SymbVar, obj.Axis);
                 otherwise
                     error("Wrong Type")
             end
@@ -97,7 +109,6 @@ classdef Joint < handle
             end
 
             obj.JointToParentTransform = double(input);
-%             obj.ChildToJointTransform = eye(4);
         end
     end
 end

@@ -39,17 +39,15 @@ filename='SC_2DoF.urdf';
 [robotSpart,robot_keys] = urdf2robot(filename);
 
 % % Spacecraft state
-% sc.JointsConfig = qm_val';
-% sc.JointsSpeed = qm_dot_val';
-% sc.BaseConfig = [r0_val'; delta0_val'];
-% sc.BaseSpeed = [r0_dot_val'; w0_val'];
+% sc.q = q_val;
+
 %% H
 if runH
     sc.initMats();
     
     tic
     sc.initMassMat();
-    % H1 = sc.Hsym;
+    % H1 = sc.H_symb;
     fprintf('H1 computed in: ')
     toc
     
@@ -91,17 +89,14 @@ if runH
     toc
     
     % Set Robot Config
-    sc.JointsConfig = qm_val';
-    sc.JointsSpeed = qm_dot_val';
-    sc.BaseConfig = [r0_val'; delta0_val'];
-    sc.BaseSpeed = [r0_dot_val'; w0_val'];
+    sc.q = q_val;
     
     % Print Results
     fprintf('\n##### Mass Matrix #####\n')
     fprintf('--- Class ---\n');
 %     fprintf('\tSymbolic\n');
 %     tic
-%     disp(sc.Hsym)
+%     disp(sc.H_symb)
 %     toc
     fprintf('\n\nVals\n')
     tic
@@ -131,7 +126,7 @@ if runC
     
     
     % Function
-    H = sc.Hsym;
+    H = sc.H_symb;
     tic
     K = 6+sc.NumActiveJoints;
     C2 = sym(zeros(K));
@@ -155,17 +150,14 @@ if runC
     toc
     
     % Set Robot Config
-    sc.JointsConfig = qm_val';
-    sc.JointsSpeed = qm_dot_val';
-    sc.BaseConfig = [r0_val'; delta0_val'];
-    sc.BaseSpeed = [r0_dot_val'; w0_val'];
+    sc.q = q_val;
     
     % Print Results
     fprintf('\n##### C Matrix #####\n')
     fprintf('--- Class ---\n');
 %     fprintf('\tSymbolic\n');
 %     tic
-%     disp(sc.Csym)
+%     disp(sc.C_symb)
 %     toc
     
     fprintf('\n\nVals\n')
@@ -192,14 +184,14 @@ if runCCheck
     % Skew Sym
     fprintf("### Checking N is skew-symmetric ###\n")
     syms t qm1(t) qm2(t)  
-    H_t = subs(sc.Hsym, q(1:6), q_val(1:6));
+    H_t = subs(sc.H_symb, q(1:6), q_val(1:6));
     H_t = subs(H_t, q(7:8), [qm1(t); qm2(t)]);
 
     H_dt = diff(H_t, t);
     H_dt = subs(H_dt, [diff(qm1(t), t); diff(qm2(t), t)], qm_dot);
     H_dt = subs(H_dt, q(7:8), q_val(7:8));
     
-    N = H_dt - 2*subs(sc.Csym, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
+    N = H_dt - 2*subs(sc.C_symb, [q; q_dot(1:6)], [q_val; q_dot_val(1:6)]);
     N_val = round(double(subs(N, q_dot(7:8), q_dot_val(7:8))), 3);
 
     fprintf('N skew-symmetric: ')
@@ -213,7 +205,7 @@ if runCCheck
     % h_ijk computing
     fprintf("\n### Checking C validity ###\n")
     fprintf("-- Computing h_ijk--\n")
-    H = sc.Hsym;
+    H = sc.H_symb;
     h = sym(zeros(K, K, K));
     for i=1:K
         fprintf('\t i=%i\n', i);
@@ -228,7 +220,7 @@ if runCCheck
     
     % Check C Matrix
     fprintf('\n-- C Matrix Check --')
-    C = sc.Csym;
+    C = sc.C_symb;
     for i =1:K
         t1 = 0;
         t2 = 0;

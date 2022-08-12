@@ -2,6 +2,8 @@
 clc
 close all
 clearvars
+fprintf("------ Initializing 2DoF Space Robot ------\n")
+tic
 
 % Materials
 
@@ -85,6 +87,7 @@ sc.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
                   baseVisual.T, baseVisual.Color);
 sc.Base.Mass = mBase;
 sc.Base.Inertia = intertiaBase;
+sc.Base.HomeConf = [0.5; 0.5; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 
 for i=1:nLinks
     newLink = Link(linkNames{i});
@@ -124,10 +127,10 @@ for i = 1:length(linksVect)
     sc.addLink(linksVect{i}, parent); % Add body1 to base
 end
 
-%% Initialize Matrices
-sc.initMats(true, true); % Can be very long
-
 sc.homeConfig();
+%% Initialize Matrices
+sc.initMats('simpH', true, 'simpC', true); % Can be very long
+
 sc.showDetails();
 % sc.show();              
 
@@ -135,7 +138,8 @@ assert(sc.isNSkewSym());
 assert(sc.isCOk(true));
 
 fprintf('SpaceRobot Initialization Completed\n')
-%%
-% Remove vars
+toc
+%% Save Robot
+fprintf('Saving robot\n')
 clearvars -except sc
 save 'Project/Models/SC_2DoF.mat'
