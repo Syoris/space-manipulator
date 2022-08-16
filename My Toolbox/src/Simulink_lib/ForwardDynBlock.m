@@ -1,12 +1,9 @@
 classdef ForwardDynBlock < matlab.System
-    % untitled6 Add summary here
-    %
-    % This template includes the minimum set of functions required
-    % to define a System object with discrete state.
+    % ForwardDynBlock FowardDyn of a SpaceRobot
 
     properties(Nontunable)
         spaceRobotStruct = 0;
-        spaceRobot = SpaceRobot();
+        spaceRobot;
     end
     
     methods
@@ -14,7 +11,7 @@ classdef ForwardDynBlock < matlab.System
             %ForwardDynsBlock Constructor for Forward Dynamics block system object
             
             % Support name-value pair arguments when constructing object
-            setProperties(obj,nargin,varargin{:})
+            setProperties(obj,nargin,varargin{:});
         end
     end
 

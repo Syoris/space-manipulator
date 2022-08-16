@@ -1,14 +1,8 @@
 classdef BasicGeometry < handle
-    %This class is for internal use only. It may be removed in the future.
-    
     %RIGIDBODYGEOMETRY This class defines the shape and pose of a rigid body's 
     %   visual or collision geometry. A RigidBody object can have multiple
     %   RigidBodyGeometry objects.
 
-    %   Copyright 2017-2022 The MathWorks, Inc.
-
-    %#codegen
-    
     properties
         
         %SourceData Information regarding how the geometry is originally

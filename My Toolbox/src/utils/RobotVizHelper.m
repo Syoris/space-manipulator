@@ -34,10 +34,12 @@ classdef RobotVizHelper < handle
             %drawRobotMemoryLess Display robot and output handles to the figure patches and lines
             %   This method draws the robot and provides a cell array
             %   output that contains the handles to the patches and lines
-            %   used to draw the robot. The output cell array has dimension
-            %   (N+1)x4. The dimensions correspond to the N rigidBodies and
-            %   base of the associated rigidBodyTree (the base occupies the
-            %   (N+1)th row). The first three columns of each cell array correspond to
+            %   used to draw the robot. 
+            %
+            %   The output cell array has dimension (N+2)x4. The dimensions correspond to the N 
+            %   Link. Base at (N+1)th row, Inertial frame at (N+2)th row.
+            %   
+            %   The first three columns of each cell array correspond to
             %   the handles to the associated objects for each body: visual
             %   patches, frame patches, and connecting lines, while the
             %   last column contains the child bodies corresponding to each
@@ -59,7 +61,7 @@ classdef RobotVizHelper < handle
             % Initialize output
             linkDisplayObjArray = cell(obj.robot.NumLinks + 2, 4);
             
-            % robotics.manip.internal.RigidBodyTreeVisualizationHelper.depositRobotShowTag(robot, ax.Parent);
+            obj.depositRobotShowTag(obj.robot, ax.Parent);
             
             % frame visibility
             if displayFrames
@@ -76,6 +78,7 @@ classdef RobotVizHelper < handle
                 'FaceColor', 'k', ...
                 'LineStyle', 'none', ...
                 'Visible', vis, ...
+                'Tag', obj.robot.ShowTag, ...
                 'DisplayName', 'inertialFrame');
 
             % Draw base frame
@@ -93,6 +96,7 @@ classdef RobotVizHelper < handle
                 'FaceColor', 'flat',...
                 'LineStyle', 'none', ...
                 'Visible', vis, ...
+                'Tag', obj.robot.ShowTag, ...
                 'DisplayName', obj.robot.BaseName);
                 % , ...
                 % 'ButtonDownFcn', {@robotics.manip.internal.RigidBodyTreeVisualizationHelper.infoDisplay, robot, robot.NumBodies+1, Ttree{end}}, ...
@@ -131,6 +135,7 @@ classdef RobotVizHelper < handle
                     'FaceColor', 'flat',...
                     'LineStyle', 'none',...
                     'Visible', vis, ...
+                    'Tag', obj.robot.ShowTag, ...
                     'DisplayName', obj.robot.LinkNames{i});
                 
                 pId = obj.robot.Links{i}.ParentId;
@@ -146,7 +151,7 @@ classdef RobotVizHelper < handle
                 p = [Tparent(1:3,4)'; Tcurr(1:3,4)']; % Line starting and final points
                 
                 % Create the line and associate it with the parent object
-                lineObject = line(ax, p(:,1), p(:,2), p(:,3), 'Visible', vis);
+                lineObject = line(ax, p(:,1), p(:,2), p(:,3), 'Tag', obj.robot.ShowTag, 'Visible', vis);
                 
                 % Store the line object in the hgObject array. The lines
                 % have to index to their parent bodies, since that is the
@@ -212,6 +217,7 @@ classdef RobotVizHelper < handle
                         'FaceColor', color(1:3),...
                         'LineStyle', 'none',...
                         'DisplayName', [linkName '_mesh'], ...
+                        'Tag', obj.robot.ShowTag, ...
                         'Visible', vis);
                 end
                 % Base and body visual patches
@@ -229,13 +235,7 @@ classdef RobotVizHelper < handle
             ax.Visible = 'off';
             daspect(ax, [1 1 1]);
             
-            
-            % % estimate the size of workspace
-            % if ~robot.IsMaxReachUpToDate
-            %     robot.estimateWorkspace;
-            %     robot.IsMaxReachUpToDate = true;
-            % end
-            % a = robot.EstimatedMaxReach; % updated by estimateWorkspace method
+            %TODO estimate 'a' value, axis range
             a = 3;
 
             set(ax, 'xlim', [-a, a], 'ylim', [-a, a], 'zlim', [-a, a]);
@@ -257,11 +257,20 @@ classdef RobotVizHelper < handle
             end
 
             ax.Visible = 'on';
-            
+
+            ax.DeleteFcn = @RobotVizHelper.clearCornerAxes;
         end
     end
 
     methods (Static, Access = private)
+        function clearCornerAxes(src, ~)
+            %clearCornerAxes
+            axArray = findall(src.Parent, 'Type', 'Axes', 'Tag', 'CornerCoordinateFrame');
+            for idx = 1:numel(axArray)
+                delete(axArray(idx));
+            end
+        end
+
         function [ F, V, C ] = bodyFrameMesh( r, l, N, isFixed )
             %BODYFRAMEMESH Create body frame mesh data. The data will be used as input
             %   for patch command.
@@ -368,6 +377,158 @@ classdef RobotVizHelper < handle
             end
             
             F = robotics.core.internal.PrimitiveMeshGenerator.flipFace(F);
+        end
+
+        function depositRobotShowTag(robot, parent)
+            %depositRobotShowTag
+            name = FigureManager.RobotShowTagsIdentifier;
+            retObj = getappdata(parent, name);
+            
+            if isempty(retObj)                
+                setappdata(parent, name, {robot.ShowTag});
+            else
+                tmp = [retObj, robot.ShowTag];
+                setappdata(parent, name, unique(tmp));
+            end
+        end
+    end    
+
+    methods(Static)
+        function hgArray = addHGTransforms(linkDisplayObjArray, parentAxes)
+            %addHGTransforms Add HGTransforms to the figure objects
+            %   The SpaceRobot figure display contains patches
+            %   representing the frames, visual patches, and lines. 
+            %
+            %   This method assigns hgTransform object associations to these objects
+            %   so that they can be moved in a figure without needing to
+            %   redefine them. The method accepts:
+            %       - linkDisplayObjArray
+            %           An (N+2)x3 cell array corresponding to the N bodies of a
+            %           SpaceRobot, the base and the inertial frame
+            %   
+            %       - parentAxes
+            %           Axes handle that specifies the parent of the hgtransform objects
+            %
+            %   The three columns contain cell arrays of visual patches, patch objects
+            %   for each frame, and cell arrays of lines, respectively. The
+            %   method assigns one hgTransform for each Link, and
+            %   then assigns all the figure objects associated with that body
+            %   as its children. For lines, which connect two bodies, the
+            %   hgTransforms are not used since they are shared over all the
+            %   objects and are only used to affect orientation, not scale (the
+            %   issue of scale is unique to the lines in this application).
+            
+            hgArray = cell(size(linkDisplayObjArray,1),1);
+            
+            for i = 1:size(linkDisplayObjArray,1)
+                % For each Link, there is one associated
+                % hgtransform object. The transform is explicitly parented
+                % to the axes handle given as input.
+                hgArray{i} = hgtransform(parentAxes);
+                
+                % Cell arrays of patches for each visual
+                visualPatchArray = linkDisplayObjArray{i,1};
+                for j = 1:length(visualPatchArray)
+                    visualPatchArray{j}.Parent = hgArray{i};
+                end
+                
+                % Patch objects for each frame
+                framePatch = linkDisplayObjArray{i,2};
+                if ~isempty(framePatch)
+                    framePatch.Parent = hgArray{i};
+                end
+                
+                % HGTransforms are not attached to lines because lines are
+                % defined by their end points. Since this approach uses one
+                % HGTransform per body (that controls the motion of all the
+                % associated frames, meshes, etc.), HGTransforms can't also
+                % be set to control line scale, because that would
+                % adversely affect the scale of other items that we want to
+                % keep the same size. As a result, lines are updated by
+                % changing the endpoints, rather than by associating them
+                % with an hgTransform.
+            end
+        end
+        
+        function fastVisualizationUpdate(hgDataArray, rbtLineData, Ttree, TtreeBaseline)
+            
+            % Update the HGTransforms
+            RobotVizHelper.updateBodyHGTransforms(hgDataArray, Ttree, TtreeBaseline);
+
+            hgArrayLength = size(hgDataArray,1);
+            TtreeLength = size(Ttree,2);
+            rbtLineDataLength = size(rbtLineData,1);
+
+            % Update the lines connecting the frames, if applicable (skip inertial frame)
+            for i = 1:size(rbtLineData,1)-1
+                bodyChildLines = rbtLineData{i,1};
+                bodyChildIndices = rbtLineData{i,2};
+
+                parentBodyTransform = Ttree{i};          
+
+                for j = 1:numel(bodyChildLines)
+                    % Get the line
+                    rigidBodyLine = bodyChildLines{j};
+
+                    % Get the child transform
+                    childBodyTransform = Ttree{bodyChildIndices{j}};
+
+
+                    lineOrigin = parentBodyTransform(1:3,4);
+
+                    % Re-assign the line data points
+                    rigidBodyLine.XData = [lineOrigin(1) childBodyTransform(1,4)];
+                    rigidBodyLine.YData = [lineOrigin(2) childBodyTransform(2,4)];
+                    rigidBodyLine.ZData = [lineOrigin(3) childBodyTransform(3,4)];
+                end
+            end
+        end
+
+        function updateBodyHGTransforms(hgArray, Ttree, TtreeBaseline)
+            %updateBodyHGTransforms Update HGTransform matrices
+            %   This method accepts and N+2 cell array of HGTransform
+            %   objects (corresponding to the N bodies of an associated
+            %   SpaceRobot, the base and the inertial frame), a transform tree representing
+            %   the poses of each of those bodies (in inertial frame), and a base
+            %   transform tree, indicating the poses of each of those
+            %   bodies at the time when the HGTransforms were initialized.
+            %   The method updates the HGTransform matrices, which are 4x4
+            %   homogeneous transform matrices, to represent the current
+            %   desired positions given by Ttree. Note that the poses in
+            %   Ttree are given with respect to inertial frame, which is defined
+            %   with respect to the figure origin, whereas the HGTransform
+            %   pose is defined with respect to the poses they were in when
+            %   the HGTransform was initialized. These poses are defined by
+            %   TtreeBaseline.
+            
+            hgArrayLength = size(hgArray,1);
+            TtreeLength = size(Ttree,2);
+            if hgArrayLength == TtreeLength
+                % In RBT visualization support, the base can move, thus
+                % Ttree and hgArray length are same.
+                N = hgArrayLength;
+            else
+                % In the interactive use cases the rigid bodytree is fixed,
+                % thus Ttree and hgArray length are different.
+                N = hgArrayLength - 1;
+            end
+            
+            % Iterate through the movable bodies and base
+            for i = 1:N
+                T = Ttree{i};
+                % The HGTransforms are initialized in a position
+                % other than the base, so the transform must be provided
+                % with respect to that position. However, the rigidBodyTree
+                % position is only known with respect to the origin, so it
+                % is necessary to post multiply by the inverse of the
+                % initial position of the rigidBodyTree (i.e. the position
+                % it was in when the HGTransform was initialized).
+                TBaseline = TtreeBaseline{i};
+                hgMatrix = T*robotics.manip.internal.tforminv(TBaseline);
+
+                % Update the HGTransformation matrix
+                hgArray{i}.Matrix = hgMatrix;
+            end
         end
 
     end
