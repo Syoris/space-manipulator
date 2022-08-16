@@ -80,7 +80,6 @@ classdef SpaceRobot < handle
         q_symb                      % Symbolic version of q
         q_dot_symb                  % Symbolic version of q_dot
         
-        matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         H_symb                      % Mass Matrix, symbolic form
         C_symb                      % NL Matrix, symbolic form
         Q_symb                      % Generlized forces matrix, symbolic form
@@ -88,9 +87,16 @@ classdef SpaceRobot < handle
         C
         Q
     end
-
+    
     % TODO: Set and Get to private
-    properties(SetAccess = private , GetAccess = private)
+    properties %(SetAccess = private , GetAccess = private)
+        % Viz
+        FastVizHelper               % Helper class for fast visualization
+        ShowTag
+        
+        % Symbolic Function handles
+        matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
+        tTreeFuncHandle
     end
     
     % Robot Representation methods
@@ -155,9 +161,14 @@ classdef SpaceRobot < handle
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
             
             % Create function handle
-            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
+            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});   
+            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb})
+
+            % Viz
+            obj.FastVizHelper = FastVizHelper;
+            obj.ShowTag = ['SHOW_TAG_', randomString(5)];
         end
-        
+                
         addLink(obj, linkIn, parentName)
         
         function initMats(obj, varargin)
@@ -205,8 +216,9 @@ classdef SpaceRobot < handle
             obj.initCMat(d, simpC);
             obj.initQMat(d);
             
-            d.Message = sprintf('Creating function...');
+            d.Message = sprintf('Creating function handles...');
             obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
+            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb})
 
             d.Message = sprintf('Done');
 
@@ -216,6 +228,10 @@ classdef SpaceRobot < handle
         showDetails(obj)
 
         ax = show(obj, varargin)
+
+        [ax, linkDisplayObjArray]  = showSimple(obj, parent, collisions, preserve, visuals, frames)
+
+        ax = showFast(obj, parent, collisions, visuals, frames)
     end
 
     % Kinematics Methods
@@ -313,6 +329,25 @@ classdef SpaceRobot < handle
                 end
             end
         end
+
+        function lName = findLinkNameByIdx(obj, idx)
+            % Returns name of link with idx.
+            % return '' if idx not valid
+            
+            lName = '';
+
+            if idx == 0
+                lName = obj.BaseName;
+                return
+            end
+
+            for i = 1:obj.NumLinks
+                if obj.Links{i}.Id == idx
+                    lName = obj.Links{i}.Name;
+                    break;
+                end
+            end
+        end    
 
         function joint = findJointByName(obj, jntName)
             % Return joint corresponding to the name
@@ -510,5 +545,10 @@ classdef SpaceRobot < handle
 
 end
 
-
-
+function s = randomString(n)
+    %randomString Generate a random string with length N
+        charset = char(['a':'z' '0':'9' 'A':'Z' ]);
+        nset = length(charset);
+        idx = randi(nset,1,n); 
+        s = charset(idx);
+    end

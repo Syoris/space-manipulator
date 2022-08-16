@@ -1,7 +1,5 @@
 classdef (ConstructOnLoad) FigureManager < handle
-    %This class is for internal use only. It may be removed in the future.
-    
-    %FigureManager Provides infrastructures for RigidBodyTree plot
+    %FigureManager Provides infrastructures for SpaceRobot plot
     %   interaction, such as display a banner message at the top of the
     %   figure when a body is clicked.
     %
@@ -12,8 +10,6 @@ classdef (ConstructOnLoad) FigureManager < handle
     %   The class constructor will be invoked when the figure manager object
     %   is reloaded from a saved .fig file
     
-    %   Copyright 2017-2021 The MathWorks, Inc.
-    
     properties (Constant)
         
         %BackgroundColor Background color for message banner
@@ -23,7 +19,7 @@ classdef (ConstructOnLoad) FigureManager < handle
         FontSize = 10
         
         %FigureManagerIdentifier
-        FigureManagerIdentifier = 'rbt_figure_manager_object'
+        FigureManagerIdentifier = 'space_robot_figure_manager_object'
         
         %RobotShowTagsIdentifier
         RobotShowTagsIdentifier = 'robot_show_tags'
@@ -46,7 +42,7 @@ classdef (ConstructOnLoad) FigureManager < handle
     
     properties
         
-        BannerText ={'robotics system toolbox'}
+        BannerText ={'SpaceRobot'}
         
         BannerTextHeight = 12
         
@@ -67,10 +63,15 @@ classdef (ConstructOnLoad) FigureManager < handle
             end
             
             if nargin < 1
-                optStruct = robotics.manip.internal.createFigureManagerOpts();
+                initBannerWidgets = true;
+                enableClearInfoOnMousePress = true;
+
+                optStruct = struct(...
+                    'InitializeBannerWidgets', initBannerWidgets, ...
+                    'EnableClearInfoOnMousePress', enableClearInfoOnMousePress);                
             end
             
-            name = robotics.manip.internal.FigureManager.FigureManagerIdentifier;
+            name = FigureManager.FigureManagerIdentifier;
             retObj = getappdata(obj.Parent, name);
             
             % if a FigureManager handle is not found in the figure, create
@@ -87,7 +88,7 @@ classdef (ConstructOnLoad) FigureManager < handle
                 axs = findall(obj.Parent, 'type', 'axes');
                 for k = 1:length(axs)
                     p = findall(axs(k), 'type','patch');
-                    showTagPrefix = robotics.manip.internal.VisualizationInfo.ShowTagPrefix;
+                    showTagPrefix = 'SHOW_TAG_';
                     result = arrayfun( @(x) strncmp(x.Tag, showTagPrefix, length(showTagPrefix)), p );
                     if ~isempty(result) && any(result)
                         obj.createCornerCoordinateFrame(axs(k));
@@ -101,33 +102,33 @@ classdef (ConstructOnLoad) FigureManager < handle
                     initializeBannerWidgets(obj);
                 end
                 
-                % listeners
-                obj.Listeners.DestroyFigure = addlistener(obj.Parent, 'ObjectBeingDestroyed', @(~,~)delete(obj));
-                obj.Listeners.Resize = addlistener(obj.Parent, 'SizeChanged', @(~,~)resize(obj));
-
-                % The following listener clears the figure selection when
-                % the mouse is pressed anywhere in the figure
-                if optStruct.EnableClearInfoOnMousePress
-                    obj.Listeners.ClearInfo = addlistener(obj.Parent, 'WindowMousePress',@(~,~) clearInfo(obj));
-                end
-                
-                % Just in case these are not turned on yet
-                pa = pan(obj.Parent);
-                rot3d = rotate3d(obj.Parent);
-                zm = zoom(obj.Parent);
-                
-                rot3dmode = getuimode(obj.Parent, 'Exploration.Rotate3d');
-                rot3dmode.WindowScrollWheelFcn = {@robotics.manip.internal.FigureManager.localScrollWheel};
-                
-                panmode = getuimode(obj.Parent, 'Exploration.Pan');
-                panmode.WindowScrollWheelFcn = {@robotics.manip.internal.FigureManager.localScrollWheel};
-                
-                % callback filter
-                rot3d.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
-                
-                pa.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
-                
-                zm.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
+%                 % listeners
+%                 obj.Listeners.DestroyFigure = addlistener(obj.Parent, 'ObjectBeingDestroyed', @(~,~)delete(obj));
+%                 obj.Listeners.Resize = addlistener(obj.Parent, 'SizeChanged', @(~,~)resize(obj));
+% 
+%                 % The following listener clears the figure selection when
+%                 % the mouse is pressed anywhere in the figure
+%                 if optStruct.EnableClearInfoOnMousePress
+%                     obj.Listeners.ClearInfo = addlistener(obj.Parent, 'WindowMousePress',@(~,~) clearInfo(obj));
+%                 end
+%                 
+%                 % Just in case these are not turned on yet
+%                 pa = pan(obj.Parent);
+%                 rot3d = rotate3d(obj.Parent);
+%                 zm = zoom(obj.Parent);
+%                 
+%                 rot3dmode = getuimode(obj.Parent, 'Exploration.Rotate3d');
+%                 rot3dmode.WindowScrollWheelFcn = {@robotics.manip.internal.FigureManager.localScrollWheel};
+%                 
+%                 panmode = getuimode(obj.Parent, 'Exploration.Pan');
+%                 panmode.WindowScrollWheelFcn = {@robotics.manip.internal.FigureManager.localScrollWheel};
+%                 
+%                 % callback filter
+%                 rot3d.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
+%                 
+%                 pa.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
+%                 
+%                 zm.ButtonDownFilter = @robotics.manip.internal.FigureManager.redirectForPatch;
             else
                 % otherwise just return the found handle
                 obj = retObj;

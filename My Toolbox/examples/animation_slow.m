@@ -4,44 +4,48 @@ load 'SC_2DoF.mat'
 
 % Config Test
 close all
-qm = [pi/4; -pi/2];
+qm0 = [pi/4; -pi/2];
+X0 = [0; 0; 0];
+phi0 = [0; 0; 0];
+
+% Animation
+dx = 10;
+dy = 0;
+dz = 0;
 
 % SpaceRobot
-sc.homeConf();  % Go to home config
-homeConf = sc.Config; % Get home current config
-
-sc.qm = qm;  % Alternative: sc.setJointsConfig = qm;
-
-sc.Base.R = [1.25; 1.5; 1.2];
-sc.Base.Phi = [0, 0, 0];
-% sc.q0 = [2; 3; 4; 0; pi/4; 0];
-
-tTree = sc.forwardKinematics; % Compute kin tree
-
+sc.qm = qm0;
+sc.q0 = [X0; phi0];
 
 % Animation test
 nSamp = 100;
-x0 = baseConf.Position(1);
-y0 = baseConf.Position(2);
-z0 = baseConf.Position(3);
-theta0 = baseConf.Rot(2);
 
-xFin = x0 + 10;
 thetaFin = 2*pi;
-xArray = linspace(x0, xFin, nSamp);
-thetaArray = linspace(theta0, thetaFin, nSamp);
+
+xArray = linspace(X0(1), X0(1)+dx, nSamp);
+yArray = linspace(X0(2), X0(2)+dy, nSamp);
+zArray = linspace(X0(3), X0(3)+dz, nSamp);
+thetaArray = linspace(phi0(1), thetaFin, nSamp);
 
 baseConfArray = cell(nSamp, 1);
 for i = 1:nSamp
-    baseConfArray{i} = [xArray(i); y0; z0; 0; thetaArray(i); 0];
+    baseConfArray{i} = [xArray(i); yArray(i); zArray(i); thetaArray(i); 0; 0];
 end
 
+sc.q0 = baseConfArray{1};
+sc.show('preserve', false, 'fast', true, 'visuals', 'on');
 
+profile on
 framesPerSecond = 50;
 r = rateControl(framesPerSecond);
+tic
 for i = 1:nSamp
     sc.q0 = baseConfArray{i};
-    sc.show('PreservePlot',false, 'Visuals', 'off');
+    sc.show('preserve', false, 'fast', true, 'visuals', 'on');
     drawnow
     waitfor(r);
 end
+toc
+r.statistics.AveragePeriods
+profile viewer
+profile off
