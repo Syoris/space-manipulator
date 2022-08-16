@@ -123,12 +123,12 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-assert(sc.isNSkewSym());
-assert(sc.isCOk(true));
+% assert(sc.isNSkewSym());
+% assert(sc.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
-f0 = [0; 0; 0]; % Force on baseC
-n0 = [0; 0; 0.1]; % Torque on base
+f0 = [0; 0; 0.5]; % Force on baseC
+n0 = [0; 0; 0]; % Torque on base
 tau_qm=[0; 0]; % Joints torque
 
 % SPART

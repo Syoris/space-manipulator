@@ -35,9 +35,9 @@ end
 sc.q0 = baseConfArray{1};
 sc.show('preserve', false, 'fast', true, 'visuals', 'on');
 
-profile on
-framesPerSecond = 50;
+framesPerSecond = 25;
 r = rateControl(framesPerSecond);
+
 tic
 for i = 1:nSamp
     sc.q0 = baseConfArray{i};
@@ -46,6 +46,5 @@ for i = 1:nSamp
     waitfor(r);
 end
 toc
-r.statistics.AveragePeriods
-profile viewer
-profile off
+r.DesiredPeriod
+r.statistics.AveragePeriod

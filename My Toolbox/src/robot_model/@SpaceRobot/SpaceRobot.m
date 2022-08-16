@@ -423,11 +423,12 @@ classdef SpaceRobot < handle
         end
         
         function tTree = get.Ttree(obj)
-            tTree = obj.Ttree_symb;
-
+            tTree = struct();
+            tTreeArray = obj.tTreeFuncHandle(obj.q);
+  
             f = fields(obj.Ttree_symb);
             for i=1:length(f)
-                tTree.(f{i}) = double(subs(tTree.(f{i}), obj.q_symb, obj.q));
+                tTree.(f{i}) = tTreeArray(:, 1+(i-1)*4: i*4);
             end
         end
 

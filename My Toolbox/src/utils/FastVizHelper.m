@@ -72,7 +72,7 @@ classdef FastVizHelper < handle
             obj.RBTLineData = axesObjects(:,3:4);
 
             grid(obj.AxesHandle, 'on');
-            rotate3d(obj.AxesHandle, 'off');
+            % rotate3d(obj.AxesHandle, 'off');
         end
 
         function checkIfReinitializationRequired(obj, scObj, parent, newMeshAndFrameOptions)
