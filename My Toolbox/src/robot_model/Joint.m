@@ -110,5 +110,17 @@ classdef Joint < handle
 
             obj.JointToParentTransform = double(input);
         end
+
+        function set.Position(obj, newPosition)
+            if newPosition > obj.PositionLimits(2)
+                obj.Position = obj.PositionLimits(2);
+                obj.Speed = 0;
+            elseif newPosition < obj.PositionLimits(1)
+                obj.Position = obj.PositionLimits(1);
+                obj.Speed = 0;
+            else
+                obj.Position = newPosition;
+            end
+        end
     end
 end

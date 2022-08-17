@@ -162,7 +162,7 @@ classdef SpaceRobot < handle
             
             % Create function handle
             obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});   
-            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb})
+            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
 
             % Viz
             obj.FastVizHelper = FastVizHelper;
