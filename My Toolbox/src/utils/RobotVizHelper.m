@@ -245,8 +245,9 @@ classdef RobotVizHelper < handle
             zlabel(ax, 'Z');
             
             % set up view
-            view(ax, [135 8]);
+            view(ax, [45 60]);  % [135, 8]
             set(ax, 'Projection', 'perspective');
+            % ax.view(0, 90); % Set view to above
             ax.CameraViewAngle = 8.0;
             ax.Tag = 'Primary';
             grid(ax, 'on');
