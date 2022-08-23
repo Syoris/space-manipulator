@@ -236,7 +236,7 @@ classdef RobotVizHelper < handle
             daspect(ax, [1 1 1]);
             
             %TODO estimate 'a' value, axis range
-            a = 5;
+            a = 3;
 
             set(ax, 'xlim', [-a, a], 'ylim', [-a, a], 'zlim', [-a, a]);
             
