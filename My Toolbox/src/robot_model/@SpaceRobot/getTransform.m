@@ -1,4 +1,4 @@
-function T = getTransform(obj, linkName1, linkName2)
+function T = getTransform(obj, linkName1, linkName2, q)
 %getTransform Get the transform between two link frames
 %   T1 = getTransform(ROBOT, linkName1) computes a
 %   transform T1 that converts points originally expressed in
@@ -7,18 +7,39 @@ function T = getTransform(obj, linkName1, linkName2)
 %   T2 = getTransform(ROBOT, linkName1, linkName2) computes
 %   a transform T2 that converts points originally expressed in
 %   linkName1 frame to be expressed in linkName2.
+%   
+%   T3 = getTransform(ROBOT, linkName1, 'inertial') computes
+%   a transform T3 that converts points originally expressed in
+%   linkName1 frame to be expressed in inertial frame.
+%
+%   If no configuration q is specified, the output will be in symbolic form. 
 
-    narginchk(2,3);
+
+    narginchk(2,4);
     
-    tTree = obj.Ttree_symb;
+    % Config specified
+    if nargin == 4
+        tTree = obj.getTtreeNum(q);
+
+    % No config specified
+    else
+        tTree = obj.Ttree_symb;
+    end
     
     % 2-argument case: getTransform(ROBOT, linkName1)
     T1 = tTree.(linkName1);
     
-    T2 = tTree.(obj.BaseName);
-    % 4-argument case: getTransform(ROBOT, linkName1, linkName2)
-    if nargin == 3
-        T2 = tTree.(linkName2);
+    
+    % 3-argument case: getTransform(ROBOT, linkName1, linkName2)
+    if nargin >= 3
+        if strcmp(linkName2, 'inertial')
+            T2 = eye(4);
+        else 
+            T2 = tTree.(linkName2);
+        end
+
+    else
+        T2 = tTree.(obj.BaseName);
     end
     
     % Compute transform:

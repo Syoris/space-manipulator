@@ -12,7 +12,6 @@ classdef SpaceRobot < handle
 %
 %   SpaceRobot methods:
 %       getBody               - Get robot's body handle by name
-%       geometricJacobian     - Compute the geometric Jacobian
 %       getTransform          - Get transform between two body frames
 %       homeConfiguration     - Return the home configuration for robot
 %       showdetails           - Display details of robot
@@ -238,12 +237,9 @@ classdef SpaceRobot < handle
     methods
         tTree = forwardKinematics(obj, varargin)
 
-        T = getTransform(obj, linkName1, linkName2)
+        T = getTransform(obj, linkName1, linkName2, q)
 
         comPositions = getCoMPosition(obj)
-
-        % TODO
-        Jac = geometricJacobian(obj, Q, endeffectorname)
 
         JacM = comJacobians(obj)
 
@@ -425,6 +421,17 @@ classdef SpaceRobot < handle
         function tTree = get.Ttree(obj)
             tTree = struct();
             tTreeArray = obj.tTreeFuncHandle(obj.q);
+  
+            f = fields(obj.Ttree_symb);
+            for i=1:length(f)
+                tTree.(f{i}) = tTreeArray(:, 1+(i-1)*4: i*4);
+            end
+        end
+
+        function tTree = getTtreeNum(obj, q)
+            % Get numerical value of tTree for given config
+            tTree = struct();
+            tTreeArray = obj.tTreeFuncHandle(q);
   
             f = fields(obj.Ttree_symb);
             for i=1:length(f)
