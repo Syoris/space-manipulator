@@ -34,7 +34,7 @@ classdef GetTransformBlock < matlab.System
         function tform = stepImpl(obj, q)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.     
-            tform = obj.spaceRobot.getTransform(obj.sourceLinkName, 'inertial', 'Config', q);
+            tform = obj.spaceRobot.getTransform(obj.sourceLinkName, 'inertial', 'Config', q, 'SymbRes', false);
         end
 
         function resetImpl(~)

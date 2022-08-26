@@ -1,6 +1,4 @@
 %% Init
-clc
-warning off
 load 'SC_2DoF.mat'
 sc.homeConfig;
 n = sc.NumActiveJoints;
@@ -18,10 +16,12 @@ C = eye(2*N);
 D = zeros(2*N, N);
 
 %% Tuning
+warning off
+
 mdl = 'Coordinated_ctrl_tuning';
 st0 = slTuner(mdl,{'Kp_b','Kd_b', 'Kp_m', 'Kd_m'});
-maxKpb = 1000;
-maxKdb = 1000;
+maxKpb = 3000;
+maxKdb = 3000;
 maxKpm = 1000;
 maxKdm = 1000;
 
@@ -53,7 +53,7 @@ addPoint(st0,{'qm_dot_ref','qm_dot'});
 % stepplot(T)
 
 
-req1 = TuningGoal.Tracking('qb_ref','qb',10);
+req1 = TuningGoal.Tracking('qb_ref','qb',5);
 req2 = TuningGoal.Tracking('qb_dot_ref','qb_dot',1);
 req3 = TuningGoal.Tracking('qm_ref','qm',1);
 req4 = TuningGoal.Tracking('qm_dot_ref','qm_dot',1);
