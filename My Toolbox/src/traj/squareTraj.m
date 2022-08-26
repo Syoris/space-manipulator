@@ -20,8 +20,8 @@ function tt = squareTraj(p0, l, tF, N, varargin)
     points(:, 1) = p0;
     points(:, end) = p0;
     
-    dx = [l     l   0;
-          0     l   l];
+    dx = [0     l       l;
+          -l    -l      0];
     
     
     switch plane
