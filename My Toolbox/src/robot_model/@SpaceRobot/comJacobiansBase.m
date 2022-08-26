@@ -1,5 +1,5 @@
 function JacM = comJacobiansBase(obj, varargin)
-    %comJacobians Compute the Jacobian of all the link CoM in base frame.
+    %comJacobiansBase Compute the Jacobian of all the link CoM in base frame.
     %   JacM: struct with link name as fields
     %   r_i_dot = J_i * q_dot,  r_i_dot: ith Link CoM speed in base frame
     %       'symbolic'      - Compute tree in symbolic form
@@ -72,6 +72,6 @@ function JacM = comJacobiansBase(obj, varargin)
         end
     end
     if symbolic
-        obj.CoMJacobsBase_symb = JacM;
+        obj.JacobsCoM_Base_symb = JacM;
     end
 end

@@ -62,7 +62,7 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 
 % % Toolbox
 comPoses = sc.getCoMPosition();
-Jacobians = sc.comJacobians();
+Jacobians = sc.computeJacobians();
 for i=1:sc.NumLinks
     linkName = sc.LinkNames{i};
     J_i = Jacobians.(linkName);

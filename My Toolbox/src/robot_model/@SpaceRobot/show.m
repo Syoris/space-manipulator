@@ -33,6 +33,7 @@ function ax = show(obj, varargin)
 %                         The value can be either 'on' or 'off'.
 %
 %                         Default: 'on'
+
     % parse inputs
     parser = inputParser;
     parser.StructExpand = false;

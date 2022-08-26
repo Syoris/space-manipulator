@@ -21,7 +21,7 @@ function initMassMat(obj, d, simpH)
     
     H = sym(zeros(6+obj.NumActiveJoints));
 
-    Jacobians = obj.CoMJacobsBase_symb;
+    Jacobians = obj.JacobsCoM_Base_symb;
     
     % Base    
     Jv_B = Jacobians.(obj.BaseName)(1:3, :); % Base speed jacobian

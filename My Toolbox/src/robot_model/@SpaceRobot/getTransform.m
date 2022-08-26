@@ -1,4 +1,4 @@
-function T = getTransform(obj, linkName1, linkName2, q)
+function T = getTransform(obj, linkName1, linkName2, varargin)
 %getTransform Get the transform between two link frames
 %   T1 = getTransform(ROBOT, linkName1) computes a
 %   transform T1 that converts points originally expressed in
@@ -13,22 +13,48 @@ function T = getTransform(obj, linkName1, linkName2, q)
 %   linkName1 frame to be expressed in inertial frame.
 %
 %   If no configuration q is specified, the output will be in symbolic form. 
+%
+%      'SymbRes'        - Bool to output transform in symbolic or numeric form. 
+%                         The value can be either true or false.
+%
+%                         Default: true
+%
+%      'Config'         - To specify robot configuration. Real vector of size (n+6, 1). 
+%                         ** The joint limits are not checked **
+%
+%                         Default: []
 
-
-    narginchk(2,4);
+    parser = inputParser;
     
-    % Config specified
-    if nargin == 4
-        tTree = obj.getTtreeNum(q);
+    parser.addParameter('SymbRes', true, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
 
-    % No config specified
-    else
+    parser.addParameter('Config', [], ...
+        @(x)(validateattributes(x, {'numeric'}, ...
+        {'nonempty', 'real', 'nonnan', 'finite', 'vector', 'numel', obj.NumActiveJoints + 6})));
+
+
+    parser.parse(varargin{:});
+                
+    SymbRes = parser.Results.SymbRes;
+    Config = parser.Results.Config;
+
+    if ~isempty(Config) && SymbRes
+        warning('Config specified but symbolic result asked. The specified config will be ignored')    
+    end
+    
+    
+    if SymbRes
+        % Symbolic results
         tTree = obj.Ttree_symb;
+    elseif ~isempty(Config)
+        tTree = obj.getTtreeNum(Config);
+    else
+        tTree = obj.Ttree;
     end
     
     % 2-argument case: getTransform(ROBOT, linkName1)
     T1 = tTree.(linkName1);
-    
     
     % 3-argument case: getTransform(ROBOT, linkName1, linkName2)
     if nargin >= 3

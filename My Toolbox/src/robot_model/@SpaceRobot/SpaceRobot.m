@@ -58,11 +58,11 @@ classdef SpaceRobot < handle
         
         
         % Configuration
-        q                           % Robot config (6+N x 1): [q0; qm]
+        q                           % Robot config (6+n x 1): [q0; qm]
         q0                          % Base config (6x1): [Rx; Ry; Rz; r; p; y]
         qm                          % Manipulator config (Nx1): [qm1; ... ;qmN] 
 
-        q_dot                       % Robot speed config (6+N x 1): [q0_dot; qm_d0t]                       
+        q_dot                       % Robot speed config (6+n x 1): [q0_dot; qm_d0t]                       
         q0_dot                      % Base speed config (6x1): [Rx_dot; Ry_dot; Rz_dot; wx; wy; wz]
         qm_dot                      % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot] 
     end
@@ -72,8 +72,9 @@ classdef SpaceRobot < handle
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
         Ttree_symb                  % Symbolic version of Ttree    
 
-        CoMJacobsBase_symb          % Jacobians of link CoM wrt to base frame
-        Jacobs_symb                 % Jacobians of link joints
+        Jacobs_symb                 % Jacobians of link joints  TODO: NOT IMPLEMENTED
+        JacobsCoM_symb              % Jacobians of link CoM
+        JacobsCoM_Base_symb         % Jacobians of link CoM wrt to base frame
 
         Config                      % Struc with info about current config
         q_symb                      % Symbolic version of q
@@ -112,7 +113,8 @@ classdef SpaceRobot < handle
                     Base = structModel.Base;
                     Links = structModel.Links;
                     Ttree_symb = structModel.Ttree_symb;
-                    CoMJacobsBase_symb = structModel.CoMJacobsBase_symb;
+                    JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
+                    JacobsCoM_symb = structModel.JacobsCoM_symb;
                     H_symb = structModel.H_symb;
                     C_symb = structModel.C_symb;
                     Q_symb = structModel.Q_symb;
@@ -126,7 +128,7 @@ classdef SpaceRobot < handle
                 Base = SpacecraftBase('spacecraftBase');
                 Links = cell(1, 0);    
                 Ttree_symb = [];
-                CoMJacobsBase_symb = [];
+                JacobsCoM_Base_symb = [];
                 H_symb = sym([]);
                 C_symb = sym([]);
                 Q_symb = sym([]);
@@ -138,7 +140,7 @@ classdef SpaceRobot < handle
             obj.Base = Base;
             obj.Links = Links;
             obj.Ttree_symb = Ttree_symb;
-            obj.CoMJacobsBase_symb = CoMJacobsBase_symb;
+            obj.JacobsCoM_Base_symb = JacobsCoM_Base_symb;
             obj.H_symb = H_symb;
             obj.C_symb = C_symb;
             obj.Q_symb = Q_symb;
@@ -237,11 +239,11 @@ classdef SpaceRobot < handle
     methods
         tTree = forwardKinematics(obj, varargin)
 
-        T = getTransform(obj, linkName1, linkName2, q)
+        T = getTransform(obj, linkName1, linkName2, varargin)
 
         comPositions = getCoMPosition(obj)
 
-        JacM = comJacobians(obj)
+        JacM = computeJacobians(obj)
 
         JacM = comJacobiansBase(obj, varargin)
 
