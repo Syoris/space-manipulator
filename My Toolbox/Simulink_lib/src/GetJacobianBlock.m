@@ -3,19 +3,19 @@ classdef GetJacobianBlock < matlab.System
     % Output a transform  that converts speed of generalized coordinated to
     % the speed of the link CoM
 
-    properties(Nontunable)
-        spaceRobot;
-        
+    properties(Nontunable)        
         %spaceRobotStruct - SpaceRobot structure
         spaceRobotStruct = 0;
         
         %LinkName - The name of the source link
         LinkName = 0;
+
+        spaceRobot;
     end
     
     methods
         function obj = GetJacobianBlock(varargin)
-            %ForwardDynsBlock Constructor for Forward Dynamics block system object
+            %GetJacobianBlock Constructor for GetJacobianBlock system object
             
             % Support name-value pair arguments when constructing object
             setProperties(obj,nargin,varargin{:});
@@ -31,9 +31,8 @@ classdef GetJacobianBlock < matlab.System
         function jac = stepImpl(obj, q)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.     
-
-            % TODO
-            jac = obj.spaceRobot.getTransform(obj.LinkName, 'inertial', 'Config', q);
+            
+            jac = obj.spaceRobot.getJacobsCoMNum(q).(obj.LinkName);         
         end
 
         function resetImpl(~)
@@ -65,9 +64,9 @@ classdef GetJacobianBlock < matlab.System
             num = 1;
         end
         
-        function out = getOutputSizeImpl(~)
+        function out = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-            out = [6 obj.spaceRobotStruct.N];
+            out = [6 obj.spaceRobotStruct.N];            
         end
 
         function out = getOutputDataTypeImpl(obj)

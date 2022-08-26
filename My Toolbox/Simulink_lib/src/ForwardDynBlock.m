@@ -11,7 +11,7 @@ classdef ForwardDynBlock < matlab.System
             %ForwardDynsBlock Constructor for Forward Dynamics block system object
             
             % Support name-value pair arguments when constructing object
-            setProperties(obj,nargin,varargin{:});
+            setProperties(obj, nargin, varargin{:});
         end
     end
 

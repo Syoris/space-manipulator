@@ -4,11 +4,11 @@ function JacM = computeJacobians(obj)
 %   JacM: struct with link name as fields
 
     JacM = struct();
-    tTree = obj.Ttree;
+    tTree = obj.Ttree_symb;
     
     % Base
-    J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
-           zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
+    J_b = sym([eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
+               zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)]);
     JacM.(obj.BaseName) = J_b;
 
     [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform); % Position of first joint in base frame
@@ -54,5 +54,14 @@ function JacM = computeJacobians(obj)
         J_i = [eye(3), J_i1, J_i2; zeros(3, 3), eye(3), J_i3];
         JacM.(obj.LinkNames{i}) = J_i;
     end
+    
+    
+    f = fields(JacM);
+    for i=1:length(f)
+        JacM.(f{i}) = simplify(JacM.(f{i}));
+    end
+    
+    obj.JacobsCoM_symb = JacM;
+    obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
 
 end
