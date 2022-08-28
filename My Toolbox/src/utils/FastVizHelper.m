@@ -6,15 +6,15 @@ classdef FastVizHelper < handle
         %HGTransforms - Cell array of HG Transforms
         HGTransforms
 
-        %RBTLineData - (N+1)-by-2 Cell array of line data
-        %   The RBTLineData cell array has N+1 rows (for the N rigid bodies
+        %RBTLineData - (n+1)-by-2 Cell array of line data
+        %   The RBTLineData cell array has n+1 rows (for the n rigid bodies
         %   and base in the associated RBT) and 2 columns. The first column
         %   is a cell array of line handles, and the second column is a
         %   cell array of child body indices. For the ith row, the cell
         %   array in the first column contains all the lines that start at
         %   the rigidBody with index i. The second column contains the
         %   indices of all the child bodies to which these lines connect.
-        %   For the base, the index N+1 is used. This data is used when
+        %   For the base, the index n+1 is used. This data is used when
         %   lines are updated during visualization updates.
         RBTLineData
 
@@ -115,7 +115,7 @@ classdef FastVizHelper < handle
 
     methods(Static)
         function tTree = kinStruct2Cell(scObj, treeStruct)
-            % tTree: 1x(N+1) Homogeneous transform matrix cell array.
+            % tTree: 1x(n+1) Homogeneous transform matrix cell array.
             % ith col -> for link i
             % last col -> for base
             

@@ -62,20 +62,22 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 
 % % Toolbox
 comPoses = sc.getCoMPosition();
-Jacobians = sc.comJacobians();
+Jacobians = sc.JacobsCoM;
 for i=1:sc.NumLinks
     linkName = sc.LinkNames{i};
     J_i = Jacobians.(linkName);
     
     fprintf('\n##### Link %i #####\n', i);
     fprintf('Mine:\n')
-%     disp(J_i);
     fprintf('\n')
-    disp(double(subs(J_i, q, q_val)));
-
+    disp(J_i);
+   
     fprintf('SPART:\n')
 %     disp(J_S{i});
-    disp(double(subs(J_S{i}, q, q_val)));
+    J_i_S = double(subs(J_S{i}, q, q_val));
+    disp(J_i_S);
+
+    assert(isequal(round(J_i, 5), round(J_i_S, 5)), 'Jacobians not matching for link %s', linkName);   
 end
 
 %% --- H - Mass Matrix ---
@@ -123,8 +125,8 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-% assert(sc.isNSkewSym());
-% assert(sc.isCOk(true));
+assert(sc.isNSkewSym());
+assert(sc.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
 f0 = [0; 0; 0.5]; % Force on baseC

@@ -236,7 +236,7 @@ classdef RobotVizHelper < handle
             daspect(ax, [1 1 1]);
             
             %TODO estimate 'a' value, axis range
-            a = 5;
+            a = 3;
 
             set(ax, 'xlim', [-a, a], 'ylim', [-a, a], 'zlim', [-a, a]);
             
@@ -245,8 +245,9 @@ classdef RobotVizHelper < handle
             zlabel(ax, 'Z');
             
             % set up view
-            view(ax, [135 8]);
+            view(ax, [45 60]);  % [135, 8]
             set(ax, 'Projection', 'perspective');
+            % ax.view(0, 90); % Set view to above
             ax.CameraViewAngle = 8.0;
             ax.Tag = 'Primary';
             grid(ax, 'on');

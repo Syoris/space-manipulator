@@ -12,7 +12,6 @@ classdef SpaceRobot < handle
 %
 %   SpaceRobot methods:
 %       getBody               - Get robot's body handle by name
-%       geometricJacobian     - Compute the geometric Jacobian
 %       getTransform          - Get transform between two body frames
 %       homeConfiguration     - Return the home configuration for robot
 %       showdetails           - Display details of robot
@@ -59,11 +58,11 @@ classdef SpaceRobot < handle
         
         
         % Configuration
-        q                           % Robot config (6+N x 1): [q0; qm]
+        q                           % Robot config (6+n x 1): [q0; qm]
         q0                          % Base config (6x1): [Rx; Ry; Rz; r; p; y]
         qm                          % Manipulator config (Nx1): [qm1; ... ;qmN] 
 
-        q_dot                       % Robot speed config (6+N x 1): [q0_dot; qm_d0t]                       
+        q_dot                       % Robot speed config (6+n x 1): [q0_dot; qm_d0t]                       
         q0_dot                      % Base speed config (6x1): [Rx_dot; Ry_dot; Rz_dot; wx; wy; wz]
         qm_dot                      % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot] 
     end
@@ -73,8 +72,12 @@ classdef SpaceRobot < handle
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
         Ttree_symb                  % Symbolic version of Ttree    
 
-        CoMJacobsBase_symb          % Jacobians of link CoM wrt to base frame
-        Jacobs_symb                 % Jacobians of link joints
+        Jacobs_symb                 % Jacobians of link joints  TODO: NOT IMPLEMENTED
+        
+        JacobsCoM_symb              % Jacobians of link CoM, symbolic form
+        JacobsCoM                   % Jacobians of link CoM, numeric form
+
+        JacobsCoM_Base_symb         % Jacobians of link CoM wrt to base frame
 
         Config                      % Struc with info about current config
         q_symb                      % Symbolic version of q
@@ -97,6 +100,7 @@ classdef SpaceRobot < handle
         % Symbolic Function handles
         matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         tTreeFuncHandle
+        JacobsCoM_FuncHandle
     end
     
     % Robot Representation methods
@@ -113,7 +117,9 @@ classdef SpaceRobot < handle
                     Base = structModel.Base;
                     Links = structModel.Links;
                     Ttree_symb = structModel.Ttree_symb;
-                    CoMJacobsBase_symb = structModel.CoMJacobsBase_symb;
+                    JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
+                    JacobsCoM_symb = structModel.JacobsCoM_symb;
+                    
                     H_symb = structModel.H_symb;
                     C_symb = structModel.C_symb;
                     Q_symb = structModel.Q_symb;
@@ -126,11 +132,15 @@ classdef SpaceRobot < handle
                 Name = "";
                 Base = SpacecraftBase('spacecraftBase');
                 Links = cell(1, 0);    
+                
                 Ttree_symb = [];
-                CoMJacobsBase_symb = [];
+                JacobsCoM_Base_symb = [];
+                JacobsCoM_symb = [];
+                
                 H_symb = sym([]);
                 C_symb = sym([]);
                 Q_symb = sym([]);
+                
                 qm_symb = [];
                 qm_dot_symb = [];
             end
@@ -138,8 +148,11 @@ classdef SpaceRobot < handle
             obj.Name = Name;
             obj.Base = Base;
             obj.Links = Links;
+            
             obj.Ttree_symb = Ttree_symb;
-            obj.CoMJacobsBase_symb = CoMJacobsBase_symb;
+            obj.JacobsCoM_Base_symb = JacobsCoM_Base_symb;
+            obj.JacobsCoM_symb = JacobsCoM_symb;
+
             obj.H_symb = H_symb;
             obj.C_symb = C_symb;
             obj.Q_symb = Q_symb;
@@ -163,6 +176,7 @@ classdef SpaceRobot < handle
             % Create function handle
             obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});   
             obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
+            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
 
             % Viz
             obj.FastVizHelper = FastVizHelper;
@@ -208,8 +222,11 @@ classdef SpaceRobot < handle
             d.Message = sprintf('Computing Symbolic Forward Kin...');
             obj.forwardKinematics('symbolic', true);
 
-            d.Message = sprintf('Computing Symbolic CoM Jacobians...');
+            d.Message = sprintf('Computing Symbolic CoM Jacobians wrt Base...');
             obj.comJacobiansBase('symbolic', true);
+
+            d.Message = sprintf('Computing Symbolic CoM Jacobians wrt Inertial Frame...');
+            obj.computeJacobians();
             
 
             obj.initMassMat(d, simpH);    
@@ -219,6 +236,7 @@ classdef SpaceRobot < handle
             d.Message = sprintf('Creating function handles...');
             obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
             obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb})
+            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
 
             d.Message = sprintf('Done');
 
@@ -232,20 +250,19 @@ classdef SpaceRobot < handle
         [ax, linkDisplayObjArray]  = showSimple(obj, parent, collisions, preserve, visuals, frames)
 
         ax = showFast(obj, parent, collisions, visuals, frames)
+
+        animate(obj, ts, varargin)
     end
 
     % Kinematics Methods
     methods
         tTree = forwardKinematics(obj, varargin)
 
-        T = getTransform(obj, linkName1, linkName2)
+        T = getTransform(obj, linkName1, linkName2, varargin)
 
         comPositions = getCoMPosition(obj)
 
-        % TODO
-        Jac = geometricJacobian(obj, Q, endeffectorname)
-
-        JacM = comJacobians(obj)
+        JacM = computeJacobians(obj)
 
         JacM = comJacobiansBase(obj, varargin)
 
@@ -431,6 +448,40 @@ classdef SpaceRobot < handle
                 tTree.(f{i}) = tTreeArray(:, 1+(i-1)*4: i*4);
             end
         end
+
+        function tTree = getTtreeNum(obj, q)
+            % Get numerical value of tTree for given config
+            tTree = struct();
+            tTreeArray = obj.tTreeFuncHandle(q);
+  
+            f = fields(obj.Ttree_symb);
+            for i=1:length(f)
+                tTree.(f{i}) = tTreeArray(:, 1+(i-1)*4: i*4);
+            end
+        end
+
+        function JacobsCoM = get.JacobsCoM(obj)
+            JacobsCoM = struct();
+            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(obj.q);
+            N = obj.NumActiveJoints + 6;
+  
+            f = fields(obj.JacobsCoM_symb);
+            for i=1:length(f)
+                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1+(i-1)*N: i*N);
+            end
+        end
+
+        function JacobsCoM = getJacobsCoMNum(obj, q)
+            JacobsCoM = struct();
+            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(q);
+            N = obj.NumActiveJoints + 6;
+  
+            f = fields(obj.JacobsCoM_symb);
+            for i=1:length(f)
+                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1+(i-1)*N: i*N);
+            end
+        end
+
 
         % Config related
         function qm = get.qm(obj)
