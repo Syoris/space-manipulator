@@ -250,6 +250,8 @@ classdef SpaceRobot < handle
         [ax, linkDisplayObjArray]  = showSimple(obj, parent, collisions, preserve, visuals, frames)
 
         ax = showFast(obj, parent, collisions, visuals, frames)
+
+        animate(obj, ts, varargin)
     end
 
     % Kinematics Methods
