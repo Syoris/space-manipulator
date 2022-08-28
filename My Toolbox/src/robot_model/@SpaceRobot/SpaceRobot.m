@@ -72,7 +72,7 @@ classdef SpaceRobot < handle
         Ttree                       % Forward kinematic transform tree (struct). Transform of each link to inertial frame                   
         Ttree_symb                  % Symbolic version of Ttree    
 
-        Jacobs_symb                 % Jacobians of link joints  TODO: NOT IMPLEMENTED
+        % Jacobs_symb                 % Jacobians of link joints  TODO: NOT IMPLEMENTED
         
         JacobsCoM_symb              % Jacobians of link CoM, symbolic form
         JacobsCoM                   % Jacobians of link CoM, numeric form
