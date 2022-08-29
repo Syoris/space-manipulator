@@ -43,7 +43,7 @@ filename='SC_2DoF.urdf';
 
 %% H
 if runH
-    sc.initMats();
+    sc.initDyn();
     
     tic
     sc.initMassMat();
@@ -116,7 +116,7 @@ if runH
 end
 %% C - Non-Linear Effect 
 if runC
-    sc.initMats();
+    sc.initDyn();
     
     % Class
     tic

@@ -7,7 +7,7 @@ classdef SpacecraftBase < Link
 
        HomeConf             % Base home config                  [Rx; Ry; Rz; r; p; y]
 
-       BaseToParentTransform_symb       % Transform from base to inertial frame in symbolic. Initialize in SpaceRobot.initMats().
+       BaseToParentTransform_symb       % Transform from base to inertial frame in symbolic. Initialize in SpaceRobot.initDyn().
        BaseToParentTransform            % Transform from base to inertial frame
     end
 

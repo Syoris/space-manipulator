@@ -21,7 +21,27 @@ classdef Joint < handle
     end
 
     properties(SetAccess = private)
+        %JointToParentTransform The first fixed transform property of a joint 
+        %   JointToParentTransform represents the homogeneous transform
+        %   that converts points originally expressed in the joint predecessor
+        %   frame to the parent body frame. This property is read-only.
+        %
+        %   Note joint predecessor frame is fixed on the parent body.
+        %
+        %   Default: eye(4)  
         JointToParentTransform      % Transfrom from joints to parent link
+
+        %ChildToJointTransform The second fixed transform property of a joint 
+        %   ChildToJointTransform represents the homogeneous transform that
+        %   converts points originally expressed in the child body frame to
+        %   the joint successor frame. This property is read-only. 
+        %
+        %   Note the rigid body who owns the joint is the child body in this
+        %   context. And the joint successor frame is fixed on the child
+        %   body.
+        %   
+        %   Default: eye(4)  
+        ChildToJointTransform
     end
 
     methods
@@ -39,6 +59,7 @@ classdef Joint < handle
             else
                 jntType = 'fixed'; 
             end
+
             obj.Type = jntType;
 
             obj.Id = 0;
@@ -67,7 +88,8 @@ classdef Joint < handle
                 otherwise
                     error("Wrong Type")
             end
-            T = obj.JointToParentTransform*TJ;
+            T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
+            
         end
 
         function T = transformLink2ParentSymb(obj)
@@ -80,35 +102,51 @@ classdef Joint < handle
                 otherwise
                     error("Wrong Type")
             end
-            T = obj.JointToParentTransform*TJ;
+            T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
         end
 
     end
 
     % Setter/Getter
     methods
-        function setFixedTransform(obj, input)
+        function setFixedTransform(obj, input, notation)
             %setFixedTransform Set fixed transform properties of joint
             %   Note that for a revolute joint, theta is a joint variable
             %   and thus not considered part of the joint's fixed transform.
-            %   Similarly, for a prismatic joint, d is a joint variable.
-            %   Joint variables in DH/MDH parameters will be ignored during
-            %   setFixedTransform calls. Check the methods in RigidBodyTree
-            %   class (such as getTransform) to see how joint variables are
-            %   specified.
             %
             %   setFixedTransform(JOINT, T) sets JointToParentTransform to
             %   the user-supplied 4x4 homogeneous transform matrix T and 
             %   ChildToJointTransform to an identity matrix.
             %
-            validateattributes(input, {'double'},...
-                {'nonnan', 'finite', 'real','nonempty', 'size',[4, 4]}, ...
-                 'setFixedTransform', 'input'); 
-            if ~isequal(double(input(4,:)),[0 0 0 1])
-                error("Last row of Homogeneous Transfrom matrix is invalid");
+            %   setFixedTransform(JOINT, DHPARAMS, 'dh') sets 
+            %   ChildToJointTransform using Denavit-Hartenberg parameters
+            %   DHPARAMS and JointToParentTransform to an identity matrix. 
+            %   DHPARAMS are given in the order [a alpha d theta].
+            narginchk(2,3);
+
+            if nargin < 3
+                notation = 'matrix';
             end
 
-            obj.JointToParentTransform = double(input);
+            switch(notation)
+                case 'dh'
+                    extractFixedTransformFromDH(obj, input); 
+
+                case 'matrix'                    
+                    validateattributes(input, {'double'},...
+                        {'nonnan', 'finite', 'real','nonempty', 'size',[4, 4]}, ...
+                         'setFixedTransform', 'input'); 
+                    if ~isequal(double(input(4,:)),[0 0 0 1])
+                        error("Last row of Homogeneous Transfrom matrix is invalid");
+                    end
+
+                    obj.JointToParentTransform = double(input);
+                    obj.ChildToJointTransform = eye(4);
+
+                otherwise
+                    error("Wrong Type")
+            end
+                            
         end
 
         function set.Position(obj, newPosition)
@@ -121,6 +159,41 @@ classdef Joint < handle
             else
                 obj.Position = newPosition;
             end
+        end
+    end
+
+    methods (Access = private) 
+        function extractFixedTransformFromDH(obj, dhparams)
+            %extractFixedTransformFromDH 
+            validateattributes(dhparams, {'double'}, { 'nonnan', ...
+                'finite', 'real', 'nonempty', 'vector',...
+                'numel', 4}, 'extractFixedTransformFromDH', 'dhparams'); 
+            
+            a = dhparams(1);
+            alpha = dhparams(2);
+            d = dhparams(3);
+            theta = dhparams(4);
+
+            Ta = [eye(3), [a, 0, 0]'; [0, 0, 0, 1]];
+            Talpha = [1, 0, 0, 0; 0, cos(alpha), -sin(alpha), 0;...
+                        0, sin(alpha), cos(alpha), 0; 0, 0, 0, 1];
+            Td = [eye(3), [0, 0, d]'; [0, 0, 0, 1]];
+            Ttheta = [cos(theta), -sin(theta), 0, 0; ...
+                   sin(theta), cos(theta), 0, 0; 0, 0, 1, 0;0, 0, 0, 1];
+
+            TL = eye(4);
+            switch(obj.Type)
+                case 'revolute'
+                    TL = Td*Ta*Talpha; 
+                case 'fixed'
+                    TL = Ttheta*Td*Ta*Talpha; 
+                otherwise
+                    error("Wrong Type");
+            end
+
+            obj.ChildToJointTransform = TL;  
+            obj.JointToParentTransform = eye(4); 
+
         end
     end
 end

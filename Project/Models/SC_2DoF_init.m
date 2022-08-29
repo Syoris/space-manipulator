@@ -124,12 +124,13 @@ for i = 1:length(linksVect)
         parent = linkNames(i-1);
     end
 
-    sc.addLink(linksVect{i}, parent); % Add body1 to base
+    sc.addLink(linksVect{i}, parent);
 end
 
 sc.homeConfig();
 %% Initialize Matrices
-sc.initMats('simpH', true, 'simpC', true); % Can be very long
+sc.initKin();
+sc.initDyn('simplify', true); % Can be very long
 
 sc.showDetails();
 % sc.show();              

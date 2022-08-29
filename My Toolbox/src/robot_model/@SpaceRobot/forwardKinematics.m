@@ -54,5 +54,6 @@ function tTree = forwardKinematics(obj, varargin)
         end
 
         obj.Ttree_symb = tTree;
+        obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
     end
 end
