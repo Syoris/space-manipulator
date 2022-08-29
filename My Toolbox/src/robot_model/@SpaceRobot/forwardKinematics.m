@@ -18,7 +18,7 @@ function tTree = forwardKinematics(obj, varargin)
     
     if ~symbolic
         % Base
-        baseTransform = obj.Base.BaseToParentTransform;
+        baseTransform = obj.Base.BaseToParentTransform; % Base position in Inertial Frame
         tTree.(obj.BaseName) = baseTransform;
 
         for i = 1:n
@@ -28,7 +28,14 @@ function tTree = forwardKinematics(obj, varargin)
             TLink2Parent = link.Joint.transformLink2Parent; % Taking into account current config 
 
             % Find transform to inertial frame
-            parentT = tTree.(obj.Links{i}.Parent.Name);
+            parent = obj.Links{i}.Parent;
+            parentT = tTree.(parent.Name);
+            
+            % Add Manip to Base transform for 1st link
+            if parent.Id == 0;
+                parentT = parentT*parent.ManipToBaseTransform;
+            end
+            
             linkT = parentT * TLink2Parent;
 
             tTree.(obj.Links{i}.Name) = linkT;

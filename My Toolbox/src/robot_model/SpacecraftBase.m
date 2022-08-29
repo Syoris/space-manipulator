@@ -9,11 +9,15 @@ classdef SpacecraftBase < Link
 
        BaseToParentTransform_symb       % Transform from base to inertial frame in symbolic. Initialize in SpaceRobot.initDyn().
        BaseToParentTransform            % Transform from base to inertial frame
+       ManipToBaseTransform             % Transform from manipulator first joint to base CoM
     end
 
     methods
         function obj = SpacecraftBase(baseName)
             obj@Link(baseName);
+
+            obj.Id = 0;
+            
             obj.R = [0; 0; 0];
             obj.Phi = [0; 0; 0];
             obj.R_dot = [0; 0; 0];
@@ -22,6 +26,7 @@ classdef SpacecraftBase < Link
             obj.HomeConf = zeros(6, 1);
 
             obj.BaseToParentTransform_symb = sym(zeros(3, 3));
+            obj.ManipToBaseTransform = eye(4);
         end
     end
 

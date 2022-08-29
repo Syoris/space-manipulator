@@ -67,7 +67,7 @@ classdef Joint < handle
             obj.SymbVar = '';
             obj.PositionLimits = [-pi, pi];
 
-            obj.ParentLink = '';
+            % obj.ParentLink = '';
             obj.ChildLink = '';
             obj.Axis = [0 0 1];
             
@@ -76,6 +76,7 @@ classdef Joint < handle
             obj.Speed = 0;
             
             obj.JointToParentTransform = eye(4);
+            obj.ChildToJointTransform = eye(4);
         end
         
         function T = transformLink2Parent(obj)
@@ -88,7 +89,11 @@ classdef Joint < handle
                 otherwise
                     error("Wrong Type")
             end
-            T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
+
+            TP = obj.ParentLink.Joint.ChildToJointTransform; % Transform from previous joint to current joint
+            
+            % T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
+            T = TP * obj.JointToParentTransform * TJ;
             
         end
 
@@ -122,6 +127,10 @@ classdef Joint < handle
             %   ChildToJointTransform using Denavit-Hartenberg parameters
             %   DHPARAMS and JointToParentTransform to an identity matrix. 
             %   DHPARAMS are given in the order [a alpha d theta].
+            %
+            %   NOTE: The first joint (the one connected to the base) JointToParentTransform will be
+            %         set when adding the joint to the SpaceRobot using `addLink`
+            
             narginchk(2,3);
 
             if nargin < 3
@@ -145,8 +154,7 @@ classdef Joint < handle
 
                 otherwise
                     error("Wrong Type")
-            end
-                            
+            end                               
         end
 
         function set.Position(obj, newPosition)
@@ -160,6 +168,15 @@ classdef Joint < handle
                 obj.Position = newPosition;
             end
         end
+
+        % function set.ParentLink(obj, parentLink)
+        %     obj.ParentLink = parentLink;
+
+        %     % If parent is base, set JointToParentTransform to ManipToBaseTransform
+        %     if obj.ParentLink.Id == 0
+        %         obj.JointToParentTransform = obj.ParentLink.ManipToBaseTransform;
+        %     end
+        % end
     end
 
     methods (Access = private) 
