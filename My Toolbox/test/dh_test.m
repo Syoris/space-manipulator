@@ -1,3 +1,4 @@
+%% Init
 % filename='SC_2DoF.urdf';
 % [robotSpart,robot_keys] = urdf2robot(filename);
 % 
@@ -97,12 +98,15 @@ end
 
 
 %% Space Robot
-load 'SC_2DoF.mat'
+% load 'SC_2DoF.mat'
 sc2 = SpaceRobot;
 sc2.Name = 'spaceRobotDH';
 
 jointsHomePos = [pi/4; -pi/2];
 
+L0=0.5;
+L1=1;
+L2=0.5;
 dhparams = [L1      0       0       0;      % [a, alpha, d, theta]
             L2   	0	    0   	0;      
             0	    0       0       0;];
@@ -157,18 +161,4 @@ sc2.initKin();
 % sc2.initDyn('simpH', true, 'simpC', true);
 
 % clearvars -except sc sc2
-
-%% Check
-clc
-sc.q0 = zeros(6, 1);
-tTree2 = sc2.forwardKinematics();
-
-for i=1:3
-    fprintf("--- i=%i ---\n", i)
-    fprintf('SC')
-    sc.Ttree.(sc.LinkNames{i})
-
-    fprintf('SC2')
-    tTree2.(sc2.LinkNames{i})
-end
 

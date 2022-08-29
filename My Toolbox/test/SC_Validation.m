@@ -1,7 +1,7 @@
 %% SC_Validation.m
 % To validate SpaceRobot properties and methods. To make sure changes
 % didn't break anything. Compares with known "good" values.
-% Will test:
+% Will valStruct:
 %   - Kinematic tree (Ttree)
 %   - CoM Jacobians (JacobsCoM)
 %   - CoM Positions
@@ -11,38 +11,68 @@
 % --- Tunable Parameters ---
 scToVal = sc2;                  % SpaceRobot to validate
 validationName = 'SC_2DoF';     % Name of validation file 
-
+toPrint = true;
 
 % --- Validation ---
 % Load validation
 clc
-fileName = [validationName '_Test.mat'];
+fileName = [validationName '_Val.mat'];
 load(fileName)
 
 % Set config 
-scToVal.q = test.q;
-scToVal.q_dot = test.q_dot;
+scToVal.q = valStruct.q;
+scToVal.q_dot = valStruct.q_dot;
 
+%% ### Validation ###
 % --- Kin Tree ---
-fprintf('\n##### Kinematic Tree #####\n');
+fprintf('##### Kinematic Tree #####\n');
 tTree = scToVal.Ttree;
 
-f = fields(test.tTree);
+f = fields(valStruct.tTree);
 for i=1:length(f)
-    Tval = test.tTree.(f{i});
+    Tval = valStruct.tTree.(f{i});
     Tsc = tTree.(f{i});
+    
+    if toPrint
+        fprintf('\n\t --- %s ---\n', f{i});
+    
+        fprintf('SC:\n')
+        fprintf('\n')
+        disp(Tsc);
+    
+        fprintf('Val:\n')
+        fprintf('\n')
+        disp(Tval);
+    end
 
-    fprintf('\n\t --- %s ---\n', f{i});
-
-    fprintf('SC:\n')
-    fprintf('\n')
-    disp(Tsc);
-
-    fprintf('Val:\n')
-    fprintf('\n')
-    disp(Tval);
+    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for link %s', f{i});
 end
+fprintf("Kinematic Tree OK\n")
 
+% --- GetTransform ---
+% valStruct GetTransform between all links and base
+fprintf('##### GetTransform #####\n');
+
+f = fields(valStruct.GetTrans);
+for i=1:length(f)
+    Tval = valStruct.GetTrans.(f{i});
+    Tsc = scToVal.getTransform(f{i}, scToVal.BaseName, 'symbRes', false);
+    
+    if toPrint
+        fprintf('\n\t --- %s ---\n', f{i});
+    
+        fprintf('SC:\n')
+        fprintf('\n')
+        disp(Tsc);
+    
+        fprintf('Val:\n')
+        fprintf('\n')
+        disp(Tval);
+    end
+
+    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for link %s', f{i});
+end
+fprintf("GetTransform OK\n")
 
 %% --- Jacobians ---
 Jacobians = scToVal.JacobsCoM;
@@ -59,6 +89,7 @@ for i=1:scToVal.NumLinks
 end
 
 
+break
 
 % --- CoM Positions ---
 comPoses = scToVal.getCoMPosition();
@@ -103,7 +134,7 @@ fprintf("\n### Foward Dynamics ###\n")
 fprintf('-- Computed --\n')
 tic
 F = [f0;n0;tau_qm];
-q_ddot = scToVal.forwardDynamics(test.F);
+q_ddot = scToVal.forwardDynamics(valStruct.F);
 disp(q_ddot)
 toc
 

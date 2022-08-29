@@ -13,53 +13,47 @@ function tTree = forwardKinematics(obj, varargin)
     symbolic = parser.Results.symbolic;
 
     n = obj.NumLinks;
-    % Ttree = repmat({eye(4)}, 1, n);
     tTree = struct;
     
+    % Base
     if ~symbolic
-        % Base
         baseTransform = obj.Base.BaseToParentTransform; % Base position in Inertial Frame
-        tTree.(obj.BaseName) = baseTransform;
-
-        for i = 1:n
-            link = obj.Links{i};
-            
-            % Find transform to parent
-            TLink2Parent = link.Joint.transformLink2Parent; % Taking into account current config 
-
-            % Find transform to inertial frame
-            parent = obj.Links{i}.Parent;
-            parentT = tTree.(parent.Name);
-            
-            % Add Manip to Base transform for 1st link
-            if parent.Id == 0;
-                parentT = parentT*parent.ManipToBaseTransform;
-            end
-            
-            linkT = parentT * TLink2Parent;
-
-            tTree.(obj.Links{i}.Name) = linkT;
-        end
-    
-    % Symbolic computation
     else
-        % Base
         baseTransform = obj.Base.BaseToParentTransform_symb;
-        tTree.(obj.BaseName) = baseTransform;
+    end
+    tTree.(obj.BaseName) = baseTransform;
 
-        for i = 1:n
-            link = obj.Links{i};
-            
-            % Find transform to parent
+    
+    for i = 1:n
+        link = obj.Links{i};
+        
+        % Find transform to parent
+        if ~symbolic
+            TLink2Parent = link.Joint.transformLink2Parent; % Taking into account current config 
+        else
             TLink2Parent = link.Joint.transformLink2ParentSymb; % Taking into account current config 
+        end
 
-            % Find transform to inertial frame
-            parentT = tTree.(obj.Links{i}.Parent.Name);
-            linkT = parentT * TLink2Parent;
+        % Find transform to inertial frame
+        parent = obj.Links{i}.Parent;
+        parentT = tTree.(parent.Name);
+        
+        % Add Manip to Base transform for 1st link
+        if parent.Id == 0;
+            parentT = parentT*parent.ManipToBaseTransform;
+        end
+        
+        linkT = parentT * TLink2Parent;
 
+        if ~symbolic
+            tTree.(obj.Links{i}.Name) = linkT;
+        else
             tTree.(obj.Links{i}.Name) = simplify(linkT);
         end
+    
+    end
 
+    if symbolic
         obj.Ttree_symb = tTree;
         obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
     end

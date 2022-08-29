@@ -107,7 +107,11 @@ classdef Joint < handle
                 otherwise
                     error("Wrong Type")
             end
-            T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
+
+            TP = obj.ParentLink.Joint.ChildToJointTransform; % Transform from previous joint to current joint
+            
+            % T = obj.JointToParentTransform*TJ*obj.ChildToJointTransform;
+            T = TP * obj.JointToParentTransform * TJ;
         end
 
     end
