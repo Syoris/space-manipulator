@@ -8,7 +8,6 @@ function JacM = comJacobiansBase(obj, varargin)
     %
 
     parser = inputParser;
-    parser.StructExpand = false;
 
     parser.addParameter('symbolic', false, ...
         @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
@@ -34,8 +33,8 @@ function JacM = comJacobiansBase(obj, varargin)
             curLink = obj.Links{k};
             nextLink = curLink.Children{1};
 
-            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, curLink.Name, 'symbRes', true));
-            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, obj.BaseName, 'symbRes', true));
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame',  curLink.Name, 'symbolic', false));
+            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame',  obj.BaseName, 'symbolic', true));
 
             J_1_t1 = J_1_t1 + linkRotM*linkLenght;
         end
@@ -46,17 +45,18 @@ function JacM = comJacobiansBase(obj, varargin)
         
         J_i1 = -skew(r0_b + J_1_t1 + J_1_t2);
 
+
         % --- J_i2 ---
-        J_2_t1 = zeros(3, 1);
+        J_2_t1 = zeros(3, obj.NumActiveJoints);
 
         for k=1:i-1
             curLink = obj.Links{k};
             nextLink = curLink.Children{1};
 
-            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, curLink.Name, 'symbRes', true));
-            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, obj.BaseName, 'symbRes', true));
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame',  curLink.Name, 'symbolic', false));
+            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame',  obj.BaseName, 'symbolic', true));
 
-            res = skew(linkRotM*linkLenght)*obj.getAxisM(k-1, 'base');
+            res = skew(linkRotM*linkLenght)*obj.getAxisM(k, 'base');
             J_2_t1 = J_2_t1 + res;
         end
         

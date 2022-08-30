@@ -37,15 +37,15 @@ tTree = sc.forwardKinematics();
 
 T_b_1 = sc.getTransform('Link1'); % Frame 1 wrt base, symbolic
 
-T_1_2 = sc.getTransform('Link2', 'Link1', 'SymbRes', true); % Frame 2 wrt frame, symbolic
+T_1_2 = sc.getTransform('Link2', 'TargetFrame', 'Link1', 'symbolic', true); % Frame 2 wrt frame, symbolic
 
-T_b_2 = sc.getTransform('Link2', 'spacecraftBase', 'SymbRes', false); % Frame 2 wrt base, numeric, current config
+T_b_2 = sc.getTransform('Link2', 'TargetFrame', 'spacecraftBase', 'symbolic', false); % Frame 2 wrt base, numeric, current config
 
-T_2_b = sc.getTransform('spacecraftBase', 'Link2', 'SymbRes', false); % Base wrt frame 2, numeric, current config
+T_2_b = sc.getTransform('spacecraftBase', 'TargetFrame', 'Link2', 'symbolic', false); % Base wrt frame 2, numeric, current config
 
-T_1_ee = sc.getTransform('endeffector', 'Link1', 'Config', q2, 'SymbRes', false); % ee wrt frame 1, numeric, at q2
+T_1_ee = sc.getTransform('endeffector', 'TargetFrame', 'Link1', 'Config', q2, 'symbolic', false); % ee wrt frame 1, numeric, at q2
 
-T_i_2 = sc.getTransform('Link2', 'inertial', 'SymbRes', false); % Frame 2 wrt inertial frame, numeric, current conf, could also get with T_i_b * T_b_2
+T_i_2 = sc.getTransform('Link2', 'TargetFrame', 'inertial', 'symbolic', false); % Frame 2 wrt inertial frame, numeric, current conf, could also get with T_i_b * T_b_2
 
 % Plot
 % Transforms are plot using Spatial Math Toolbox by Peter Corke

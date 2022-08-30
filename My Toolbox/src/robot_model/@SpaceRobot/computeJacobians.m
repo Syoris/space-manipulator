@@ -1,67 +1,149 @@
-function JacM = computeJacobians(obj)
-%computeJacobians Compute the Jacobians of all the link CoM to express speed in inertial frame.
-%   Output in symbolic form.
+function JacM = computeJacobians(obj, varargin)
+%comJacobiansBase Compute the Jacobian of all the link CoM in the specified TargetFrame.
 %   JacM: struct with link name as fields
+%   [r_i_dot, w_i] = JacM.linkName_i * q_dot
+%       r_i_dot:    ith Link CoM speed in base frame
+%       w_i:        ith Link angular speed in target frame 
+%
+%       'TargetFrame'   - To compute Jacobians wrt to inertial or spacecraft base frame. 
+%                         Either `inertial` or `base`.
+%                         Default: 'inertial'
+%
+%       'symbolic'      - Compute jacobians in symbolic form
+%                         Default: false
+%
 
+    % Parse Args
+    parser = inputParser;
+
+    parser.addParameter('TargetFrame', 'inertial', ...
+        @(x)any(validatestring(x, {'inertial', 'base'})));
+
+    parser.addParameter('symbolic', false, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+
+    parser.parse(varargin{:});
+    targetFrame = parser.Results.TargetFrame;
+    symbolic = parser.Results.symbolic;
+
+    % 
     JacM = struct();
     tTree = obj.Ttree_symb;
     
     % Base
-    J_b = sym([eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
-               zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)]);
+    J_b = [eye(3),      zeros(3),   zeros(3, obj.NumActiveJoints);...
+           zeros(3, 3), eye(3),     zeros(3, obj.NumActiveJoints)];
+
+    if symbolic
+        J_b = sym(J_b);
+    end
+
     JacM.(obj.BaseName) = J_b;
 
-    [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform); % Position of first joint in base frame
-    [rotM_IB, ~] = tr2rt(tTree.(obj.BaseName)); % Position of first joint in Inertial
-    r0_I = rotM_IB*r0_b;
+    % Manip position
+    [~, r0_b] = tr2rt(obj.Base.ManipToBaseTransform); % Position of first joint in base frame
+    
+    switch targetFrame            
+        case 'inertial'
+            [rotM_t_B, ~] = tr2rt(tTree.(obj.BaseName)); % Rotation matrix of base frame to inertial frame
+        case 'base'
+            rotM_t_B = eye(3);
+    end
+    r0_t = rotM_t_B*r0_b;    % Position of first joint in target frame
+
 
     % Links
     for i =1:obj.NumLinks
-        % Build J_i1
+        
+        % --- J_i1 ---
+        % J_i1_t1
         J_1_t1 = zeros(3, 1);
 
-        for k=2:i
-            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
-            [prevLinkRotM, ~] = tr2rt(tTree.(obj.Links{k}.Parent.Name)); % Transform of previous joint to Base
+        for k=1:i-1
+            curLink = obj.Links{k};
+            nextLink = curLink.Children{1};
 
-            J_1_t1 = J_1_t1 + prevLinkRotM*prevLinkLenght;
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame',  curLink.Name, 'symbolic', false));
+            
+            switch targetFrame            
+                case 'inertial'
+                    [linkRotM, ~] = tr2rt(tTree.(curLink.Name));
+                case 'base'
+                    [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame', obj.BaseName, 'symbolic', symbolic));
+            end
+                
+
+            J_1_t1 = J_1_t1 + linkRotM*linkLenght;            
         end
         
-        [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to Base
+        % J_i1_t2        
+        switch targetFrame
+            case 'inertial'
+                [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to inertial frame     
+            case 'base'
+                [linkRotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name, 'symbolic', symbolic)); % Transform of link to Base frame
+        end
+                
         J_1_t2 = linkRotM*obj.Links{i}.CenterOfMass.';
         
-        J_i1 = -skew(r0_I + J_1_t1 + J_1_t2);
+        J_i1 = -skew(r0_t + J_1_t1 + J_1_t2);
 
-        % J_i2
+
+
+        % --- J_i2 ---
         J_2_t1 = zeros(3, obj.NumActiveJoints);
-        for k=2:i
-            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
-            [prevLinkRotM, ~] = tr2rt(tTree.(obj.Links{k}.Parent.Name)); % Transform of previous joint to Base
 
-            res = skew(prevLinkRotM*prevLinkLenght) * obj.getAxisM(k-1);
+        for k=1:i-1
+            curLink = obj.Links{k};
+            nextLink = curLink.Children{1};
+            
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame', curLink.Name, 'symbolic', false));
 
+            switch targetFrame
+                case 'inertial'
+                    [linkRotM, ~] = tr2rt(tTree.(curLink.Name));
+                    E = obj.getAxisM(k);
+                case 'base'
+                    [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame', obj.BaseName, 'symbolic', symbolic));
+                    E = obj.getAxisM(k, 'base');
+            end
+            
+            res = skew(linkRotM*linkLenght) * E;
             J_2_t1 = J_2_t1 + res;
         end
         
-        [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to Base
-        J_2_t2 = skew(linkRotM * obj.Links{i}.CenterOfMass.')*obj.getAxisM(i);
+        switch targetFrame
+            case 'inertial'
+                [linkRotM, ~] = tr2rt(tTree.(obj.LinkNames{i})); % Transform of link to inertial frame     
+                E = obj.getAxisM(i);
+            case 'base'
+                [linkRotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name, 'symbolic', symbolic)); % Transform of link to Base frame
+                E = obj.getAxisM(i, 'base');
+        end
+        
+        J_2_t2 = skew(linkRotM * obj.Links{i}.CenterOfMass.')*E;
         
         J_i2 = - J_2_t1 - J_2_t2;
 
         % J_i3
-        J_i3 = obj.getAxisM(i);
-
-        J_i = [eye(3), J_i1, J_i2; zeros(3, 3), eye(3), J_i3];
+        J_i = [eye(3), J_i1, J_i2; zeros(3, 3), eye(3), E];
         JacM.(obj.LinkNames{i}) = J_i;
     end
     
-    
-    f = fields(JacM);
-    for i=1:length(f)
-        JacM.(f{i}) = simplify(JacM.(f{i}));
+    % Simplify symbolic result
+    if symbolic
+        f = fields(JacM);
+        for i=1:length(f)
+            JacM.(f{i}) = simplify(JacM.(f{i}));
+        end
     end
     
-    obj.JacobsCoM_symb = JacM;
-    obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
-
+    % Update SpaceRobot Parameters
+    switch targetFrame
+        case 'inertial'
+            obj.JacobsCoM_symb = JacM;
+            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+%         case 'base'
+%             %
+    end
 end

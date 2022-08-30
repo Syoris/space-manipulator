@@ -277,15 +277,15 @@ classdef SpaceRobot < handle
     methods
         tTree = forwardKinematics(obj, varargin)
 
-        T = getTransform(obj, linkName1, linkName2, varargin)
+        T = getTransform(obj, linkName1, varargin)
 
         comPositions = getCoMPosition(obj)
 
-        JacM = computeJacobians(obj)
+        JacM = computeJacobians(obj, varargin)
 
         JacM = comJacobiansBase(obj, varargin)
 
-        AxisM = getAxisM(obj, linkId, frame)
+        AxisM = getAxisM(obj, linkId, frame, varargin)
     end
 
     % Dynamcics Methods

@@ -56,7 +56,7 @@ fprintf('##### GetTransform #####\n');
 f = fields(valStruct.GetTrans);
 for i=1:length(f)
     Tval = valStruct.GetTrans.(f{i});
-    Tsc = scToVal.getTransform(f{i}, scToVal.BaseName, 'symbRes', false);
+    Tsc = scToVal.getTransform(f{i}, 'TargetFrame', scToVal.BaseName, 'symbolic', false);
     
     if toPrint
         fprintf('\n\t --- %s ---\n', f{i});
@@ -75,19 +75,28 @@ end
 fprintf("GetTransform OK\n")
 
 %% --- Jacobians ---
+fprintf('##### Jacobians #####\n');
 Jacobians = scToVal.JacobsCoM;
 for i=1:scToVal.NumLinks
     linkName = scToVal.LinkNames{i};
-    J_i = Jacobians.(linkName);
-    
-    fprintf('\n##### Link %i #####\n', i);
-    fprintf('Mine:\n')
-    fprintf('\n')
-    disp(J_i);
-   
-    assert(isequal(round(J_i, 5), round(J_i_S, 5)), 'Jacobians not matching for link %s', linkName);   
-end
+    Jval = Jacobians.(linkName);
+    Jsc = sc2.JacobsCoM.(linkName);
 
+    if toPrint
+        fprintf('\n\t --- %s ---\n', f{i});
+    
+        fprintf('SC:\n')
+        fprintf('\n')
+        disp(Jsc);
+    
+        fprintf('Val:\n')
+        fprintf('\n')
+        disp(Jval);
+    end
+   
+    assert(isequal(round(Jval, 5), round(Jsc, 5)), 'Jacobians not matching for link %s', linkName);   
+end
+fprintf("Jacobians OK\n")
 
 return
 

@@ -1,16 +1,37 @@
 %TODO: Test with different robot construction
-function AxisM = getAxisM(obj, linkId, frame)
+function AxisM = getAxisM(obj, linkId, frame, varargin)
 %getAxisM Compute the axis matrix related to the specified link
 %   Options: frame. Specified reference frame. Can be either 'inertial' or 'base'. Default: 'inertial'
 %
 %   Computed as: [R1*Z1, R2*Z2, ..., Ri*Zi, 0]
 %   Rj: Rotation matrix from link frame to inertial frame
 %   Zj: Rotation axis in link frame
+%
+%       'TargetFrame'   - To compute matrix wrt to inertial or spacecraft base frame. 
+%                         Either `inertial` or `base`.
+%                         Default: 'inertial'
+%
+%       'symbolic'      - Compute matrix in symbolic form
+%                         Default: false
+%
+    % Parse Args
+    parser = inputParser;
 
-    tTree = obj.Ttree;
+    parser.addParameter('symbolic', false, ...
+        @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
+
+    parser.parse(varargin{:});
+    symbolic = parser.Results.symbolic;
+
+    if symbolic
+        tTree = obj.Ttree_symb;
+    else
+        tTree = obj.Ttree;
+    end
+
     AxisM = zeros(3, obj.NumActiveJoints);
     count = 1; % Active joint count
-    narginchk(2, 3);
+
     if nargin == 2
         frame = 'inertial';
     end
@@ -25,7 +46,7 @@ function AxisM = getAxisM(obj, linkId, frame)
             if strcmp(frame, 'inertial')
                 [rotM, ~] = tr2rt(tTree.(obj.Links{i}.Name));
             else
-                [rotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name));
+                [rotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name, 'symbolic', symbolic));
             end
             ax = rotM*joint.Axis';
 

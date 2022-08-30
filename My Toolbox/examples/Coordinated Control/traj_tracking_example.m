@@ -21,7 +21,7 @@ end
 
 
 % Compute Traj
-[~, p0] = tr2rt(sc.getTransform('endeffector', 'inertial', 'SymbRes', false));
+[~, p0] = tr2rt(sc.getTransform('endeffector', 'TargetFrame',  'inertial', 'symbolic', false));
 traj = squareTraj(p0, squareLength, str2double(simTime), Nsamp, 'plane', 'xy');
 
 % Launch Sim

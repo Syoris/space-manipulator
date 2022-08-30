@@ -14,7 +14,7 @@ valStruct.tTree = sc.Ttree;
 
 valStruct.GetTrans = struct();
 for i=1:sc.NumLinks
-    valStruct.GetTrans.(sc.LinkNames{i}) = sc.getTransform(sc.LinkNames{i}, sc.BaseName, 'symbRes', false);
+    valStruct.GetTrans.(sc.LinkNames{i}) = sc.getTransform(sc.LinkNames{i}, 'TargetFrame', sc.BaseName, 'symbolic', false);
 end
 
 valStruct.JacobsCoM = sc.JacobsCoM;
