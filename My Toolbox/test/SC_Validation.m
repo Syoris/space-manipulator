@@ -89,7 +89,7 @@ for i=1:scToVal.NumLinks
 end
 
 
-break
+return
 
 % --- CoM Positions ---
 comPoses = scToVal.getCoMPosition();

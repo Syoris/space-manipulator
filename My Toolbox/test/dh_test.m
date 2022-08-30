@@ -120,6 +120,11 @@ jointsAxis = [[0 0 1];
               [0 0 1];
               [0 0 0]];
 
+linksCoM = [[L1/2 0 0];
+            [L2/2 0 0];
+            [0 0 0];];
+
+% Create Robot
 nLinks = 3;
 linksVect = cell(1, nLinks);
 jointsVect = cell(1, nLinks);
@@ -132,6 +137,7 @@ joints = cell(nLinks,1);
 
 for i=1:nLinks
     links{i} = Link(linkNames{i});
+    links{i}.CenterOfMass = linksCoM(i, :);
    
     if any(jointsAxis(i, :))
         newJoint = Joint(jointNames{i}, 'revolute');
