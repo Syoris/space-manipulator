@@ -213,14 +213,14 @@ classdef SpaceRobot < handle
             
             msg = sprintf('Computing Symbolic CoM Jacobians wrt Base...');
             disp(msg);
-            obj.comJacobiansBase('symbolic', true);
-
+            % obj.comJacobiansBase('symbolic', true);
+            obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
+            
             msg = sprintf('Computing Symbolic CoM Jacobians wrt Inertial Frame...');
             disp(msg)
-            obj.computeJacobians();
+            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
-
         end
 
         function initDyn(obj, varargin)
@@ -231,8 +231,6 @@ classdef SpaceRobot < handle
             
             % Pars inputs
             parser = inputParser;
-            parser.StructExpand = false;
-
             parser.addParameter('simplify', true, ...
                 @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
 

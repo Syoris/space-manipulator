@@ -74,7 +74,7 @@ for i=1:length(f)
 end
 fprintf("GetTransform OK\n")
 
-%% --- Jacobians ---
+% --- Jacobians ---
 fprintf('##### Jacobians #####\n');
 Jacobians = scToVal.JacobsCoM;
 for i=1:scToVal.NumLinks
@@ -98,14 +98,35 @@ for i=1:scToVal.NumLinks
 end
 fprintf("Jacobians OK\n")
 
-return
-
 % --- CoM Positions ---
-comPoses = scToVal.getCoMPosition();
+fprintf('##### CoM Positions #####\n');
+comPosesVal = scToVal.getCoMPosition();
+comPosesSC = sc2.getCoMPosition();
+
+for i=1:scToVal.NumLinks
+    linkName = scToVal.LinkNames{i};
+    [~, tVal] = tr2rt(comPosesVal.(linkName));
+    [~, tSc] = tr2rt(comPosesSC.(linkName));
+
+    if toPrint
+        fprintf('\n\t --- %s ---\n', f{i});
+    
+        fprintf('SC:\n')
+        fprintf('\n')
+        disp(tSc);
+    
+        fprintf('Val:\n')
+        fprintf('\n')
+        disp(tVal);
+    end
+   
+    assert(isequal(round(tVal, 5), round(tSc, 5)), 'CoM Positions not matching for link %s', linkName);   
+end
+fprintf("CoM Positions OK\n")
 
 
 
-% --- Dyn Matrices ---
+%% --- Dyn Matrices ---
 fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic

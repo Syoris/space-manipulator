@@ -125,8 +125,14 @@ function JacM = computeJacobians(obj, varargin)
         
         J_i2 = - J_2_t1 - J_2_t2;
 
-        % J_i3
-        J_i = [eye(3), J_i1, J_i2; zeros(3, 3), eye(3), E];
+        % --- J_i ---
+        switch targetFrame
+            case 'inertial'
+                J_i0 = eye(3);
+            case 'base'
+                J_i0 = zeros(3);
+        end
+        J_i = [J_i0, J_i1, J_i2; zeros(3, 3), eye(3), E];
         JacM.(obj.LinkNames{i}) = J_i;
     end
     
@@ -136,14 +142,19 @@ function JacM = computeJacobians(obj, varargin)
         for i=1:length(f)
             JacM.(f{i}) = simplify(JacM.(f{i}));
         end
+
+            % Update SpaceRobot Parameters
+        switch targetFrame
+            case 'inertial'
+                obj.JacobsCoM_symb = JacM;
+                obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+            
+            case 'base'
+                obj.JacobsCoM_Base_symb = JacM;
+        
+        end
+
     end
     
-    % Update SpaceRobot Parameters
-    switch targetFrame
-        case 'inertial'
-            obj.JacobsCoM_symb = JacM;
-            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
-%         case 'base'
-%             %
-    end
+
 end
