@@ -143,7 +143,7 @@ function JacM = computeJacobians(obj, varargin)
             JacM.(f{i}) = simplify(JacM.(f{i}));
         end
 
-            % Update SpaceRobot Parameters
+        % Update SpaceRobot Parameters
         switch targetFrame
             case 'inertial'
                 obj.JacobsCoM_symb = JacM;

@@ -125,49 +125,58 @@ end
 fprintf("CoM Positions OK\n")
 
 
-
 %% --- Dyn Matrices ---
-fprintf('\n##### H - Mass Matrix #####\n')
-fprintf('--- Computed ---\n');
-tic
-disp(scToVal.H);
-toc
 
-fprintf('--- SPART ---\n');
-tic
-H_spart_val = double(subs(H_spart, q, q_val));
-disp(H_spart_val)
-toc
+% H - Mass Matrix
+fprintf('\n##### H - Mass Matrix #####\n')
+H_val = valStruct.H;
+H_sc = scToVal.H;
+if toPrint
+    fprintf('--- Validation ---\n');
+    disp(H_val);
+
+    fprintf('\n--- Computed ---\n');  
+    disp(H_sc);
+end
+assert(isequal(round(H_val, 5), round(H_sc, 5)), 'H matrices not matching'); 
+fprintf("H Matrix OK\n")
+
 
 % C - Non-Linear Effect
-fprintf('\n##### C Matrix #####\n')
-fprintf('--- Computed ---\n');
-tic
-disp(scToVal.C);
-toc
+fprintf('\n##### C - Non-Linear Effect #####\n')
+C_val = valStruct.C;
+C_sc = scToVal.C;
+if toPrint
+    fprintf('--- Validation ---\n');
+    disp(C_val);
 
-fprintf('--- SPART ---\n');
-tic
-disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
-toc
+    fprintf('\n--- Computed ---\n');  
+    disp(C_sc);
+end
+assert(isequal(round(C_val, 5), round(C_sc, 5)), 'C matrices not matching'); 
+fprintf("C Matrix OK\n")
 
 % C Matrix Check
-assert(scToVal.isNSkewSym());
-assert(scToVal.isCOk(true));
+% assert(scToVal.isNSkewSym());
+% assert(scToVal.isCOk(true));
 
 % Q Matrix - Force Jacobian
 
 
 
 % --- Forward Dyn ---
-fprintf("\n### Foward Dynamics ###\n")
-fprintf('-- Computed --\n')
-tic
-F = [f0;n0;tau_qm];
-q_ddot = scToVal.forwardDynamics(valStruct.F);
-disp(q_ddot)
-toc
+fprintf("\n##### Foward Dynamics #####\n")
+q_ddot_val = valStruct.q_ddot;
+q_ddot_sc = scToVal.forwardDynamics(valStruct.F);
 
-fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
+if toPrint
+    fprintf('--- Validation ---\n');
+    disp(q_ddot_val);
+
+    fprintf('\n--- Computed ---\n');  
+    disp(q_ddot_sc);
+end
+assert(isequal(round(q_ddot_val, 5), round(q_ddot_sc, 5)), 'q_ddot not matching'); 
+fprintf("Forward Dyn OK\n")
 
 

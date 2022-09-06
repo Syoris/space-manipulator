@@ -77,13 +77,20 @@ for i=1:nLinks
     sc2.addLink(links{i}, parent);
 end
 
-% --- Initialize Matrices ---
+%% --- Initialize Matrices ---
+profile on
 tic
 sc2.initKin();
 sc2.initDyn();
 toc
+profile viewer
+profile off
 
 sc2.homeConfig;
 
-% clearvars -except sc sc2
+
+%% Save Robot
+fprintf('Saving robot\n')
+clearvars -except sc2
+save 'Project/Models/SC2_2DoF.mat'
 

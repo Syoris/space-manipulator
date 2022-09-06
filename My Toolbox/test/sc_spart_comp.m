@@ -172,7 +172,7 @@ disp([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD])
 toc
 
 fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
-
+return
 %% --- Inverse Dynamics ---
 %Accelerations
 u0dot=zeros(6,1);
