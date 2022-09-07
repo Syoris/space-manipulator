@@ -203,14 +203,16 @@ classdef Joint < handle
                    sin(theta), cos(theta), 0, 0; 0, 0, 1, 0;0, 0, 0, 1];
 
             TL = eye(4);
-            switch(obj.Type)
-                case 'revolute'
-                    TL = Td*Ta*Talpha; 
-                case 'fixed'
-                    TL = Ttheta*Td*Ta*Talpha; 
-                otherwise
-                    error("Wrong Type");
-            end
+
+            TL = Ttheta*Td*Ta*Talpha; 
+            % switch(obj.Type)
+            %     case 'revolute'
+            %         TL = Td*Ta*Talpha; 
+            %     case 'fixed'
+            %         TL = Ttheta*Td*Ta*Talpha; 
+            %     otherwise
+            %         error("Wrong Type");
+            % end
 
             obj.ChildToJointTransform = TL;  
             obj.JointToParentTransform = eye(4); 

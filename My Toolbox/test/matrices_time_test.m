@@ -78,3 +78,66 @@ for i=1:N
 end
 t2 = toc;
 fprintf("\t Average: %f\n", t2/N)
+
+%% Kinematics Test
+% sc: SpaceRobot with Ttree in symbolic form simplified
+% sc2: SpaceRobot with Ttree in symbolic form NOT simplified
+
+q0 = [0.1; 0.2; 0.3; pi/2; pi/2; pi/2];
+q0_dot = ones(6, 1)*0.1;
+
+qm = ones(6, 1)*pi/4;
+qm_dot = ones(6, 1)*pi/40;
+
+sc.q = [q0; qm];
+sc.q_dot = [q0_dot; qm_dot];
+
+sc2.q = [q0; qm];
+sc2.q_dot = [q0_dot; qm_dot];
+
+N = 100;
+disp("Simplified")
+tic
+for i=1:N
+    sc.Ttree;
+end
+t0 = toc;
+fprintf("\t Average: %f\n", t0/N)
+
+disp("Not Simplified")
+tic
+for i=1:N
+    sc2.Ttree;
+end
+t0 = toc;
+fprintf("\t Average: %f\n", t0/N)
+
+%% Inertial Jacobians
+q0 = [0.1; 0.2; 0.3; pi/2; pi/2; pi/2];
+q0_dot = ones(6, 1)*0.1;
+
+qm = ones(6, 1)*pi/4;
+qm_dot = ones(6, 1)*pi/40;
+
+sc.q = [q0; qm];
+sc.q_dot = [q0_dot; qm_dot];
+
+sc2.q = [q0; qm];
+sc2.q_dot = [q0_dot; qm_dot];
+
+N = 100;
+disp("Simplified")
+tic
+for i=1:N
+    sc.JacobsCoM;
+end
+t0 = toc;
+fprintf("\t Average: %f\n", t0/N)
+
+disp("Not Simplified")
+tic
+for i=1:N
+    sc2.JacobsCoM;
+end
+t0 = toc;
+fprintf("\t Average: %f\n", t0/N)

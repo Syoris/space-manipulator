@@ -58,6 +58,8 @@ classdef SpaceRobot < handle
         q_dot                       % Robot speed config (6+n x 1): [q0_dot; qm_d0t]                       
         q0_dot                      % Base speed config (6x1): [Rx_dot; Ry_dot; Rz_dot; wx; wy; wz]
         qm_dot                      % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot] 
+
+        Logging                     % Verbose level: 'error', 'warning', 'info', 'debug'. Default: 'warning'
     end
     
     % TODO: SetAccess = private
@@ -110,6 +112,8 @@ classdef SpaceRobot < handle
         matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         tTreeFuncHandle
         JacobsCoM_FuncHandle
+
+        LogLevels = {'error', 'warning', 'info', 'debug'};
     end
     
     % Robot Representation methods
@@ -174,6 +178,7 @@ classdef SpaceRobot < handle
             obj.KinInitialized = KinInitialized;
             obj.DynInitialized = DynInitialized;
 
+            obj.Logging = 'warning';
 
             % Config
             syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
@@ -203,21 +208,17 @@ classdef SpaceRobot < handle
         addLink(obj, linkIn, parentName)
         
         function initKin(obj)
-        % Initialize kinematic tree (Ttree) and Jacobians                        
+        % Initialize kinematic tree (Ttree) and Jacobians
+
+            obj.logger('Initializing kinematic matrices', 'info');
+
             obj.Base.BaseToParentTransform_symb = [rpy2r(obj.q_symb(4:6).'), obj.q_symb(1:3); zeros(1, 3), 1];
             
-            % Forward kinematic tree
-            msg = sprintf('Computing Kin Tree');
-            disp(msg);
+            % Forward kinematic tree            
             obj.forwardKinematics('symbolic', true);
             
-            msg = sprintf('Computing Symbolic CoM Jacobians wrt Base...');
-            disp(msg);
-            % obj.comJacobiansBase('symbolic', true);
             obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
-            
-            msg = sprintf('Computing Symbolic CoM Jacobians wrt Inertial Frame...');
-            disp(msg)
+
             obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
@@ -259,6 +260,8 @@ classdef SpaceRobot < handle
 
             obj.DynInitialized = true;
         end
+
+        logger(obj, msg, level)
 
         showDetails(obj)
 
@@ -575,6 +578,11 @@ classdef SpaceRobot < handle
                                'SpaceRobot', 'q_dot');
             obj.q0_dot = q_dot(1:6);
             obj.qm_dot = q_dot(7:end);
+        end
+
+        function set.Logging(obj, logging)            
+            logging = validatestring(logging, obj.LogLevels, 'set.Logging', 'Logging');
+            obj.Logging = logging;
         end
         
         function Config = get.Config(obj)

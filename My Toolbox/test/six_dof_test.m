@@ -1,10 +1,10 @@
 close all
-sc.q0 = [-3; 0.5; 0; 0; 0; 0];
+sc.q0 = [0; 0; 0; 0; 0; 0];
 
 th1 = 0;
 th2 = 0;
-th3 = 0;
-th4 = 0;
+th3 = 0*pi/180;
+th4 = 0*pi/180;
 th5 = 0;
 th6 = 0;
 
@@ -12,7 +12,9 @@ sc.qm = [th1; th2; th3; th4; th5; th6];
 
 sc.show()
 % axis equal
-% xlim([3, 5])
+xlim([4, 6])
+ylim([-1, 1])
+zlim([0, 2])
 
 %% CoM
 close all
@@ -26,10 +28,12 @@ linkNames = fields(comPositions);
 hold on
 for i=1:length(linkNames)
     pose = comPositions.(linkNames{i});
-    plot3(pose(1, 4), pose(2, 4), pose(3, 4),'r*', 'MarkerSize', 15);
+    plot3(pose(1, 4), pose(2, 4), pose(3, 4),'r*', 'MarkerSize', 30);
 end
-xlim([1.5, 4])
-axis equal
+xlim([2.6, 3.6])
+ylim([2.2, 3.2])
+zlim([1, 2])
+% axis equal
 hold off
 
 %% 

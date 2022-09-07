@@ -2,8 +2,7 @@ function tTree = forwardKinematics(obj, varargin)
     % Compute forwardKinematics of the robot. Output an array of the homogenous 
     % transformation matrix of inertial frame to link: T_inertial_linkI
     %       'symbolic'      - Compute tree in symbolic form
-    %                           Default: false
-
+    %                           Default: false    
     parser = inputParser;
     parser.StructExpand = false;
 
@@ -11,6 +10,9 @@ function tTree = forwardKinematics(obj, varargin)
         @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
     parser.parse(varargin{:});
     symbolic = parser.Results.symbolic;
+
+    msg = sprintf('Computing Kin Tree. Symbolic form: %s', string(symbolic));
+    obj.logger(msg, 'info');
 
     n = obj.NumLinks;
     tTree = struct;
@@ -25,6 +27,9 @@ function tTree = forwardKinematics(obj, varargin)
 
     
     for i = 1:n
+        msg = sprintf('Kinematic of link %i', i);
+        obj.logger(msg, 'debug');
+
         link = obj.Links{i};
         
         % Find transform to parent
@@ -39,21 +44,32 @@ function tTree = forwardKinematics(obj, varargin)
         parentT = tTree.(parent.Name);
         
         % Add Manip to Base transform for 1st link
-        if parent.Id == 0;
+        if parent.Id == 0
             parentT = parentT*parent.ManipToBaseTransform;
         end
         
         linkT = parentT * TLink2Parent;
 
-        if ~symbolic
-            tTree.(obj.Links{i}.Name) = linkT;
-        else
-            tTree.(obj.Links{i}.Name) = simplify(linkT);
-        end
+        tTree.(obj.Links{i}.Name) = linkT;
     
     end
 
     if symbolic
+%         % Simplify Results
+%         f = fields(tTree);
+%         for i=1:length(f)
+%             mat = tTree.(f{i});
+% 
+%             for j=1:size(mat, 1)
+%                 for k=1:size(mat, 1)
+%                     msg = sprintf('Simplifying %s ... (%i, %i)', f{i}, j, k);
+%                     obj.logger(msg, 'debug');
+%                     mat(j, k) = simplify(mat(j, k), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+%                 end
+%             end
+%             tTree.(f{i}) = mat;
+%         end
+        
         obj.Ttree_symb = tTree;
         obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
     end

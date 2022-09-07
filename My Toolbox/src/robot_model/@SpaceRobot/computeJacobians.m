@@ -12,7 +12,7 @@ function JacM = computeJacobians(obj, varargin)
 %       'symbolic'      - Compute jacobians in symbolic form
 %                         Default: false
 %
-
+    
     % Parse Args
     parser = inputParser;
 
@@ -25,6 +25,9 @@ function JacM = computeJacobians(obj, varargin)
     parser.parse(varargin{:});
     targetFrame = parser.Results.TargetFrame;
     symbolic = parser.Results.symbolic;
+    
+    msg = sprintf('Computing Symbolic CoM Jacobians. Symbolic: %s. TargetFrame: %s', string(symbolic), targetFrame);
+    obj.logger(msg, 'info');
 
     % 
     JacM = struct();
@@ -54,6 +57,8 @@ function JacM = computeJacobians(obj, varargin)
 
     % Links
     for i =1:obj.NumLinks
+        msg = sprintf('Computing for link %i', i);
+        obj.logger(msg, 'debug');
         
         % --- J_i1 ---
         % J_i1_t1
@@ -136,12 +141,21 @@ function JacM = computeJacobians(obj, varargin)
         JacM.(obj.LinkNames{i}) = J_i;
     end
     
-    % Simplify symbolic result
     if symbolic
-        f = fields(JacM);
-        for i=1:length(f)
-            JacM.(f{i}) = simplify(JacM.(f{i}));
-        end
+%         % Simplify Results
+%         f = fields(JacM);
+%         for i=1:length(f)
+%             mat = JacM.(f{i});
+% 
+%             for j=1:size(mat, 1)
+%                 for k=1:size(mat, 1)
+%                     msg = sprintf('Simplifying %s ... (%i, %i)', f{i}, j, k);
+%                     obj.logger(msg, 'debug');
+%                     mat(j, k) = simplify(mat(j, k), 'IgnoreAnalyticConstraints',true,'Seconds',10);
+%                 end
+%             end
+%             JacM.(f{i}) = mat;
+%         end
 
         % Update SpaceRobot Parameters
         switch targetFrame
