@@ -214,7 +214,9 @@ end
 %% --- Initialize Matrices ---
 tic
 sc.initKin();
-% sc.initDyn();
+toc
+tic
+sc.initDyn('simplify', false);
 toc
 
 sc.homeConfig;
