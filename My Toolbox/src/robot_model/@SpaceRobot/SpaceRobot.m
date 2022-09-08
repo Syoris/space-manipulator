@@ -4,7 +4,7 @@ classdef SpaceRobot < handle
 %   link.
 %
 %   SpaceRobot properties:
-%       NumLinks               - Number of linkss
+%       NumLinks               - Number of links
 %       Bodies                 - Cell array of rigid bodies
 %       Base                   - Base of the robot
 %       BodyNames              - Cell array of Names of rigid bodies
@@ -43,18 +43,11 @@ classdef SpaceRobot < handle
         %   Default: ""
         Name
 
-        %NumLinks Number of links in the robot
-        %
-        %   Default: 0
-        NumLinks
-    
-        NumActiveJoints             %  Number of active joints
+
 
         Links                       %  Cell array of robot links    
-        LinkNames
 
         Base                        %  Base link of the robot, SpacecraftBase
-        BaseName
         
         
         % Configuration
@@ -65,6 +58,8 @@ classdef SpaceRobot < handle
         q_dot                       % Robot speed config (6+n x 1): [q0_dot; qm_d0t]                       
         q0_dot                      % Base speed config (6x1): [Rx_dot; Ry_dot; Rz_dot; wx; wy; wz]
         qm_dot                      % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot] 
+
+        Logging                     % Verbose level: 'error', 'warning', 'info', 'debug'. Default: 'warning'
     end
     
     % TODO: SetAccess = private
@@ -89,8 +84,24 @@ classdef SpaceRobot < handle
         H
         C
         Q
+
+        KinInitialized              % bool, true if kin mats have been initialized
+        DynInitialized              % bool, true if dyn mats have been initialized
     end
     
+    properties(SetAccess = private)
+        %NumLinks Number of links in the robot
+        %
+        %   Default: 0
+        NumLinks
+
+        NumActiveJoints             %  Number of active joints
+        
+        LinkNames
+
+        BaseName
+    end
+
     % TODO: Set and Get to private
     properties %(SetAccess = private , GetAccess = private)
         % Viz
@@ -101,14 +112,14 @@ classdef SpaceRobot < handle
         matFuncHandle               % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         tTreeFuncHandle
         JacobsCoM_FuncHandle
+
+        LogLevels = {'error', 'warning', 'info', 'debug'};
     end
     
     % Robot Representation methods
     methods
         function obj = SpaceRobot(varargin)
             if nargin==1
-                % TODO: Init urdf file, DH params
-
                 % From Struct
                 if isa(varargin{1}, 'struct')                    
                     structModel = varargin{1};
@@ -122,20 +133,23 @@ classdef SpaceRobot < handle
                     
                     H_symb = structModel.H_symb;
                     C_symb = structModel.C_symb;
-                    Q_symb = structModel.Q_symb;
+                    Q_symb = structModel.Q_symb;         
+                    
+                    KinInitialized = structModel.KinInitialized;
+                    DynInitialized = structModel.DynInitialized;
                 else
                     error("Error creating SpaceRobot: Invalid robot model specified")
                 end
 
-                     
             else
                 Name = "";
-                Base = SpacecraftBase('spacecraftBase');
+                baseName = 'spacecraftBase';
+                Base = SpacecraftBase(baseName);
                 Links = cell(1, 0);    
                 
-                Ttree_symb = [];
-                JacobsCoM_Base_symb = [];
-                JacobsCoM_symb = [];
+                Ttree_symb = struct(baseName, sym([]));
+                JacobsCoM_Base_symb = struct(baseName, sym([]));
+                JacobsCoM_symb = struct(baseName, sym([]));
                 
                 H_symb = sym([]);
                 C_symb = sym([]);
@@ -143,8 +157,12 @@ classdef SpaceRobot < handle
                 
                 qm_symb = [];
                 qm_dot_symb = [];
+
+                KinInitialized = false;
+                DynInitialized = false;
             end
             
+            % Set parameters
             obj.Name = Name;
             obj.Base = Base;
             obj.Links = Links;
@@ -157,6 +175,10 @@ classdef SpaceRobot < handle
             obj.C_symb = C_symb;
             obj.Q_symb = Q_symb;
 
+            obj.KinInitialized = KinInitialized;
+            obj.DynInitialized = DynInitialized;
+
+            obj.Logging = 'warning';
 
             % Config
             syms 'Rx' 'Ry' 'Rz' 'r' 'p' 'y'
@@ -185,29 +207,37 @@ classdef SpaceRobot < handle
                 
         addLink(obj, linkIn, parentName)
         
-        function initMats(obj, varargin)
+        function initKin(obj)
+        % Initialize kinematic tree (Ttree) and Jacobians
+
+            obj.logger('Initializing kinematic matrices', 'info');
+
+            obj.Base.BaseToParentTransform_symb = [rpy2r(obj.q_symb(4:6).'), obj.q_symb(1:3); zeros(1, 3), 1];
+            
+            % Forward kinematic tree            
+            obj.forwardKinematics('symbolic', true);
+            
+            obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
+
+            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
+
+            obj.KinInitialized = true;
+        end
+
+        function initDyn(obj, varargin)
             % Initialize H, C and Q Matrices
-            %      'simpH'         - To simplify mass matrix. Takes a long time but makes 
+            %      'simplify'      - To simplify symbolic matrix. Takes a long time but makes 
             %                        computing much faster after.
-            %                        Default: false
-            %
-            %      'simpC'          - To simplify mass matrix. Takes a long time but makes 
-            %                        computing much faster after.
-            %                        Default: false
+            %                        Default: true
             
             % Pars inputs
             parser = inputParser;
-            parser.StructExpand = false;
-
-            parser.addParameter('simpH', false, ...
-                @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
-            parser.addParameter('simpC', false, ...
+            parser.addParameter('simplify', true, ...
                 @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
 
             parser.parse(varargin{:});
                 
-            simpH = parser.Results.simpH;
-            simpC = parser.Results.simpC;
+            simplify = parser.Results.simplify;
             
             % Start UI
             fig = uifigure;
@@ -217,31 +247,21 @@ classdef SpaceRobot < handle
             fig.Position(3:4) = [410, 110];
             drawnow;
 
-            obj.Base.BaseToParentTransform_symb = [rpy2r(obj.q_symb(4:6).'), obj.q_symb(1:3); zeros(1, 3), 1];
-            
-            d.Message = sprintf('Computing Symbolic Forward Kin...');
-            obj.forwardKinematics('symbolic', true);
-
-            d.Message = sprintf('Computing Symbolic CoM Jacobians wrt Base...');
-            obj.comJacobiansBase('symbolic', true);
-
-            d.Message = sprintf('Computing Symbolic CoM Jacobians wrt Inertial Frame...');
-            obj.computeJacobians();
-            
-
-            obj.initMassMat(d, simpH);    
-            obj.initCMat(d, simpC);
+            obj.initMassMat(d, simplify);    
+            obj.initCMat(d, simplify);
             obj.initQMat(d);
             
             d.Message = sprintf('Creating function handles...');
             obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
-            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb})
-            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
 
             d.Message = sprintf('Done');
 
             close(fig);
+
+            obj.DynInitialized = true;
         end
+
+        logger(obj, msg, level)
 
         showDetails(obj)
 
@@ -258,22 +278,22 @@ classdef SpaceRobot < handle
     methods
         tTree = forwardKinematics(obj, varargin)
 
-        T = getTransform(obj, linkName1, linkName2, varargin)
+        T = getTransform(obj, linkName1, varargin)
 
         comPositions = getCoMPosition(obj)
 
-        JacM = computeJacobians(obj)
+        JacM = computeJacobians(obj, varargin)
 
         JacM = comJacobiansBase(obj, varargin)
 
-        AxisM = getAxisM(obj, linkId, frame)
+        AxisM = getAxisM(obj, linkId, frame, varargin)
     end
 
     % Dynamcics Methods
     methods
-        initMassMat(obj, d, simpM)
+        initMassMat(obj, d, simplify)
 
-        initCMat(obj, d, simpC)
+        initCMat(obj, d, simplify)
         
         initQMat(obj, d)
 
@@ -419,8 +439,7 @@ classdef SpaceRobot < handle
                 if ~strcmp(obj.Links{i}.Joint.Type, 'fixed')
                     NumActiveJoints = NumActiveJoints + 1;
                 end 
-            end
-            
+            end            
         end
         
         % Matrices
@@ -559,6 +578,11 @@ classdef SpaceRobot < handle
                                'SpaceRobot', 'q_dot');
             obj.q0_dot = q_dot(1:6);
             obj.qm_dot = q_dot(7:end);
+        end
+
+        function set.Logging(obj, logging)            
+            logging = validatestring(logging, obj.LogLevels, 'set.Logging', 'Logging');
+            obj.Logging = logging;
         end
         
         function Config = get.Config(obj)

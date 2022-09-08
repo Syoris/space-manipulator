@@ -8,6 +8,9 @@ function q_ddot = forwardDynamics(obj, F, q, q_dot)
     %       n0: Torque applied to base, in base frame (3x1)
     %       tau_m: Joint torques (Nx1)
 
+    assert(obj.DynInitialized, ['Dynamics needs to be initialized for calling this function.' ...
+                                ' Call SpaceRobot.initDyn() first']);
+
     if nargin > 2
         [H, C, Q] = obj.getMats(q, q_dot);
     else

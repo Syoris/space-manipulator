@@ -2,11 +2,12 @@ function JacM = comJacobiansBase(obj, varargin)
     %comJacobiansBase Compute the Jacobian of all the link CoM in base frame.
     %   JacM: struct with link name as fields
     %   r_i_dot = J_i * q_dot,  r_i_dot: ith Link CoM speed in base frame
+    %
     %       'symbolic'      - Compute tree in symbolic form
     %                           Default: false
+    %
 
     parser = inputParser;
-    parser.StructExpand = false;
 
     parser.addParameter('symbolic', false, ...
         @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
@@ -16,22 +17,26 @@ function JacM = comJacobiansBase(obj, varargin)
     JacM = struct();
     
     % Base
-    J_b = [eye(3), zeros(3), zeros(3, obj.NumActiveJoints);...
-    zeros(3, 3), eye(3), zeros(3, obj.NumActiveJoints)];
+    J_b = [eye(3),      zeros(3),   zeros(3, obj.NumActiveJoints);...
+           zeros(3, 3), eye(3),     zeros(3, obj.NumActiveJoints)];
     J_b = sym(J_b);
     JacM.(obj.BaseName) = J_b;
-    [~, r0_b] = tr2rt(obj.Base.Children{1}.Joint.JointToParentTransform);
+    [~, r0_b] = tr2rt(obj.Base.ManipToBaseTransform);
 
     % Links
     for i =1:obj.NumLinks
-        % Build J_i1
+        
+        % --- J_i1 ---
         J_1_t1 = zeros(3, 1);
 
-        for k=2:i
-            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
-            [prevLinkRotM, ~] = tr2rt(obj.getTransform(obj.Links{k-1}.Name)); % Transform of previous joint to Base
+        for k=1:i-1
+            curLink = obj.Links{k};
+            nextLink = curLink.Children{1};
 
-            J_1_t1 = J_1_t1 + prevLinkRotM*prevLinkLenght;
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame',  curLink.Name, 'symbolic', false));
+            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame',  obj.BaseName, 'symbolic', true));
+
+            J_1_t1 = J_1_t1 + linkRotM*linkLenght;
         end
         
         [linkRotM, ~] = tr2rt(obj.getTransform(obj.Links{i}.Name)); % Transform of link to Base
@@ -40,14 +45,18 @@ function JacM = comJacobiansBase(obj, varargin)
         
         J_i1 = -skew(r0_b + J_1_t1 + J_1_t2);
 
-        % J_i2
-        J_2_t1 = zeros(3, 1);
 
-        for k=2:i
-            [~, prevLinkLenght] = tr2rt(obj.Links{k}.Joint.JointToParentTransform);
-            [prevLinkRotM, ~] = tr2rt(obj.getTransform(obj.Links{k-1}.Name)); % Transform of previous joint to Base
+        % --- J_i2 ---
+        J_2_t1 = zeros(3, obj.NumActiveJoints);
 
-            res = skew(prevLinkRotM*prevLinkLenght)*obj.getAxisM(k-1, 'base');
+        for k=1:i-1
+            curLink = obj.Links{k};
+            nextLink = curLink.Children{1};
+
+            [~, linkLenght] = tr2rt(obj.getTransform(nextLink.Name, 'TargetFrame',  curLink.Name, 'symbolic', false));
+            [linkRotM, ~] = tr2rt(obj.getTransform(curLink.Name, 'TargetFrame',  obj.BaseName, 'symbolic', true));
+
+            res = skew(linkRotM*linkLenght)*obj.getAxisM(k, 'base');
             J_2_t1 = J_2_t1 + res;
         end
         
@@ -56,7 +65,7 @@ function JacM = comJacobiansBase(obj, varargin)
         
         J_i2 = - J_2_t1 - J_2_t2;
 
-        % J_i3
+        % --- J_i3 ---
         J_i3 = obj.getAxisM(i, 'base');
 
         J_i = [zeros(3), J_i1, J_i2; zeros(3, 3), eye(3), J_i3];

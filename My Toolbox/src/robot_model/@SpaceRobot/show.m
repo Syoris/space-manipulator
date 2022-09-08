@@ -34,6 +34,9 @@ function ax = show(obj, varargin)
 %
 %                         Default: 'on'
 
+    assert(obj.KinInitialized, ['Kinematics needs to be initialized for calling this function.' ...
+                                ' Call SpaceRobot.initKin() first']);
+
     % parse inputs
     parser = inputParser;
     parser.StructExpand = false;

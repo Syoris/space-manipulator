@@ -17,4 +17,7 @@ function scStruct = scToStruct(spaceRobot)
     scStruct.H_symb = spaceRobot.H_symb;
     scStruct.C_symb = spaceRobot.C_symb;
     scStruct.Q_symb = spaceRobot.Q_symb;
+
+    scStruct.KinInitialized = spaceRobot.KinInitialized;
+    scStruct.DynInitialized = spaceRobot.DynInitialized;
 end

@@ -3,6 +3,8 @@
 clc
 load 'SC_2DoF.mat'
 
+scTest = sc2;
+
 % Spacecraft State
 qm_val=[pi/6; -pi/4];
 r0_val = [0.5; 0.2; 1];
@@ -33,8 +35,8 @@ q_val = [r0_val; delta0_val; qm_val];
 q_dot_val = [r0_dot_val; w0_val; qm_dot_val];
 
 % 
-sc.q = q_val;
-sc.q_dot = q_dot_val;
+scTest.q = q_val;
+scTest.q_dot = q_dot_val;
 
 % SPART
 filename='SC_2DoF.urdf';
@@ -61,10 +63,10 @@ J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
 
 
 % % Toolbox
-comPoses = sc.getCoMPosition();
-Jacobians = sc.JacobsCoM;
-for i=1:sc.NumLinks
-    linkName = sc.LinkNames{i};
+comPoses = scTest.getCoMPosition();
+Jacobians = scTest.JacobsCoM;
+for i=1:scTest.NumLinks
+    linkName = scTest.LinkNames{i};
     J_i = Jacobians.(linkName);
     
     fprintf('\n##### Link %i #####\n', i);
@@ -104,7 +106,7 @@ C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3,4:6), C0(1:3, 1:3)], [C0m(4:6, :)
 fprintf('\n##### H - Mass Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-disp(sc.H);
+disp(scTest.H);
 toc
 
 fprintf('--- SPART ---\n');
@@ -116,7 +118,7 @@ toc
 fprintf('\n##### C Matrix #####\n')
 fprintf('--- Computed ---\n');
 tic
-disp(sc.C);
+disp(scTest.C);
 toc
 
 fprintf('--- SPART ---\n');
@@ -125,8 +127,8 @@ disp(double(subs(C_spart, [q; q_dot], [q_val; q_dot_val])))
 toc
 
 % % C Matrix Check
-assert(sc.isNSkewSym());
-assert(sc.isCOk(true));
+assert(scTest.isNSkewSym());
+assert(scTest.isCOk(true));
 %% --- Forward Dyn ---
 % FORCES
 f0 = [0; 0; 0.5]; % Force on baseC
@@ -159,7 +161,7 @@ fprintf("\n### Foward Dynamics ###\n")
 fprintf('-- Computed --\n')
 tic
 F = [f0;n0;tau_qm];
-q_ddot = sc.forwardDynamics(F);
+q_ddot = scTest.forwardDynamics(F);
 disp(q_ddot)
 toc
 
@@ -170,7 +172,7 @@ disp([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD])
 toc
 
 fprintf("Same result: %i\n", all(round(q_ddot, 5) == round([u0dot_FD(4:6); u0dot_FD(1:3); umdot_FD], 5)))
-
+return
 %% --- Inverse Dynamics ---
 %Accelerations
 u0dot=zeros(6,1);

@@ -24,9 +24,8 @@ function addLink(obj, linkIn, parentName)
     
     % TODO: Check joint name collision
 
-    % Update indexes
-    obj.NumLinks = obj.NumLinks + 1;
-    linkId = obj.NumLinks;
+    % Update indexes  
+    linkId = obj.NumLinks + 1;
 
     obj.Links{linkId} = linkIn;
     obj.LinkNames{linkId} = linkIn.Name;

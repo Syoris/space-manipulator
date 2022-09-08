@@ -1,20 +1,24 @@
-function T = getTransform(obj, linkName1, linkName2, varargin)
+function T = getTransform(obj, linkName1, varargin)
 %getTransform Get the transform between two link frames
 %   T1 = getTransform(ROBOT, linkName1) computes a
 %   transform T1 that converts points originally expressed in
 %   linkName1 frame to be expressed in the robot's base frame.
 %
-%   T2 = getTransform(ROBOT, linkName1, linkName2) computes
+%   T2 = getTransform(ROBOT, linkName1, 'TargetFrame', linkName2) computes
 %   a transform T2 that converts points originally expressed in
 %   linkName1 frame to be expressed in linkName2.
 %   
-%   T3 = getTransform(ROBOT, linkName1, 'inertial') computes
+%   T3 = getTransform(ROBOT, linkName1, 'TargetFrame', 'inertial') computes
 %   a transform T3 that converts points originally expressed in
 %   linkName1 frame to be expressed in inertial frame.
 %
 %   If no configuration q is specified, the output will be in symbolic form. 
 %
-%      'SymbRes'        - Bool to output transform in symbolic or numeric form. 
+%      'TargetFrame'    - To specify transform target frame. 
+%
+%                         Default: 'base'
+%
+%      'symbolic'        - Bool to output transform in symbolic or numeric form. 
 %                         The value can be either true or false.
 %
 %                         Default: true
@@ -26,7 +30,9 @@ function T = getTransform(obj, linkName1, linkName2, varargin)
 
     parser = inputParser;
     
-    parser.addParameter('SymbRes', true, ...
+    parser.addParameter('TargetFrame', 'base');
+
+    parser.addParameter('symbolic', true, ...
         @(x)validateattributes(x,{'logical', 'numeric'}, {'nonempty','scalar'}));
 
     parser.addParameter('Config', [], ...
@@ -35,16 +41,17 @@ function T = getTransform(obj, linkName1, linkName2, varargin)
 
 
     parser.parse(varargin{:});
-                
-    SymbRes = parser.Results.SymbRes;
+    
+    targetFrame = parser.Results.TargetFrame;
+    symbolic = parser.Results.symbolic;
     Config = parser.Results.Config;
 
-    if ~isempty(Config) && SymbRes
+    if ~isempty(Config) && symbolic
         warning('Config specified but symbolic result asked. The specified config will be ignored')    
     end
     
     
-    if SymbRes
+    if symbolic
         % Symbolic results
         tTree = obj.Ttree_symb;
     elseif ~isempty(Config)
@@ -56,16 +63,14 @@ function T = getTransform(obj, linkName1, linkName2, varargin)
     % 2-argument case: getTransform(ROBOT, linkName1)
     T1 = tTree.(linkName1);
     
-    % 3-argument case: getTransform(ROBOT, linkName1, linkName2)
-    if nargin >= 3
-        if strcmp(linkName2, 'inertial')
+    % Target Frame
+    switch targetFrame            
+        case 'inertial'
             T2 = eye(4);
-        else 
-            T2 = tTree.(linkName2);
-        end
-
-    else
-        T2 = tTree.(obj.BaseName);
+        case 'base'
+            T2 = tTree.(obj.BaseName);
+        otherwise
+            T2 = tTree.(targetFrame);
     end
     
     % Compute transform:
