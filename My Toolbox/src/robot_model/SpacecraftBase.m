@@ -1,4 +1,4 @@
-classdef SpacecraftBase < Link
+classdef SpacecraftBase < Body
     properties
        R                    % Base position wrt parent frame    [Rx; Ry; Rz]
        Phi                  % Base rotation wrt parent frame    [r; p; y]
@@ -14,7 +14,7 @@ classdef SpacecraftBase < Link
 
     methods
         function obj = SpacecraftBase(baseName)
-            obj@Link(baseName);
+            obj@Body(baseName);
 
             obj.Id = 0;
             

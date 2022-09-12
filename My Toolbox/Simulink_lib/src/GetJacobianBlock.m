@@ -1,14 +1,14 @@
 classdef GetJacobianBlock < matlab.System
-    % GetJacobianBlock Get Jacobian matrix between robot link CoM and inertial frame.
+    % GetJacobianBlock Get Jacobian matrix between robot body CoM and inertial frame.
     % Output a transform  that converts speed of generalized coordinated to
-    % the speed of the link CoM
+    % the speed of the body CoM
 
     properties(Nontunable)        
         %spaceRobotStruct - SpaceRobot structure
         spaceRobotStruct = 0;
         
-        %LinkName - The name of the source link
-        LinkName = 0;
+        %BodyName - The name of the source body
+        BodyName = 0;
 
         spaceRobot;
     end
@@ -32,7 +32,7 @@ classdef GetJacobianBlock < matlab.System
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.     
             
-            jac = obj.spaceRobot.getJacobsCoMNum(q).(obj.LinkName);         
+            jac = obj.spaceRobot.getJacobsCoMNum(q).(obj.BodyName);         
         end
 
         function resetImpl(~)
@@ -96,7 +96,7 @@ classdef GetJacobianBlock < matlab.System
             %getPropertyGroupsImpl Define property section(s) for System block dialog
             mainGroup = matlab.system.display.SectionGroup(...
                 'Title','Parameters', ...
-                'PropertyList',{'spaceRobotStruct', 'LinkName'});
+                'PropertyList',{'spaceRobotStruct', 'BodyName'});
             
             group = mainGroup;
         end

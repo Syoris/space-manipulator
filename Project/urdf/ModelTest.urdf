@@ -17,7 +17,7 @@
   </material>
 
   <!--Spacecraft-->
-  <link name="Spacecraft">
+  <body name="Spacecraft">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="100"/>
@@ -30,21 +30,21 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-  </link>
+  </body>
   
 
   <!-- Joint 1 -->
   <joint name="jnt1" type="revolute">
-    <parent link="Spacecraft"/>
-    <child link="Link1"/>
+    <parent body="Spacecraft"/>
+    <child body="Body1"/>
     <origin rpy="0 0 0" xyz="0.5 0 0"/>
     <axis xyz="0 0 1"/>
     <limit effort="0" velocity="0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
   
-  <!-- Link 1 -->
-  <link name="Link1">
+  <!-- Body 1 -->
+  <body name="Body1">
     <inertial>
       <origin rpy="0 0 0" xyz="0.5 0 0"/>
       <mass value="5"/>
@@ -65,20 +65,20 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-  </link>
+  </body>
 
   <!-- Joint 2 -->
   <joint name="jnt2" type="revolute">
-    <parent link="Link1"/>
-    <child link="Link2"/>
+    <parent body="Body1"/>
+    <child body="Body2"/>
     <origin rpy="0 0 0" xyz="1 0 0"/>
     <axis xyz="0 0 1"/>
     <limit effort="0" velocity="0"/>
     <dynamics damping="0.0" friction="0.0"/>
   </joint>
 
-  <!-- Link 2 -->
-  <link name="Link2">
+  <!-- Body 2 -->
+  <body name="Body2">
     <inertial>
       <origin rpy="0 0 0" xyz="0.25 0 0"/>
       <mass value="5"/>
@@ -99,18 +99,18 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-  </link>
+  </body>
   
   <!-- Joint End-Effector -->
   <joint name="jntEE" type="fixed">
-    <parent link="Link2"/>
-    <child link="endeffector"/>
+    <parent body="Body2"/>
+    <child body="endeffector"/>
     <origin rpy="0 0 0" xyz="0.5 0 0"/>
     <axis xyz="1 0 0"/>
   </joint>
   
   <!-- End-Effector -->
-  <link name="endeffector">
+  <body name="endeffector">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0"/>
@@ -123,7 +123,7 @@
       </geometry>
       <material name="Red"/>
     </visual>
-  </link>
+  </body>
   
 </robot>
 

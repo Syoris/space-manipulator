@@ -19,64 +19,63 @@ mBase = 10;
 comBase = [0 0 0];
 intertiaBase = [9.3, 9.3, 9.3, 0, 0, 0];
 
-% Link Parameters
-nLinks = 3;
-linksVect = cell(1, nLinks);
-jointsVect = cell(1, nLinks);
+% Body Parameters
+nBodies = 3;
+bodiesVect = cell(1, nBodies);
+jointsVect = cell(1, nBodies);
 
-linkNames = {'Link1', 'Link2', 'endeffector'};
+bodyNames = {'Body1', 'Body2', 'endeffector'};
 jointNames = {'jnt1', 'jnt2', 'jnt_ee'};
 
 jointsAxis = [[0 0 1];
-              [0 0 1];
-              [0 0 0]];
+            [0 0 1];
+            [0 0 0]];
 
+jointsHomePos = [pi / 4, -pi / 2, 0];
 
-jointsHomePos = [pi/4, -pi/2, 0];
+bodiesLength = [1; 0.5];
+bodiesMass = [5; 2.5; 0];
+bodiesInertia = [0.5, 0.5, 0.5, 0, 0, 0;
+            0.1, 0.1, 0.1, 0, 0, 0;
+            0, 0, 0, 0, 0, 0];
 
-linksLength = [1; 0.5];
-linksMass = [5; 2.5; 0];
-linksInertia = [0.5, 0.5, 0.5, 0, 0, 0; 
-                0.1, 0.1, 0.1, 0, 0, 0;
-                0, 0, 0, 0, 0, 0];
+jointsT = {trvec2tform([lBase / 2, 0, 0]);
+        trvec2tform([bodiesLength(1), 0, 0]);
+        trvec2tform([bodiesLength(2), 0, 0])};
 
-jointsT = {trvec2tform([lBase/2, 0, 0]);
-           trvec2tform([linksLength(1), 0, 0]);
-           trvec2tform([linksLength(2), 0, 0])};
-
-linksCoM = [[linksLength(1)/2 0 0];
-            [linksLength(2)/2 0 0];
-            [0 0 0];];
+bodiesCoM = [[bodiesLength(1) / 2 0 0];
+        [bodiesLength(2) / 2 0 0];
+        [0 0 0]; ];
 
 % Visuals
 baseVisual = struct('Geometry', 'Box', ...
-                    'Parameters', [lBase, lBase, lBase], ...
-                    'T', trvec2tform([0 0 0]), ...
-                    'Color', materials.Grey);
+'Parameters', [lBase, lBase, lBase], ...
+    'T', trvec2tform([0 0 0]), ...
+    'Color', materials.Grey);
 
-linksVisual = cell(nLinks, 1);
-linksVisual{1}(end+1) = struct('Geometry', 'Cylinder', ...
-                               'Parameters', [0.05, linksLength(1)], ...
-                               'T', trvec2tform([linksLength(1)/2 0 0])*eul2tform([0 pi/2 0]), ...
-                               'Color', materials.Blue);
-linksVisual{1}(end+1) = struct('Geometry', 'Cylinder', ...
-                               'Parameters', [0.1, 0.1], ...
-                               'T', trvec2tform([0.0 0 0]), ...
-                               'Color', materials.Orange);
+bodiesVisual = cell(nBodies, 1);
+bodiesVisual{1}(end + 1) = struct('Geometry', 'Cylinder', ...
+    'Parameters', [0.05, bodiesLength(1)], ...
+    'T', trvec2tform([bodiesLength(1) / 2 0 0]) * eul2tform([0 pi / 2 0]), ...
+    'Color', materials.Blue);
+bodiesVisual{1}(end + 1) = struct('Geometry', 'Cylinder', ...
+    'Parameters', [0.1, 0.1], ...
+    'T', trvec2tform([0.0 0 0]), ...
+    'Color', materials.Orange);
 
-linksVisual{2}(end+1) = struct('Geometry', 'Cylinder', ...
-                               'Parameters', [0.05, linksLength(2)], ...
-                               'T', trvec2tform([linksLength(2)/2 0 0])*eul2tform([0 pi/2 0]), ...
-                               'Color', materials.Blue);
-linksVisual{2}(end+1) = struct('Geometry', 'Cylinder', ...
-                               'Parameters', [0.1, 0.1], ...
-                               'T', trvec2tform([0.0 0 0]), ...
-                               'Color', materials.Orange);
+bodiesVisual{2}(end + 1) = struct('Geometry', 'Cylinder', ...
+    'Parameters', [0.05, bodiesLength(2)], ...
+    'T', trvec2tform([bodiesLength(2) / 2 0 0]) * eul2tform([0 pi / 2 0]), ...
+    'Color', materials.Blue);
+bodiesVisual{2}(end + 1) = struct('Geometry', 'Cylinder', ...
+    'Parameters', [0.1, 0.1], ...
+    'T', trvec2tform([0.0 0 0]), ...
+    'Color', materials.Orange);
 
-linksVisual{3}(end+1) = struct('Geometry', 'Sphere', ...
-                               'Parameters', 0.1, ...
-                               'T', trvec2tform([0.0 0 0]), ...
-                               'Color', materials.Red);
+bodiesVisual{3}(end + 1) = struct('Geometry', 'Sphere', ...
+    'Parameters', 0.1, ...
+    'T', trvec2tform([0.0 0 0]), ...
+    'Color', materials.Red);
 
 %% Create Robot
 sc = SpaceRobot;
@@ -84,13 +83,14 @@ sc.Name = 'spaceRobot';
 
 % Base visual
 sc.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
-                  baseVisual.T, baseVisual.Color);
+baseVisual.T, baseVisual.Color);
 sc.Base.Mass = mBase;
 sc.Base.Inertia = intertiaBase;
 sc.Base.HomeConf = [0.5; 0.5; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 
-for i=1:nLinks
-    newLink = Link(linkNames{i});
+for i = 1:nBodies
+    newBody = Body(bodyNames{i});
+
     if any(jointsAxis(i, :))
         newJoint = Joint(jointNames{i}, 'revolute');
         newJoint.Axis = jointsAxis(i, :);
@@ -98,33 +98,36 @@ for i=1:nLinks
     else
         newJoint = Joint(jointNames{i}, 'fixed');
     end
-    
+
     newJoint.setFixedTransform(jointsT{i});
-    newLink.Joint = newJoint;
-    newLink.Mass = linksMass(i);
-    newLink.Inertia = linksInertia(i, :);
-    newLink.CenterOfMass = linksCoM(i, :);
-    
-    if ~isempty(linksVisual{i})
-        for j=1:length(linksVisual{i})
-            vis = linksVisual{i}(j);
-            newLink.addVisual(vis.Geometry, vis.Parameters, ...
-                              vis.T, vis.Color);
+    newBody.Joint = newJoint;
+    newBody.Mass = bodiesMass(i);
+    newBody.Inertia = bodiesInertia(i, :);
+    newBody.CenterOfMass = bodiesCoM(i, :);
+
+    if ~isempty(bodiesVisual{i})
+
+        for j = 1:length(bodiesVisual{i})
+            vis = bodiesVisual{i}(j);
+            newBody.addVisual(vis.Geometry, vis.Parameters, ...
+                vis.T, vis.Color);
         end
+
     end
 
-    linksVect{i} = newLink;
+    bodiesVect{i} = newBody;
     jointsVect{i} = newJoint;
 end
 
-for i = 1:length(linksVect)
-    if i==1
+for i = 1:length(bodiesVect)
+
+    if i == 1
         parent = sc.BaseName;
     else
-        parent = linkNames(i-1);
+        parent = bodyNames(i - 1);
     end
 
-    sc.addLink(linksVect{i}, parent);
+    sc.addBody(bodiesVect{i}, parent);
 end
 
 sc.homeConfig();
@@ -133,7 +136,7 @@ sc.initKin();
 sc.initDyn('simplify', true); % Can be very long
 
 sc.showDetails();
-% sc.show();              
+% sc.show();
 
 assert(sc.isNSkewSym());
 assert(sc.isCOk(true));

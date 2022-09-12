@@ -2,8 +2,8 @@ classdef MaskUtils < handle
     % Class to update block masks
 
     methods(Static)
-        function updateLinkList(block, parameterName)
-            %updateMaskBodyList Update the list of available Links
+        function updateBodyList(block, parameterName)
+            %updateMaskBodyList Update the list of available Bodies
             %   When the algorithm block dialog is opened, for dialogs that
             %   allow users to specify bodies (e.g. Get Jacobian and Get
             %   Transform blocks), this function is used to populate the
@@ -36,7 +36,7 @@ classdef MaskUtils < handle
             currentBody = get_param(block, parameterName);
             
             %Create a dialog object and populate it
-            bodyDlg = LinkSelector();
+            bodyDlg = BodySelector();
             bodyDlg.openDialog(currentBody, spaceRobot, @dialogCloseCallback);
             
             %Dialog close callback: set associated parameter value

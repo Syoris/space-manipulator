@@ -1,7 +1,7 @@
 classdef GetTransformBlock < matlab.System
-    % GetTransformBlock GetTransform between robot link and inertial frame.
+    % GetTransformBlock GetTransform between robot body and inertial frame.
     % Output a transform  that converts points originally expressed in
-    % sourceLinkName frame to be expressed in targetLinkName
+    % sourceBodyName frame to be expressed in targetBodyName
 
     properties(Nontunable)
         spaceRobot;
@@ -9,11 +9,11 @@ classdef GetTransformBlock < matlab.System
         %spaceRobotStruct - SpaceRobot structure
         spaceRobotStruct = 0;
         
-        %sourceLinkName - The name of the source link
-        sourceLinkName = 0;
+        %sourceBodyName - The name of the source body
+        sourceBodyName = 0;
         
-        %targetLinkName - The name of the target link
-        targetLinkName = 0;
+        %targetBodyName - The name of the target body
+        targetBodyName = 0;
     end
     
     methods
@@ -34,7 +34,7 @@ classdef GetTransformBlock < matlab.System
         function tform = stepImpl(obj, q)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.     
-            tform = obj.spaceRobot.getTransform(obj.sourceLinkName, 'TargetFrame',  'inertial', 'Config', q, 'symbolic', false);
+            tform = obj.spaceRobot.getTransform(obj.sourceBodyName, 'TargetFrame',  'inertial', 'Config', q, 'symbolic', false);
         end
 
         function resetImpl(~)
@@ -98,7 +98,7 @@ classdef GetTransformBlock < matlab.System
             %getPropertyGroupsImpl Define property section(s) for System block dialog
             mainGroup = matlab.system.display.SectionGroup(...
                 'Title','Parameters', ...
-                'PropertyList',{'spaceRobotStruct', 'sourceLinkName', 'targetLinkName'});
+                'PropertyList',{'spaceRobotStruct', 'sourceBodyName', 'targetBodyName'});
             
             group = mainGroup;
         end

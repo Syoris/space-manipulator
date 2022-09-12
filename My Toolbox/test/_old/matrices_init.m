@@ -65,21 +65,21 @@ if runH
     
     H2 = H2 + bV + bW;
     
-    for i=1:sc.NumLinks
-        link = sc.Links{i};
-        joint = link.Joint;
+    for i=1:sc.NumBodies
+        body = sc.Bodies{i};
+        joint = body.Joint;
         
         % Compute for active joints
         if joint.Q_id ~= -1   
-    %         disp(link.Name)
-            Jv_i = Jacobians.(link.Name)(1:3, :);
-            Jw_i = Jacobians.(link.Name)(4:6, :);
-            I_i = inertias.(link.Name);
+    %         disp(body.Name)
+            Jv_i = Jacobians.(body.Name)(1:3, :);
+            Jw_i = Jacobians.(body.Name)(4:6, :);
+            I_i = inertias.(body.Name);
             
-            iv_1 = link.Mass*(Jv_B'*Jv_B);
-            iv_2 = 2*link.Mass*(Jv_B'*Jv_i);
-            iv_2_2 = link.Mass*( Jv_B'*Jv_i + Jv_i'*Jv_B);
-            iv_3 = link.Mass*(Jv_i'*Jv_i);
+            iv_1 = body.Mass*(Jv_B'*Jv_B);
+            iv_2 = 2*body.Mass*(Jv_B'*Jv_i);
+            iv_2_2 = body.Mass*( Jv_B'*Jv_i + Jv_i'*Jv_B);
+            iv_3 = body.Mass*(Jv_i'*Jv_i);
             iw = Jw_i' * I_i * Jw_i;
             
             H2 = H2 + iv_1 + iv_2_2 + iv_3 + iw;

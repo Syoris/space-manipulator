@@ -3,7 +3,7 @@ function scStruct = scToStruct(spaceRobot)
 
     scStruct.Name = spaceRobot.Name;
     scStruct.Base = spaceRobot.Base;
-    scStruct.Links = spaceRobot.Links;
+    scStruct.Bodies = spaceRobot.Bodies;
 
     scStruct.n = spaceRobot.NumActiveJoints;        % Number of active joints
     scStruct.N = spaceRobot.NumActiveJoints + 6;    % Number of active joints + base DoF

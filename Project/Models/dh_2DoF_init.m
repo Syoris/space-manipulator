@@ -5,12 +5,12 @@ load 'SC_2DoF.mat'
 sc2 = SpaceRobot;
 sc2.Name = 'spaceRobotDH';
 
-L0=0.5;
-L1=1;
-L2=0.5;
-dhparams = [L1      0       0       0;      % [a, alpha, d, theta]
-            L2   	0	    0   	0;      
-            0	    0       0       0;];
+L0 = 0.5;
+L1 = 1;
+L2 = 0.5;
+dhparams = [L1 0 0 0; % [a, alpha, d, theta]
+        L2 0 0 0;
+        0 0 0 0; ];
 
 % Base Parameters
 mBase = 10;
@@ -22,35 +22,35 @@ sc2.Base.Inertia = intertiaBase;
 sc2.Base.HomeConf = [0.5; 0.5; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 sc2.Base.ManipToBaseTransform = rt2tr(eye(3), [L0; 0; 0]);
 
-% Link Parameters
+% Body Parameters
 jointsAxis = [[0 0 1];
-              [0 0 1];
-              [0 0 0]];
+            [0 0 1];
+            [0 0 0]];
 
-linksCoM = [[L1/2 0 0];
-            [L2/2 0 0];
-            [0 0 0];];
+bodiesCoM = [[L1 / 2 0 0];
+        [L2 / 2 0 0];
+        [0 0 0]; ];
 
-linksMass = [5; 2.5; 0];
-linksInertia = [0.5, 0.5, 0.5, 0, 0, 0; 
-                0.1, 0.1, 0.1, 0, 0, 0;
-                0, 0, 0, 0, 0, 0];
-jointsHomePos = [pi/4, -pi/2, 0];
+bodiesMass = [5; 2.5; 0];
+bodiesInertia = [0.5, 0.5, 0.5, 0, 0, 0;
+            0.1, 0.1, 0.1, 0, 0, 0;
+            0, 0, 0, 0, 0, 0];
+jointsHomePos = [pi / 4, -pi / 2, 0];
 
 % Create Robot
-nLinks = 3;
-linksVect = cell(1, nLinks);
-jointsVect = cell(1, nLinks);
+nBodies = 3;
+bodiesVect = cell(1, nBodies);
+jointsVect = cell(1, nBodies);
 
-linkNames = {'Link1', 'Link2', 'endeffector'};
+bodyNames = {'Body1', 'Body2', 'endeffector'};
 jointNames = {'jnt1', 'jnt2', 'jnt_ee'};
 
-links = cell(nLinks,1);
-joints = cell(nLinks,1);
+bodies = cell(nBodies, 1);
+joints = cell(nBodies, 1);
 
-for i=1:nLinks
-    newLink = Link(linkNames{i});
-     
+for i = 1:nBodies
+    newBody = Body(bodyNames{i});
+
     if any(jointsAxis(i, :))
         newJoint = Joint(jointNames{i}, 'revolute');
         newJoint.Axis = jointsAxis(i, :);
@@ -59,22 +59,22 @@ for i=1:nLinks
         newJoint = Joint(jointNames{i}, 'fixed');
     end
 
-    newJoint.setFixedTransform(dhparams(i,:),'dh');
-    newLink.Joint = newJoint;
-    newLink.Mass = linksMass(i);
-    newLink.Inertia = linksInertia(i, :);
-    newLink.CenterOfMass = linksCoM(i, :);
+    newJoint.setFixedTransform(dhparams(i, :), 'dh');
+    newBody.Joint = newJoint;
+    newBody.Mass = bodiesMass(i);
+    newBody.Inertia = bodiesInertia(i, :);
+    newBody.CenterOfMass = bodiesCoM(i, :);
 
-    % Add link
-    if i==1
+    % Add body
+    if i == 1
         parent = sc2.BaseName;
     else
-        parent = linkNames(i-1);
+        parent = bodyNames(i - 1);
     end
-    
-    links{i} = newLink;
+
+    bodies{i} = newBody;
     joints{i} = newJoint;
-    sc2.addLink(links{i}, parent);
+    sc2.addBody(bodies{i}, parent);
 end
 
 %% --- Initialize Matrices ---
@@ -88,9 +88,7 @@ profile off
 
 sc2.homeConfig;
 
-
 %% Save Robot
 fprintf('Saving robot\n')
 clearvars -except sc2
 save 'Project/Models/SC2_2DoF.mat'
-

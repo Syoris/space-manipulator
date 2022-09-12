@@ -105,7 +105,7 @@ classdef FastVizHelper < handle
                 
                 %If bodies have been added or removed
                 %Number of HGTransforms equals the number of bodies +1
-                hasTreeSizeChanged = ~isequal(scObj.NumLinks+2, size(obj.HGTransforms, 1));
+                hasTreeSizeChanged = ~isequal(scObj.NumBodies+2, size(obj.HGTransforms, 1));
                 
                 %Needs re-initialization when IsUpdated is false
                 obj.IsUpdated = ~(isAxesUndefined || isNewParent || isDeletedHGT || isAxesChanged || haveMeshFrameOptionsChanged || hasTreeSizeChanged);
@@ -116,14 +116,14 @@ classdef FastVizHelper < handle
     methods(Static)
         function tTree = kinStruct2Cell(scObj, treeStruct)
             % tTree: 1x(n+1) Homogeneous transform matrix cell array.
-            % ith col -> for link i
+            % ith col -> for body i
             % last col -> for base
             
-            tTree = cell(1, scObj.NumLinks + 1);
+            tTree = cell(1, scObj.NumBodies + 1);
             tTree{end} = treeStruct.(scObj.BaseName);
 
-            for i=1:scObj.NumLinks
-                tTree{i} = treeStruct.(scObj.findLinkNameByIdx(i));
+            for i=1:scObj.NumBodies
+                tTree{i} = treeStruct.(scObj.findBodyNameByIdx(i));
             end            
         end
     end

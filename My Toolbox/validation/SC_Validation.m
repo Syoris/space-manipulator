@@ -45,12 +45,12 @@ for i=1:length(f)
         disp(Tval);
     end
 
-    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for link %s', f{i});
+    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for body %s', f{i});
 end
 fprintf("Kinematic Tree OK\n")
 
 % --- GetTransform ---
-% valStruct GetTransform between all links and base
+% valStruct GetTransform between all bodies and base
 fprintf('##### GetTransform #####\n');
 
 f = fields(valStruct.GetTrans);
@@ -70,15 +70,15 @@ for i=1:length(f)
         disp(Tval);
     end
 
-    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for link %s', f{i});
+    assert(isequal(round(Tval, 5), round(Tsc, 5)), 'Forward Kin not matching for body %s', f{i});
 end
 fprintf("GetTransform OK\n")
 
 % --- Jacobians ---
 fprintf('##### Jacobians #####\n');
 Jacobians = scToVal.JacobsCoM;
-for i=1:scToVal.NumLinks
-    linkName = scToVal.LinkNames{i};
+for i=1:scToVal.NumBodies
+    linkName = scToVal.BodyNames{i};
     Jval = Jacobians.(linkName);
     Jsc = sc2.JacobsCoM.(linkName);
 
@@ -94,7 +94,7 @@ for i=1:scToVal.NumLinks
         disp(Jval);
     end
    
-    assert(isequal(round(Jval, 5), round(Jsc, 5)), 'Jacobians not matching for link %s', linkName);   
+    assert(isequal(round(Jval, 5), round(Jsc, 5)), 'Jacobians not matching for body %s', linkName);   
 end
 fprintf("Jacobians OK\n")
 
@@ -103,8 +103,8 @@ fprintf('##### CoM Positions #####\n');
 comPosesVal = scToVal.getCoMPosition();
 comPosesSC = sc2.getCoMPosition();
 
-for i=1:scToVal.NumLinks
-    linkName = scToVal.LinkNames{i};
+for i=1:scToVal.NumBodies
+    linkName = scToVal.BodyNames{i};
     [~, tVal] = tr2rt(comPosesVal.(linkName));
     [~, tSc] = tr2rt(comPosesSC.(linkName));
 
@@ -120,7 +120,7 @@ for i=1:scToVal.NumLinks
         disp(tVal);
     end
    
-    assert(isequal(round(tVal, 5), round(tSc, 5)), 'CoM Positions not matching for link %s', linkName);   
+    assert(isequal(round(tVal, 5), round(tSc, 5)), 'CoM Positions not matching for body %s', linkName);   
 end
 fprintf("CoM Positions OK\n")
 

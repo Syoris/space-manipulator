@@ -13,8 +13,8 @@ valStruct.n = sc.NumActiveJoints;
 valStruct.tTree = sc.Ttree;
 
 valStruct.GetTrans = struct();
-for i=1:sc.NumLinks
-    valStruct.GetTrans.(sc.LinkNames{i}) = sc.getTransform(sc.LinkNames{i}, 'TargetFrame', sc.BaseName, 'symbolic', false);
+for i=1:sc.NumBodies
+    valStruct.GetTrans.(sc.BodyNames{i}) = sc.getTransform(sc.BodyNames{i}, 'TargetFrame', sc.BaseName, 'symbolic', false);
 end
 
 valStruct.JacobsCoM = sc.JacobsCoM;

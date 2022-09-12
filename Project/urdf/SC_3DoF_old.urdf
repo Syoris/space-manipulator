@@ -19,7 +19,7 @@
 
 
   <!--Spacecraft-->
-  <link name="Spacecraft">
+  <body name="Spacecraft">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="100"/>
@@ -32,12 +32,12 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-  </link>
+  </body>
   
   <!-- Joint to Manipulator -->
   <joint name="Spacecraft_Manipulator_Joint" type="fixed">
-    <parent link="Spacecraft"/>
-    <child link="Link_0"/>
+    <parent body="Spacecraft"/>
+    <child body="Body_0"/>
     <origin rpy="0 0 0" xyz="0 0 0.375"/>
     <axis xyz="0 0 1"/>
   </joint>
@@ -46,8 +46,8 @@
 
   
   <!--Manipulator-->
-  <!-- Link 0 -->
-  <link name="Link_0">
+  <!-- Body 0 -->
+  <body name="Body_0">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0.125"/>
       <mass value="5"/>
@@ -60,17 +60,17 @@
       </geometry>
       <material name="Grey"/>
     </visual>
-  </link>
+  </body>
   <!-- Joint 1 -->
   <joint name="Joint_1" type="revolute">
-    <parent link="Link_0"/>
-    <child link="Link_1"/>
+    <parent body="Body_0"/>
+    <child body="Body_1"/>
     <origin rpy="0 0 0" xyz="0 0 0.25"/>
     <axis xyz="0 0 1"/>
   </joint>
 
-  <!-- Link 1 -->
-  <link name="Link_1">
+  <!-- Body 1 -->
+  <body name="Body_1">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0.1"/>
       <mass value="5"/>
@@ -90,18 +90,18 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-  </link>
+  </body>
 
   <!-- Joint 2 -->
   <joint name="Joint_2" type="revolute">
-    <parent link="Link_1"/>
-    <child link="Link_2"/>
+    <parent body="Body_1"/>
+    <child body="Body_2"/>
     <origin rpy="0 0 0" xyz="0 0 0.2"/>
     <axis xyz="1 0 0"/>
   </joint>
 
-  <!-- Link 2 -->
-  <link name="Link_2">
+  <!-- Body 2 -->
+  <body name="Body_2">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0.375"/>
       <mass value="10"/>
@@ -121,18 +121,18 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-  </link>
+  </body>
 
   <!-- Joint 3 -->
   <joint name="Joint_3" type="revolute">
-    <parent link="Link_2"/>
-    <child link="Link_3"/>
+    <parent body="Body_2"/>
+    <child body="Body_3"/>
     <origin rpy="0 0 0" xyz="0 0 0.75"/>
     <axis xyz="1 0 0"/>
   </joint>
 
-  <!-- Link 3 -->
-  <link name="Link_3">
+  <!-- Body 3 -->
+  <body name="Body_3">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 1"/>
       <mass value="10"/>
@@ -152,17 +152,17 @@
       </geometry>
       <material name="Orange"/>
     </visual>
-  </link>
+  </body>
   <!-- Joint End-Effector -->
   <joint name="Joint_EE" type="fixed">
-    <parent link="Link_3"/>
-    <child link="Link_EE"/>
+    <parent body="Body_3"/>
+    <child body="Body_EE"/>
     <origin rpy="0 0 0" xyz="0 0 0.75"/>
     <axis xyz="1 0 0"/>
   </joint>
 
   <!-- End-Effector -->
-  <link name="Link_EE">
+  <body name="Body_EE">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0"/>
@@ -175,7 +175,7 @@
       </geometry>
       <material name="Red"/>
     </visual>
-  </link>
+  </body>
   
 </robot>
 
