@@ -1,10 +1,8 @@
 clearvars
 load 'SC2_2DoF.mat'
 sc.homeConfig;
-sc.q0_dot = [0.1; 0.2; 0.3; 0.01; 0.02; 0.03];
-sc.qm_dot = [pi/2; -pi/4]/10; 
 
-%% Init mats
+% Init mats
 sc.Base.initBase();
 
 for i=1:length(sc.Bodies)
@@ -12,10 +10,26 @@ for i=1:length(sc.Bodies)
 end
 
 %% Inverse Dynamics
-q0_ddot = sc.q0_dot/10;
+
+% --- Initial cond --- 
+% Position
+% sc.q = zeros(8, 1);
+% sc.qm = [0; 0];
+% 
+% % Speed
+% sc.q0_dot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
+% sc.qm_dot = diag([0; 0]) * rand(2, 1); 
+% 
+% % Accel
+% q0_ddot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
+% qm_ddot = diag([1; 0]) * rand(2, 1);
+
+
+% --- Initialize --- 
+% Add ee coord
 qm = [sc.qm; 0];
 qm_dot = [sc.qm_dot; 0];
-qm_ddot = [sc.qm_dot; 0];
+qm_ddot = [qm_ddot; 0];
 
 % Base twist
 w_b = sc.q_dot(4:6); % Base angular rate
@@ -49,6 +63,7 @@ app_data.anchor.Omega = blkdiag(omega_skew, omega_skew); % Anchor point accel
 nk = 3;
 app_data.t_array = zeros(6, 1, nk);
 app_data.t_dot_array = zeros(6, 1, nk);
+app_data.Omega_array = zeros(6, 6, nk);
 
 app_data.A_array = zeros(6, 6, nk); % A_array(:, :, i): A_i_i-1
 app_data.A_dot_array = zeros(6, 6, nk); % A_dot_array(:, :, i): A_dot_i_i-1
@@ -58,7 +73,7 @@ A_dot_prev = app_data.anchor.Omega * sc.Bodies{1}.A - sc.Bodies{1}.A * app_data.
 t_prev = app_data.anchor.t;
 t_dot_prev = app_data.anchor.t_dot;
 
-
+% --- Twist propagation ---
 for i=1:nk
     body = sc.Bodies{i};
 
@@ -85,6 +100,7 @@ for i=1:nk
     % Update matrices
     app_data.t_array(:, :, i) = ti;
     app_data.t_dot_array(:, :, i) = ti_dot;
+    app_data.Omega_i(:, :, i) = Omega_i;
 
     app_data.A_array(:, :, i) = A_i;
     app_data.A_dot_array(:, :, i) = A_dot_i;
@@ -98,7 +114,34 @@ for i=1:nk
     end 
 end
 
+% --- Force propagation ---
+app_data.w_array = zeros(6, 1, nk); % Wrench array
+app_data.tau_array = zeros(1, nk); % Torque array. tau_array(:, 2) = torque of Joint 2
 
+w_next = zeros(6, 1); % Wrench at the end-effect
+Ev = blkdiag(zeros(3, 3), eye(3));
+
+for i=nk:-1:1
+    body = sc.Bodies{i};
+    
+    Omega_i = app_data.Omega_array(:, :, i);
+    ti = app_data.t_array(:, :, i);
+    ti_dot = app_data.t_dot_array(:, :, i);
+    Mi = body.M;
+    A = app_data.A_array(:, :, i).'; % From i to i+1
+    P_i = body.P; % Joint rate propagation matrix
+
+
+    gamma = Omega_i * Mi * Ev * ti;
+    w = Mi*ti_dot + gamma;
+    w_i = w + A.' * w_next;
+
+    tau_i = P_i' * w_i;
+
+    % Update mats
+    app_data.w_array(:, :, i) = w_i;
+    app_data.tau_array(:, i) = tau_i;
+end
 
 
 
