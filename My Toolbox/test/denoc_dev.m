@@ -1,33 +1,105 @@
 clearvars
-load 'SC_2DoF.mat'
+load 'SC2_2DoF.mat'
 sc.homeConfig;
 sc.q0_dot = [0.1; 0.2; 0.3; 0.01; 0.02; 0.03];
 sc.qm_dot = [pi/2; -pi/4]/10; 
 
-%% ### Body matrices ###
-body = sc.Bodies{2};
+%% Init mats
+sc.Base.initBase();
 
-% --- ParentRotM and Parent Length ---
-% To set once
-% rotM: R_i_i-1: From frame i to i-1
-% L: vector from frame O_i-1 to E_i-1 -> length of previous link
-T = body.Joint.transformBody2ParentSymb;
-T_val = body.Joint.transformBody2Parent;
-[rotM, L] = tr2rt(T);    
-body.ParentRotM = rotM;
-body.Parent.Length = double(L);
+for i=1:length(sc.Bodies)
+    sc.Bodies{i}.initBody();
+end
 
-% Computed in the get
-rotM_val = double(subs(body.ParentRotM, body.Joint.SymbVar, body.Joint.Position));
-R_full = [rotM_val, zeros(3, 3); zeros(3, 3), rotM_val];
+%% Inverse Dynamics
+q0_ddot = sc.q0_dot/10;
+qm = [sc.qm; 0];
+qm_dot = [sc.qm_dot; 0];
+qm_ddot = [sc.qm_dot; 0];
+
+% Base twist
+w_b = sc.q_dot(4:6); % Base angular rate
+Omega_b = blkdiag(skew(w_b), skew(w_b)); % diag(skew(w_b), skew(w_b))
+
+tb = sc.Base.P * sc.q0_dot;
+tb_dot = sc.Base.P*q0_ddot + Omega_b*sc.Base.P*sc.q0_dot;
 
 
-% --- A ---
-% Compute once, ind from config
-body.A = [eye(3), -skew(body.Parent.Length); zeros(3, 3), eye(3)];
 
-% --- P ---
-body.P = [zeros(3,1); body.Joint.Axis.'];
+% --- For each appendage ---
+app_data = struct(); % Data for the whole appendage
 
-% --- M ---
-body.M = [body.Mass*eye(3), zeros(3, 3); zeros(3, 3), body.InertiaM];
+
+Ab_b = sc.Base.A; % Base twist propagation matrix, base frame
+Ab_k = sc.Base.RotM.' * Ab_b; % Base twist propagation matrix, Appendage frame
+
+Ab_dot_k = sc.Base.RotM.' * (Omega_b * Ab_b - Ab_b * Omega_b); % Appendage frame
+
+t0 = Ab_k * tb; % Anchor point speed
+t0_dot = Ab_k*tb_dot + Ab_dot_k * tb; % Anchor point accel
+
+app_data.anchor.Ab_k = Ab_k; % Base twist propagation matrix, Appendage frame
+app_data.anchor.Ab_dot_k = Ab_dot_k; % Appendage frame
+app_data.anchor.t = t0; % Anchor point speed
+app_data.anchor.t_dot = t0_dot; % Anchor point accel
+omega_skew = skew(app_data.anchor.t(4:6));
+app_data.anchor.Omega = blkdiag(omega_skew, omega_skew); % Anchor point accel
+
+% Init mats
+nk = 3;
+app_data.t_array = zeros(6, 1, nk);
+app_data.t_dot_array = zeros(6, 1, nk);
+
+app_data.A_array = zeros(6, 6, nk); % A_array(:, :, i): A_i_i-1
+app_data.A_dot_array = zeros(6, 6, nk); % A_dot_array(:, :, i): A_dot_i_i-1
+
+% Init prev data for first joint
+A_dot_prev = app_data.anchor.Omega * sc.Bodies{1}.A - sc.Bodies{1}.A * app_data.anchor.Omega;
+t_prev = app_data.anchor.t;
+t_dot_prev = app_data.anchor.t_dot;
+
+
+for i=1:nk
+    body = sc.Bodies{i};
+
+    R = body.RotM.'; % Rotation matrix from parent to current
+
+    % Joint vals
+    qi = qm(i);
+    qi_dot = qm_dot(i);
+    qi_ddot = qm_ddot(i);
+    
+    % Propagation matrices
+    A_i = R * body.A; % twist propagation, frame i 
+    A_dot_i = R * A_dot_prev; % accel propagation, frame i
+    P_i = body.P; % Joint rate propagation matrix
+    
+    % twist
+    ti = A_i*t_prev + P_i*qi_dot;  % TODO: Check how to handle specified speed and fix joints
+    wi = ti(4:6);
+    wi_skew = skew(wi);
+    Omega_i = blkdiag(wi_skew, wi_skew);
+
+    ti_dot = A_i * t_dot_prev + A_dot_i * t_prev + P_i*qi_ddot + Omega_i*P_i*qi_dot;
+    
+    % Update matrices
+    app_data.t_array(:, :, i) = ti;
+    app_data.t_dot_array(:, :, i) = ti_dot;
+
+    app_data.A_array(:, :, i) = A_i;
+    app_data.A_dot_array(:, :, i) = A_dot_i;
+
+    % Update prev values
+    if i<nk
+        A_dot_prev = Omega_i * sc.Bodies{i+1}.A - sc.Bodies{i+1}.A * Omega_i;
+        
+        t_prev = ti;
+        t_dot_prev = ti_dot;
+    end 
+end
+
+
+
+
+
+

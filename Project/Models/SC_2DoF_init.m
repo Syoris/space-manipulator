@@ -1,4 +1,5 @@
-%% 2 DoF Planar Manipulator
+%% 2 DoF Manipulator
+% Create a 2DoF manipulator using the fixed transform
 clc
 close all
 clearvars
@@ -87,6 +88,7 @@ baseVisual.T, baseVisual.Color);
 sc.Base.Mass = mBase;
 sc.Base.Inertia = intertiaBase;
 sc.Base.HomeConf = [0.5; 0.5; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
+sc.Base.ManipToBaseTransform = rt2tr(eye(3), [lBase/2; 0; 0]);
 
 for i = 1:nBodies
     newBody = Body(bodyNames{i});

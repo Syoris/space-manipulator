@@ -48,7 +48,7 @@ classdef Body < handle
         ParentRotM % Rotation matrix to parent body (R_i_i-1). In symbolic form.
         RotM % Rotation matrix to parent body: diag(R_i_i-1). Evaluated at current config.
 
-        A % Twist propagation matrix
+        A % Twist propagation matrix, in frame i-1
         Length % Vector from body origin to body end position, in body frame
         P % Joint rate propagation matrix.
 
@@ -84,7 +84,6 @@ classdef Body < handle
 
             % Rotation matrix and parent length
             T = obj.Joint.transformBody2ParentSymb;
-            T_val = obj.Joint.transformBody2Parent;
             [R, L] = tr2rt(T);
             obj.ParentRotM = R;
             obj.Parent.Length = double(L);

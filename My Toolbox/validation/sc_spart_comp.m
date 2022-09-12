@@ -3,7 +3,7 @@
 clc
 load 'SC_2DoF.mat'
 
-scTest = sc2;
+scTest = sc;
 
 % Spacecraft State
 qm_val = [pi / 6; -pi / 4];

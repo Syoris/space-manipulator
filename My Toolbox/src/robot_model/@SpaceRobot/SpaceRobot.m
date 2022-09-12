@@ -120,25 +120,22 @@ classdef SpaceRobot < handle
 
             if nargin == 1
                 % From Struct
-                if isa(varargin{1}, 'struct')
-                    structModel = varargin{1};
+                assert(isa(varargin{1}, 'struct'), "Invalid input argument for SpaceRobot constructor")
+                structModel = varargin{1};
 
-                    Name = structModel.Name;
-                    Base = structModel.Base;
-                    Bodies = structModel.Bodies;
-                    Ttree_symb = structModel.Ttree_symb;
-                    JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
-                    JacobsCoM_symb = structModel.JacobsCoM_symb;
+                Name = structModel.Name;
+                Base = structModel.Base;
+                Bodies = structModel.Bodies;
+                Ttree_symb = structModel.Ttree_symb;
+                JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
+                JacobsCoM_symb = structModel.JacobsCoM_symb;
 
-                    H_symb = structModel.H_symb;
-                    C_symb = structModel.C_symb;
-                    Q_symb = structModel.Q_symb;
+                H_symb = structModel.H_symb;
+                C_symb = structModel.C_symb;
+                Q_symb = structModel.Q_symb;
 
-                    KinInitialized = structModel.KinInitialized;
-                    DynInitialized = structModel.DynInitialized;
-                else
-                    error("Error creating SpaceRobot: Invalid robot model specified")
-                end
+                KinInitialized = structModel.KinInitialized;
+                DynInitialized = structModel.DynInitialized;
 
             else
                 Name = "";
@@ -217,9 +214,9 @@ classdef SpaceRobot < handle
             % Forward kinematic tree
             obj.forwardKinematics('symbolic', true);
 
-            obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
+            % obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
 
-            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
+            % obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
         end
