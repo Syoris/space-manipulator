@@ -31,10 +31,10 @@ bodiesCoM = [[L1 / 2 0 0];
         [L2 / 2 0 0];
         [0 0 0]; ];
 
-bodiesMass = [5; 2.5; 0];
+bodiesMass = [5; 2.5; 1];
 bodiesInertia = [0.5, 0.5, 0.5, 0, 0, 0;
             0.1, 0.1, 0.1, 0, 0, 0;
-            0, 0, 0, 0, 0, 0];
+            0.01, 0.01, 0.01, 0, 0, 0];
 jointsHomePos = [pi / 4, -pi / 2, 0];
 
 % Create Robot

@@ -95,7 +95,10 @@ classdef Body < handle
             obj.P = [zeros(3, 1); obj.Joint.Axis.'];
 
             % M - Body mass matrix
-            obj.M = [obj.Mass * eye(3), zeros(3, 3); zeros(3, 3), obj.InertiaM];
+            c = obj.CenterOfMass * obj.Mass;
+            Io = obj.InertiaM - obj.Mass * skew(obj.CenterOfMass) * skew(obj.CenterOfMass); % inertia mat wrt origin
+
+            obj.M = [obj.Mass * eye(3), -skew(c); (-skew(c)).', Io];
         end
 
         function addVisual(obj, type, parameter, tform, color)

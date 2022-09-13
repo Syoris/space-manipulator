@@ -1,6 +1,8 @@
 % SPART
 filename = 'SC_2DoF.urdf';
 [robotSpart, robot_keys] = urdf2robot(filename);
+robotSpart.links(3).mass = sc.Bodies{3}.Mass;
+robotSpart.links(3).inertia = sc.Bodies{3}.InertiaM;
 
 R0 = rpy2r(sc.q(4:6).');
 u0 = [sc.q0_dot(4:6); sc.q0_dot(1:3)];
@@ -40,25 +42,34 @@ for i=1:3
 
     [R, ~] = tr2rt(sc.getTransform(body.Name, 'symbolic', false));
     t_D = app_data.t_array(:, :, i);
-    t_D = blkdiag(R, R) * t_D;
+    t_com = t_D(1:3) + skew(t_D(4:6)) * (body.CenterOfMass.');
+
+    t_com_I = blkdiag(R, R) * [t_com; t_D(4:6)];
     
-    fprintf('[SPART, DeNOC]\n')  
-    disp([t_S, t_D])    
+    fprintf('[SPART, DeNOC (CoM in I), DeNOC (o)]\n')  
+    disp([t_S, t_com_I, t_D])    
 end
 
 fprintf('### ACCEL ###\n')
 for i=1:3
-    
+    body = sc.Bodies{i};  
     fprintf('--- Body: %s ---\n', body.Name)
     
     t_dot_S = [tm_dot(4:6, i); tm_dot(1:3, i)];
+    r = body.CenterOfMass.';
 
     [R, ~] = tr2rt(sc.getTransform(body.Name, 'symbolic', false));
-    t_dot_D = app_data.t_dot_array(:, :, i);
-    t_dot_D = blkdiag(R, R) * t_dot_D;
+    t_o_dot = app_data.t_dot_array(:, :, i);
+    t_o = app_data.t_array(:, :, i);
+
+    t_o_dot_I = blkdiag(R, R) * t_o_dot;
+
+    t_com_dot = t_o_dot(1:3) + skew(t_o_dot(4:6)) * r + cross(t_o(4:6), cross(t_o(4:6), r));
+    t_com_dot_I = blkdiag(R, R) * [t_com_dot; t_o_dot(4:6)];
     
-    fprintf('[SPART, DeNOC]\n')  
-    disp([t_dot_S, t_dot_D])   
+    
+    fprintf('[SPART, DeNOC (CoM), DeNOC (o)]\n')  
+    disp([t_dot_S, t_com_dot_I, t_o_dot_I])   
 end
 
 % Inverse Dyn
@@ -74,12 +85,18 @@ for i=1:3
     fprintf('%s\n', body.Name)
     
     w_S = [wq_tilde(4:6, i); wq_tilde(1:3, i)];
-
-    [R, ~] = tr2rt(sc.getTransform(body.Name, 'symbolic', false));
-    w_D = app_data.w_array(:, :, i);
-%     w_D = blkdiag(R, R) * w_D;
     
-    fprintf('[SPART, DeNOC]\n')  
-    disp([w_S, w_D])    
+    r = body.CenterOfMass.';
+    [R, ~] = tr2rt(sc.getTransform(body.Name, 'symbolic', false));
+    
+    w_o = app_data.w_array(:, :, i);
+    w_o_I = blkdiag(R, R) * w_o;
+    
+    w_com = w_o;
+    w_com(4:6) = w_o(4:6) + skew(-r)*w_o(1:3);
+    w_com_I = blkdiag(R, R) * w_com;
+    
+    fprintf('[SPART, DeNOC (CoM), DeNOC (o)]\n')  
+    disp([w_S, w_com_I, w_o_I])    
 end
 

@@ -1,4 +1,3 @@
-clearvars
 load 'SC2_2DoF.mat'
 sc.homeConfig;
 
@@ -10,20 +9,22 @@ for i=1:length(sc.Bodies)
 end
 
 %% Inverse Dynamics
+newConfig = true;
 
 % --- Initial cond --- 
-% Position
-% sc.q = zeros(8, 1);
-% sc.qm = [0; 0];
-% 
-% % Speed
-% sc.q0_dot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-% sc.qm_dot = diag([0; 0]) * rand(2, 1); 
-% 
-% % Accel
-% q0_ddot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-% qm_ddot = diag([1; 0]) * rand(2, 1);
-
+if newConfig
+    % Position
+    sc.q = zeros(8, 1);
+    sc.qm = diag([0; 0]) * rand(2, 1); 
+    
+    % Speed
+    sc.q0_dot = diag([1; 1; 1; 0; 0; 0]) * rand(6, 1);
+    sc.qm_dot = diag([1; 1]) * rand(2, 1); 
+    
+    % Accel
+    q0_ddot = diag([1; 1; 1; 1; 1; 1]) * rand(6, 1);
+    qm_ddot = diag([1; 1]) * rand(2, 1);
+end
 
 % --- Initialize --- 
 % Add ee coord
@@ -100,7 +101,7 @@ for i=1:nk
     % Update matrices
     app_data.t_array(:, :, i) = ti;
     app_data.t_dot_array(:, :, i) = ti_dot;
-    app_data.Omega_i(:, :, i) = Omega_i;
+    app_data.Omega_array(:, :, i) = Omega_i;
 
     app_data.A_array(:, :, i) = A_i;
     app_data.A_dot_array(:, :, i) = A_dot_i;
@@ -119,6 +120,7 @@ app_data.w_array = zeros(6, 1, nk); % Wrench array
 app_data.tau_array = zeros(1, nk); % Torque array. tau_array(:, 2) = torque of Joint 2
 
 w_next = zeros(6, 1); % Wrench at the end-effect
+A_next = app_data.A_array(:, :, 3).'; % From i to i+1
 Ev = blkdiag(zeros(3, 3), eye(3));
 
 for i=nk:-1:1
@@ -128,21 +130,26 @@ for i=nk:-1:1
     ti = app_data.t_array(:, :, i);
     ti_dot = app_data.t_dot_array(:, :, i);
     Mi = body.M;
-    A = app_data.A_array(:, :, i).'; % From i to i+1
+    
     P_i = body.P; % Joint rate propagation matrix
 
-
+    
     gamma = Omega_i * Mi * Ev * ti;
     w = Mi*ti_dot + gamma;
-    w_i = w + A.' * w_next;
-
+    w_i = w + A_next.' * w_next;   
+    
     tau_i = P_i' * w_i;
 
     % Update mats
     app_data.w_array(:, :, i) = w_i;
     app_data.tau_array(:, i) = tau_i;
+
+    % Next values
+    A_next = app_data.A_array(:, :, i); % From i to i-1
+    w_next = w_i;
 end
 
 
+run spart_twist_test.m
 
 
