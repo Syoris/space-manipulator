@@ -26,7 +26,21 @@ if newConfig
     qm_ddot = diag([0; 0]) * rand(2, 1);
 end
 
-% --- Initialize ---
+[tau_b, tau_m] = sc.inverseDynamics(sc.q, sc.q_dot, [q0_ddot; qm_ddot]);
+
+run spart_twist_test.m
+
+fprintf('--- Torques ---\n')
+fprintf('Base\n')
+tau0 = [tau0_S(4:6); tau0_S(1:3)];
+fprintf('[SPART, DeNOC]\n')  
+disp([tau0, tau_b])   
+
+fprintf('[SPART, DeNOC]\n')  
+disp([taum_S, tau_m])
+
+
+%% --- Initialize ---
 % Add ee coord
 qm = [sc.qm; 0];
 qm_dot = [sc.qm_dot; 0];
@@ -153,6 +167,3 @@ w_cstr = w_cstr - (app_data.A_array(:, :, 1) * app_data.anchor.Ab_k).' * app_dat
 
 w_base = sc.Base.M * tb_dot + Omega_b * sc.Base.M * Ev * tb - w_cstr;
 tau_base = sc.Base.P.' * w_base;
-
-
-run spart_twist_test.m

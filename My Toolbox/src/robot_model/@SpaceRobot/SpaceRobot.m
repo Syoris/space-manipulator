@@ -310,7 +310,7 @@ classdef SpaceRobot < handle
 
         q_ddot = forwardDynamics(obj, F, q, q_dot)
 
-        tau = inverseDynamics(obj, varargin)
+        [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
         function inertiaM = getInertiaM(obj, varargin)
             %getInertiaM Compute Inertia matrix of all the bodies in the inertial frame
