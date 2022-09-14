@@ -41,7 +41,7 @@ H_spart = [[H0(4:6, 4:6), H0(4:6, 1:3); H0(1:3, 4:6), H0(1:3, 1:3)], [H0m(4:6, :
                                                                 [H0m(4:6, :)', H0m(1:3, :)'], Hm];
 
 %Generalized Convective Inertia matrix
-[C0, C0m, Cm0, Cm] = CIM(t0_S, tm_S, I0, Im, M0_tilde, Mm_tilde, Bij, Bi0, P0, pm, robotSpart);
+[C0, C0m, Cm0, Cm, M0_tilde, child_con_C0, Bi0, Hi0_tilde, Mdot0_tilde, P0, Mdot_tilde] = CIM_test(t0_S, tm_S, I0, Im, M0_tilde, Mm_tilde, Bij, Bi0, P0, pm, robotSpart);
 C_spart_ori = [C0, C0m; Cm0, Cm];
 C_spart = [[C0(4:6, 4:6), C0(4:6, 1:3); C0(1:3, 4:6), C0(1:3, 1:3)], [C0m(4:6, :); C0m(1:3, :)];
                                                                 [Cm0(:, 4:6), Cm0(:, 1:3)], Cm];
