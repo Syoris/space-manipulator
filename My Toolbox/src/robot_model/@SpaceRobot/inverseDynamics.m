@@ -86,7 +86,7 @@ function [tau_b, tau_m] = inverseDynamics(obj, varargin)
     app_data.anchor.t = t0; % Anchor point speed
     app_data.anchor.t_dot = t0_dot; % Anchor point accel
     omega_skew = skew(app_data.anchor.t(4:6));
-    app_data.anchor.Omega = blkdiag(omega_skew, omega_skew); % Anchor point accel
+    app_data.anchor.Omega = blkdiag(omega_skew, omega_skew); % Anchor angular speed
 
     % Init mats
     nk = obj.NumBodies; % Number of bodies in the appendage
@@ -128,7 +128,7 @@ function [tau_b, tau_m] = inverseDynamics(obj, varargin)
         P_i = body.P; % Joint rate propagation matrix
 
         % twist
-        ti = A_i * t_prev + P_i * qi_dot; % TODO: Check how to handle specified speed and fix joints
+        ti = A_i * t_prev + P_i * qi_dot;
         wi = ti(4:6);
         wi_skew = skew(wi);
         Omega_i = blkdiag(wi_skew, wi_skew);

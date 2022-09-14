@@ -2,9 +2,9 @@
 % 6 DoF SpaceRobot initialization from DH parameters. Using the 6 DoF arm
 % designed by MDA. See [2016, Dubanchet] p.338
 
-sc = SpaceRobot;
-sc.Name = 'spaceRobot_6DoF';
-sc.Logging = 'debug';
+sr6 = SpaceRobot;
+sr6.Name = 'spaceRobot_6DoF';
+sr6.Logging = 'debug';
 nBodies = 7; % 6DoF + ee
 
 % --- Manipulator Parameters ---
@@ -79,10 +79,10 @@ mBase = 786; % [kg]
 comBase = [0 0 0];
 intertiaBase = [401.5, 655.0, 632.1, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
 
-sc.Base.Mass = mBase;
-sc.Base.Inertia = intertiaBase;
-sc.Base.HomeConf = [0; 0; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
-sc.Base.ManipToBaseTransform = rt2tr(eye(3), [0; 0; sizeBase(1) / 2]);
+sr6.Base.Mass = mBase;
+sr6.Base.Inertia = intertiaBase;
+sr6.Base.HomeConf = [0; 0; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
+sr6.Base.ManipToBaseTransform = rt2tr(eye(3), [0; 0; sizeBase(1) / 2]);
 
 % --- Visuals ---
 % Materials
@@ -160,7 +160,7 @@ bodiesVisual{7}(end + 1) = struct('Geometry', 'Sphere', ...
     'Color', materials.Red);
 
 % --- Robot Initialization ---
-sc.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
+sr6.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
 baseVisual.T, baseVisual.Color);
 
 bodiesVect = cell(1, nBodies);
@@ -200,27 +200,34 @@ for i = 1:nBodies
 
     % Add body
     if i == 1
-        parent = sc.BaseName;
+        parent = sr6.BaseName;
     else
         parent = bodyNames(i - 1);
     end
 
     bodies{i} = newBody;
     joints{i} = newJoint;
-    sc.addBody(bodies{i}, parent);
+    sr6.addBody(bodies{i}, parent);
+end
+
+% Init mats
+sr6.Base.initBase();
+
+for i = 1:length(sr6.Bodies)
+    sr6.Bodies{i}.initBody();
 end
 
 %% --- Initialize Matrices ---
 tic
-sc.initKin();
+sr6.initKin();
 toc
 tic
-sc.initDyn('simplify', false);
+sr6.initDyn('simplify', false);
 toc
 
-sc.homeConfig;
+sr6.homeConfig;
 
 %% Save Robot
 fprintf('Saving robot\n')
-clearvars -except sc
-save 'Project/Models/SC_6DoF.mat'
+clearvars -except sr6
+save 'Project/Models/SR6.mat'
