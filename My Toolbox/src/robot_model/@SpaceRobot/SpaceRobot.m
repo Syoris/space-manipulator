@@ -288,13 +288,13 @@ classdef SpaceRobot < handle
 
     % Dynamcics Methods
     methods
-        initMassMat(obj, d, simplify)
+        initMassMat(obj, d, simplify) % OLD
 
-        initCMat(obj, d, simplify)
+        initCMat(obj, d, simplify) % OLD
 
-        initQMat(obj, d)
+        initQMat(obj, d) % OLD
 
-        function [H, C, Q] = getMats(obj, q, q_dot)
+        function [H, C, Q] = getMats(obj, q, q_dot) % OLD
 
             if nargin == 1
                 q = obj.q;
@@ -308,11 +308,13 @@ classdef SpaceRobot < handle
 
         cOk = isCOk(obj, verbose)
 
+        D = MassMat(obj, varargin)
+
         q_ddot = forwardDynamics(obj, F, q, q_dot)
 
         [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
-        function inertiaM = getInertiaM(obj, varargin)
+        function inertiaM = getInertiaM(obj, varargin) % OLD
             %getInertiaM Compute Inertia matrix of all the bodies in the inertial frame
             %   I_inertial = R * I_body * R'
             parser = inputParser;
