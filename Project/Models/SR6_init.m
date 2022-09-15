@@ -209,21 +209,19 @@ for i = 1:nBodies
     joints{i} = newJoint;
     sr6.addBody(bodies{i}, parent);
 end
-
-% Init mats
+%% --- Initialize Matrices ---
 sr6.Base.initBase();
 
 for i = 1:length(sr6.Bodies)
     sr6.Bodies{i}.initBody();
 end
 
-%% --- Initialize Matrices ---
-tic
-sr6.initKin();
-toc
-tic
-sr6.initDyn('simplify', false);
-toc
+% tic
+% sr6.initKin();
+% toc
+% tic
+% sr6.initDyn('simplify', false);
+% toc
 
 sr6.homeConfig;
 

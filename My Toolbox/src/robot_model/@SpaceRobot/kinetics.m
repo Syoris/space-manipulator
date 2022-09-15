@@ -26,9 +26,10 @@ function res = kinetics(obj, q, q_dot, q_ddot)
 
     % --- Appendage k Dynamic --- % TODO Repeat for each appendage
     Ab_b = obj.Base.A; % Base twist propagation matrix, base frame
-    Ab_k = obj.Base.RotM.' * Ab_b; % Base twist propagation matrix, Appendage frame
+    Rb = obj.Base.getRotM(0); % Get roation matrix from appendage to base
+    Ab_k = Rb.' * Ab_b; % Base twist propagation matrix, Appendage frame
 
-    Ab_dot_k = obj.Base.RotM.' * (Omega_b * Ab_b - Ab_b * Omega_b); % Appendage frame
+    Ab_dot_k = Rb.' * (Omega_b * Ab_b - Ab_b * Omega_b); % Appendage frame
 
     t0 = Ab_k * tb; % Anchor point speed
     t0_dot = Ab_k * tb_dot + Ab_dot_k * tb; % Anchor point accel
@@ -59,8 +60,6 @@ function res = kinetics(obj, q, q_dot, q_ddot)
     for i = 1:nk
         body = obj.Bodies{i};
 
-        R = body.RotM.'; % Rotation matrix from parent to current
-
         % Joint vals. Set to 0 if joint is fixed
         jnt_idx = body.Joint.Q_id;
 
@@ -73,6 +72,8 @@ function res = kinetics(obj, q, q_dot, q_ddot)
             qi_dot = 0;
             qi_ddot = 0;
         end
+
+        R = body.getRotM(qi).'; % Rotation matrix from parent to current
 
         % Propagation matrices
         A_i = R * body.A; % twist propagation, frame i

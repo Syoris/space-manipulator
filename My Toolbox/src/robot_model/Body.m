@@ -47,6 +47,8 @@ classdef Body < handle
         InertiaM % Body inertia matrix in body frame
         ParentRotM % Rotation matrix to parent body (R_i_i-1). In symbolic form.
         RotM % Rotation matrix to parent body: diag(R_i_i-1). Evaluated at current config.
+        RotM_symb % Rotation matrix to parent body: diag(R_i_i-1). In symbolic form
+        RotM_handle % Function handle to get RotM from symbolic values
 
         A % Twist propagation matrix, in frame i-1
         Length % Vector from body origin to body end position, in body frame
@@ -71,7 +73,7 @@ classdef Body < handle
 
             obj.Visuals = {};
 
-            obj.ParentRotM = eye(4);
+            obj.ParentRotM = eye(3);
             obj.RotM = eye(6);
             obj.A = eye(6);
             obj.Length = zeros(3, 1);
@@ -99,6 +101,14 @@ classdef Body < handle
             Io = obj.InertiaM - obj.Mass * skew(obj.CenterOfMass) * skew(obj.CenterOfMass); % inertia mat wrt origin
 
             obj.M = [obj.Mass * eye(3), -skew(c); (-skew(c)).', Io];
+
+            % RotM Function handle
+            obj.RotM_symb = [obj.ParentRotM, zeros(3, 3); zeros(3, 3), obj.ParentRotM];
+
+            if ~isempty(obj.Joint.SymbVar)
+                obj.RotM_handle = matlabFunction(obj.RotM_symb, 'Vars', {obj.Joint.SymbVar});
+            end
+
         end
 
         function addVisual(obj, type, parameter, tform, color)
@@ -177,6 +187,22 @@ classdef Body < handle
         function rotM = get.RotM(obj)
             rotM_val = double(subs(obj.ParentRotM, obj.Joint.SymbVar, obj.Joint.Position));
             rotM = [rotM_val, zeros(3, 3); zeros(3, 3), rotM_val];
+        end
+
+        function rotM = getRotM(obj, varargin)
+
+            if nargin == 2
+                q = varargin{1};
+            else
+                q = obj.Joint.Position;
+            end
+
+            if ~strcmp(obj.Joint.Type, 'fixed')
+                rotM = obj.RotM_handle(q);
+            else
+                rotM = double(obj.RotM_symb);
+            end
+
         end
 
     end

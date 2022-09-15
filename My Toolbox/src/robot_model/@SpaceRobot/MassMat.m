@@ -10,6 +10,17 @@ function D = MassMat(obj, varargin)
     %   Output:
     %       D: Mass Matrix (NxN)
 
+    narginchk(1, 2);
+
+    if nargin > 1
+        q = varargin{1}
+    else
+        q = obj.q;
+    end
+
+    q0 = q(1:6);
+    qm = q(7:end);
+
     % --- Mat initialization ---
     Ma = zeros(6, 6);
     nk = obj.NumBodies;
@@ -52,7 +63,7 @@ function D = MassMat(obj, varargin)
                     Da(jnt_idx_i, jnt_idx_j) = P_i.' * M_ik * A_i_j * body_j.P;
                     Da(jnt_idx_j, jnt_idx_i) = Da(jnt_idx_i, jnt_idx_j).';
 
-                    R_j = body_j.RotM.'; % R from j-1 -> j
+                    R_j = body_j.getRotM(qm(jnt_idx_j)).'; % R from j-1 -> j
                     A_j = body_j.A; % A_j_j-1. j-1 frame
 
                     A_i_j = A_i_j * (R_j * A_j); % Compute A_i_(j-1)
@@ -63,9 +74,15 @@ function D = MassMat(obj, varargin)
             % Compute Dba
             Dba(:, jnt_idx_i) = obj.Base.P.' * obj.Base.A.' * A_i_j.' * M_ik * P_i;
         end
-
+        
+        if jnt_idx_i > 0
+            RotMat = body_i.getRotM(qm(jnt_idx_i));
+        else
+            RotMat = body_i.getRotM(0);
+        end
+        
         % Update matrices
-        app_data.A_array(:, :, i) = body_i.RotM.' * body_i.A;
+        app_data.A_array(:, :, i) = RotMat.' * body_i.A;
         app_data.M_array(:, :, i) = M_ik; % Payload mass matrix    (Not needed to save??)
     end
 
