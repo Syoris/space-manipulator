@@ -1,26 +1,26 @@
 % load 'SR2.mat'
 % sr2.homeConfig;
 
-% % --- RANDOM CONFIG ---
-% % Position
-% sr2.q0 = diag([0; 0; 0; 1; 0; 0]) * rand(6, 1);
-% sr2.qm = diag([0; 0]) * rand(2, 1);
-% 
-% % Speed
-% sr2.q0_dot = diag([0; 0; 0; 1; 0; 0]) * rand(6, 1);
-% sr2.qm_dot = diag([1; 0]) * rand(2, 1);
-% 
-% % Accel
-% q0_ddot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-% qm_ddot = diag([0; 0]) * rand(2, 1);
+% --- RANDOM CONFIG ---
+% Position
+sr2.q0 = diag([1; 1; 1; 0; 0; 0]) * rand(6, 1);
+sr2.qm = diag([1; 1]) * rand(2, 1);
 
-% --- ERRORS ---
-% Conf 1 
-sr2.q0 = [0; 0; 0; 0; 0; 0];
-sr2.qm = [0; 0];
+% Speed
+sr2.q0_dot = diag([1; 1; 1; 0; 0; 0]) * rand(6, 1);
+sr2.qm_dot = diag([1; 1]) * rand(2, 1);
 
-sr2.q0_dot = [0; 0; 0; 0.1; 0; 0];
-sr2.qm_dot = [0.1; 0];
+% Accel
+q0_ddot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
+qm_ddot = diag([0; 0]) * rand(2, 1);
+
+% % --- ERRORS ---
+% % Conf 1 
+% sr2.q0 = [0; 0; 0; 0; 0; 0];
+% sr2.qm = [0; 0];
+% 
+% sr2.q0_dot = [0; 0; 0; 0.1; 0; 0];
+% sr2.qm_dot = [0.1; 0];
 
 % --- Set values ---
 q = sr2.q;
@@ -34,8 +34,6 @@ qm_dot = q_dot(7:end);
 
 q0_ddot = zeros(8, 1);
 qm_ddot = zeros(2, 1);
-
-fprintf('NEW CONFIG\n')
 
 % --- Compare C Mats ---
 % clc

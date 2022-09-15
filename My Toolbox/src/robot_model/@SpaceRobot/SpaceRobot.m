@@ -284,6 +284,9 @@ classdef SpaceRobot < handle
         JacM = comJacobiansBase(obj, varargin)
 
         AxisM = getAxisM(obj, bodyId, frame, varargin)
+
+        res = kinetics(obj, q, q_dot, q_ddot)
+
     end
 
     % Dynamcics Methods

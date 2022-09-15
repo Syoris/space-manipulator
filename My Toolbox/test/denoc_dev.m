@@ -7,7 +7,6 @@ clc
 [tau_b, tau_m, app_data_1] = sr2.inverseDynamics(sr2.q, sr2.q_dot, [q0_ddot; qm_ddot]);
 
 tb = app_data_1.base.t;
-tb_2 = app_data_2.base.t;
 tb_dot = app_data_1.base.t_dot;
 wen_base = app_data_1.base.wen;
 
