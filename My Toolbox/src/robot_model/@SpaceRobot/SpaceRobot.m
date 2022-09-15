@@ -117,6 +117,7 @@ classdef SpaceRobot < handle
     methods
 
         function obj = SpaceRobot(varargin)
+            initFuncs = false;
 
             if nargin == 1
                 % From Struct
@@ -156,6 +157,8 @@ classdef SpaceRobot < handle
 
                 KinInitialized = false;
                 DynInitialized = false;
+
+                initFuncs = true;
             end
 
             % Set parameters
@@ -193,9 +196,15 @@ classdef SpaceRobot < handle
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
 
             % Create function handle
-            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
-            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
-            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+            if initFuncs
+                obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
+                obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
+                obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+            else
+                obj.matFuncHandle = [];
+                obj.tTreeFuncHandle = [];
+                obj.JacobsCoM_FuncHandle = [];
+            end
 
             % Viz
             obj.FastVizHelper = FastVizHelper;
@@ -214,7 +223,7 @@ classdef SpaceRobot < handle
             % Forward kinematic tree
             obj.forwardKinematics('symbolic', true);
 
-            obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
+            % obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
 
             obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
