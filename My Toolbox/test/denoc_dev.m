@@ -1,43 +1,135 @@
-load 'SC2_2DoF.mat'
-sc.homeConfig;
-
-% Init mats
-sc.Base.initBase();
-
-for i = 1:length(sc.Bodies)
-    sc.Bodies{i}.initBody();
-end
+%% DeNOC Dev - DeNOC alog development
+load 'SR2.mat'
+sr2.homeConfig;
 
 %% Inverse Dynamics
-newConfig = true;
+clc
+[tau_b, tau_m, app_data_1] = sr2.inverseDynamics(sr2.q, sr2.q_dot, [q0_ddot; qm_ddot]);
 
-% --- Initial cond ---
-if newConfig
-    % Position
-    sc.q = zeros(8, 1);
-    sc.qm = diag([1; 1]) * rand(2, 1);
+tb = app_data_1.base.t;
+tb_2 = app_data_2.base.t;
+tb_dot = app_data_1.base.t_dot;
+wen_base = app_data_1.base.wen;
 
-    % Speed
-    sc.q0_dot = diag([1; 1; 0; 0; 0; 0]) * rand(6, 1);
-    sc.qm_dot = diag([1; 1]) * rand(2, 1);
+% run spart_twist_test.m
 
-    % Accel
-    q0_ddot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-    qm_ddot = diag([0; 0]) * rand(2, 1);
+fprintf('### TWIST ###\n')
+fprintf('--- Base ---\n')
+t0_S = [t0_S(4:6); t0_S(1:3)];
+fprintf('[SPART, DeNOC (CoM in I)]\n')  
+disp([t0_S, tb, tb_2])  
+if ~isequal(round(t0_S, 5), round(tb, 5))
+        fprintf('ERROR\n')
+else
+    fprintf('OK\n')
+end    
+
+for i=1:3
+    body = sr2.Bodies{i};  
+    fprintf('--- Body: %s ---\n', body.Name)
+    
+    t_S = [tm_S(4:6, i); tm_S(1:3, i)];
+
+    [R, ~] = tr2rt(sr2.getTransform(body.Name, 'symbolic', false, 'targetFrame', 'inertial'));
+    t_D = app_data_2.t_array(:, :, i);
+    t_com = t_D(1:3) + skew(t_D(4:6)) * (body.CenterOfMass.');
+
+    t_com_I = blkdiag(R, R) * [t_com; t_D(4:6)];
+    
+    fprintf('[SPART, DeNOC (CoM in I)]\n')  
+    disp([t_S, t_com_I])  
+    if ~isequal(round(t_S, 5), round(t_com_I, 5))
+        fprintf('ERROR\n')  
+    else
+        fprintf('OK\n')
+    end               
 end
 
-[tau_b, tau_m] = sc.inverseDynamics(sc.q, sc.q_dot, [q0_ddot; qm_ddot]);
-
-run spart_twist_test.m
-
-fprintf('--- Torques ---\n')
-fprintf('Base\n')
-tau0 = [tau0_S(4:6); tau0_S(1:3)];
-fprintf('[SPART, DeNOC]\n')
-disp([tau0, tau_b])
-
-fprintf('[SPART, DeNOC]\n')
-disp([taum_S, tau_m])
+% fprintf('### ACCEL ###\n')
+% fprintf('--- Base ---\n')
+% t0_dot_S = [t0_dot_S(4:6); t0_dot_S(1:3)];
+% if ~isequal(round(t0_dot_S, 5), round(tb_dot, 5))
+%     fprintf('ERROR\n')
+%     fprintf('[SPART, DeNOC]\n')  
+%     disp([t0_dot_S, tb_dot])    
+% else
+%     fprintf('OK\n')
+%     fprintf('[SPART, DeNOC]\n')  
+%     disp([t0_dot_S, tb_dot])   
+% end    
+% 
+% for i=1:3
+%     body = sr2.Bodies{i};  
+%     fprintf('--- Body: %s ---\n', body.Name)
+%     
+%     t_dot_S = [tm_dot_S(4:6, i); tm_dot_S(1:3, i)];
+%     r = body.CenterOfMass.';
+% 
+%     [R, ~] = tr2rt(sr2.getTransform(body.Name, 'symbolic', false, 'targetFrame', 'inertial'));
+%     t_o_dot = app_data_2.t_dot_array(:, :, i);
+%     t_o = app_data_2.t_array(:, :, i);
+% 
+%     t_o_dot_I = blkdiag(R, R) * t_o_dot;
+% 
+%     t_com_dot = t_o_dot(1:3) + skew(t_o_dot(4:6)) * r + cross(t_o(4:6), cross(t_o(4:6), r));
+%     t_com_dot_I = blkdiag(R, R) * [t_com_dot; t_o_dot(4:6)];
+%     
+%     fprintf('[SPART, DeNOC (CoM in I)]\n')  
+%     disp([t_dot_S, t_com_dot_I])  
+% 
+%     if ~isequal(round(t_dot_S, 5), round(t_com_dot_I, 5))
+%         fprintf('ERROR\n')       
+%     else
+%         fprintf('OK\n')    
+%     end        
+% end
+% 
+% fprintf('--- Wrenches ---\n')
+% fprintf('Base\n')
+% wq_tilde0 = [wq_tilde0(4:6); wq_tilde0(1:3)];
+% [R, ~] = tr2rt(sr2.getTransform(sr2.BaseName, 'symbolic', false, 'targetFrame', 'inertial'));
+% wen_base_I = blkdiag(R, R) * wen_base;
+% 
+% fprintf('[SPART, DeNOC]\n')  
+% disp([wq_tilde0, wen_base_I])   
+% if ~isequal(round(wq_tilde0, 5), round(wen_base_I, 5))
+%     fprintf('ERROR\n')
+% else
+%     fprintf('OK\n') 
+% end    
+% 
+% for i=1:3
+%     body = sr2.Bodies{i};  
+%     fprintf('%s\n', body.Name)
+%     
+%     w_S = [wq_tilde(4:6, i); wq_tilde(1:3, i)];
+%     
+%     r = body.CenterOfMass.';
+%     [R, ~] = tr2rt(sr2.getTransform(body.Name, 'symbolic', false, 'targetFrame', 'inertial'));
+%     
+%     w_o = app_data_2.wen_array(:, :, i);
+%     w_o_I = blkdiag(R, R) * w_o;
+%     
+%     w_com = w_o;
+%     w_com(4:6) = w_o(4:6) + skew(-r)*w_o(1:3);
+%     w_com_I = blkdiag(R, R) * w_com;
+%     
+%     fprintf('[SPART, DeNOC (CoM), DeNOC (o)]\n')  
+%     disp([w_S, w_com_I, w_o_I])    
+% end
+% 
+% fprintf('--- Torques ---\n')
+% fprintf('Base\n')
+% tau0_S = [tau0_S(4:6); tau0_S(1:3)];
+% 
+% [R, ~] = tr2rt(sr2.getTransform(sr2.BaseName, 'symbolic', false, 'targetFrame', 'inertial'));
+% tau_b_I = blkdiag(R, eye(3)) * tau_b;
+% 
+% fprintf('[SPART, DeNOC]\n')
+% disp([tau0_S, tau_b_I])
+% 
+% fprintf('[SPART, DeNOC]\n')
+% disp([taum_S, tau_m])
 
 
 
@@ -46,8 +138,8 @@ clc
 
 % % --- Mat initialization ---
 % Ma = zeros(6, 6);
-% nk = sc.NumBodies;
-% n = sc.NumActiveJoints;
+% nk = sr2.NumBodies;
+% n = sr2.NumActiveJoints;
 % 
 % Dbb = zeros(6, 6);
 % Dba = zeros(6, n);
@@ -65,7 +157,7 @@ clc
 % app_data.M_array(:, :, end) = zeros(6, 6); % Payload mass matrix
 % 
 % for i = nk:-1:1
-%     body_i = sc.Bodies{i};
+%     body_i = sr2.Bodies{i};
 %     jnt_idx_i = body_i.Joint.Q_id;
 % 
 %     M_next = app_data.M_array(:, :, i + 1); % Next link M_hat matrix
@@ -84,7 +176,7 @@ clc
 %         A_i_j = eye(6);
 % 
 %         for j = i:-1:1
-%             body_j = sc.Bodies{j};
+%             body_j = sr2.Bodies{j};
 %             jnt_idx_j = body_j.Joint.Q_id;
 % 
 %             if jnt_idx_j > 0
@@ -100,7 +192,7 @@ clc
 %         end
 % 
 %         % Compute Dba
-%         Dba(:, jnt_idx_i) = sc.Base.P.' * sc.Base.A.' * A_i_j.' * M_ik * P_i;
+%         Dba(:, jnt_idx_i) = sr2.Base.P.' * sr2.Base.A.' * A_i_j.' * M_ik * P_i;
 %     end
 % 
 %     % Update matrices
@@ -109,15 +201,16 @@ clc
 %     %     app_data.R_array(:, :, nk) = ;
 % end
 % 
-% A_1_b = app_data.A_array(:, :, 1) * sc.Base.A;
+% A_1_b = app_data.A_array(:, :, 1) * sr2.Base.A;
 % 
 % Ma = Ma + A_1_b.' * M_ik * A_1_b;
 % 
 % % Base matrix
-% Dbb = sc.Base.P.' * (sc.Base.M + Ma) * sc.Base.P;
+% Dbb = sr2.Base.P.' * (sr2.Base.M + Ma) * sr2.Base.P;
 % 
 % D = [Dbb, Dba; Dba.', Da];
-D = sc.MassMat;
+D = sr2.MassMat;
+H = sr2.H;
 
 run spart_twist_test.m
 
@@ -126,45 +219,37 @@ fprintf('SPART:\n')
 disp(H_spart)
 fprintf('DeNOC\n')
 disp(D)
+fprintf('Symb\n')
+disp(H)
 
-if isequal(round(H_spart, 5), round(D, 5))
-    fprintf('Mass Matrix OK\n')
+
+if isequal(round(H_spart, 5), round(D, 5)) && isequal(round(H_spart, 5), round(H, 5))
+    fprintf('All Mat equal\n')
+elseif ~isequal(round(D, 5), round(H, 5))
+    fprintf('Symb and DeNOC diff ERROR\n')
 else
-    fprintf('Mass matrix ERROR\n')
+    fprintf('DeNOC and Symb same, Spart diff')
 end
+    
+
 
 %% C Matrix
 clc
 
-% newConfig = false;
-
-% --- Configuration ---
-if newConfig
-    % Position
-    sc.q = zeros(8, 1);
-    sc.qm = diag([0; 0]) * rand(2, 1);
-
-    % Speed
-    sc.q0_dot = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-    sc.qm_dot = diag([1; 0]) * rand(2, 1);
-end
-
-
-
-nk = sc.NumBodies;
-n = sc.NumActiveJoints;
+nk = sr2.NumBodies;
+n = sr2.NumActiveJoints;
 
 % --- A_i_i-1, A_i-i-1_dot, Omega_i ---
 % Base twist
 w_b = qb_dot(4:6); % Base angular rate
 Omega_b = blkdiag(skew(w_b), skew(w_b)); % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
 
-tb = sc.Base.P * qb_dot; % Base twist
+tb = sr2.Base.P * qb_dot; % Base twist
 
-Ab_b = sc.Base.A; % Base twist propagation matrix, base frame
-Ab_k = sc.Base.RotM.' * Ab_b; % Base twist propagation matrix, Appendage frame
+Ab_b = sr2.Base.A; % Base twist propagation matrix, base frame
+Ab_k = sr2.Base.RotM.' * Ab_b; % Base twist propagation matrix, Appendage frame
 
-Ab_dot_k = sc.Base.RotM.' * (Omega_b * Ab_b - Ab_b * Omega_b); % Appendage frame
+Ab_dot_k = sr2.Base.RotM.' * (Omega_b * Ab_b - Ab_b * Omega_b); % Appendage frame
 
 % Anchor point
 t0k = Ab_k * tb; % Anchor point speed
@@ -180,11 +265,11 @@ app_data.A_array = zeros(6, 6, nk); % A_array(:, :, i): A_i_i-1
 app_data.A_dot_array = zeros(6, 6, nk); % A_dot_array(:, :, i): A_dot_i_i-1
 
 % Init prev data for first joint
-A_dot_prev = Omega_0k * sc.Bodies{1}.A - sc.Bodies{1}.A * Omega_0k;
+A_dot_prev = Omega_0k * sr2.Bodies{1}.A - sr2.Bodies{1}.A * Omega_0k;
 t_prev = t0k;
 
 for i = 1:nk
-    body = sc.Bodies{i};
+    body = sr2.Bodies{i};
 
     R = body.RotM.'; % Rotation matrix from parent to current
 
@@ -219,7 +304,7 @@ for i = 1:nk
 
     % Update prev values
     if i < nk
-        A_dot_prev = Omega_i * sc.Bodies{i + 1}.A - sc.Bodies{i + 1}.A * Omega_i;
+        A_dot_prev = Omega_i * sr2.Bodies{i + 1}.A - sr2.Bodies{i + 1}.A * Omega_i;
         t_prev = ti;
     end
 
@@ -251,7 +336,7 @@ A_1_b = app_data.A_array(:, :, 1) * Ab_k;
 
 % For each body
 for i = nk:-1:1
-    body = sc.Bodies{i};
+    body = sr2.Bodies{i};
 
     % Body vars
     jnt_idx_i = body.Joint.Q_id;
@@ -290,7 +375,7 @@ for i = nk:-1:1
     Adot_i_j = zeros(6);
 
     for j = i - 1:-1:1
-        body_j = sc.Bodies{j};
+        body_j = sr2.Bodies{j};
         jnt_idx_j = body_j.Joint.Q_id;
         Omega_j = app_data.Omega_array(:, :, j);
         Pj = body_j.P;
@@ -312,7 +397,7 @@ for i = nk:-1:1
     A_j_i = eye(6);
 
     for j = i:nk
-        body_j = sc.Bodies{j};
+        body_j = sr2.Bodies{j};
         jnt_idx_j = body_j.Joint.Q_id;
         Omega_j = app_data.Omega_array(:, :, j);
         Pj = body_j.P;
@@ -330,7 +415,7 @@ for i = nk:-1:1
     
     % Cba, Cab, NOK for base angular speed
     if jnt_idx_i > 0
-        Pb = sc.Base.P;
+        Pb = sr2.Base.P;
         Cba(:, jnt_idx_i) = Pb.' * A_1_b.' * (A_i_j.' * Hi + A_i_j.' * Mi_h * Omega_i + A_i_j.' * Mi_dot_h) * Pi;
 
         Cab(jnt_idx_i, :) = Pi.' * ((Mi_h * Adot_i_j + (Hi + Mi_dot_h) * A_i_j) * A_1_b ...
@@ -349,7 +434,7 @@ M1_dot_h = app_data.M_dot_h_array(:, :, 1);
 
 Ha = Ha + A_1_b.' * (H1 * A_1_b + M1_h * (Adot_1_b + A_1_b * Omega_b) + M1_dot_h * A_1_b);
 
-Mb = sc.Base.M;
+Mb = sr2.Base.M;
 Mb_dot = Omega_b * Mb * Ev;
 Cbb = Pb.' * (Mb * Omega_b + Mb_dot + Ha) * Pb;
 
@@ -360,31 +445,31 @@ H1b = A_1_b' * (M1_h*Adot_1_b + H1*A_1_b);
 C = [Cbb, Cba; Cab, Ca];
 h = C * q_dot;
 
-run spart_twist_test.m
-Cbb_spart = C_spart(1:6, 1:6);
-
-M0_tilde_s = [M0_tilde(4:6, 4:6), M0_tilde(4:6, 1:3); M0_tilde(1:3, 4:6), M0_tilde(1:3, 1:3)]; 
-H_s = [child_con_C0(4:6, 4:6), child_con_C0(4:6, 1:3); child_con_C0(1:3, 4:6), child_con_C0(1:3, 1:3)];
-Mdot0_tilde_s = [Mdot0_tilde(4:6, 4:6), Mdot0_tilde(4:6, 1:3); Mdot0_tilde(1:3, 4:6), Mdot0_tilde(1:3, 1:3)];
-
-fprintf("Base Mass Hat\n")
-fprintf("SPART\n")
-disp(M0_tilde_s)
-fprintf("DeNOC\n")
-disp(Mb_h)
-
-fprintf("Base Mass Dot Hat\n")
-fprintf("SPART\n")
-disp(Mdot0_tilde_s)
-fprintf("DeNOC\n")
-disp(Mb_dot_h)
-
-
-fprintf("H_1b\n")
-fprintf("SPART\n")
-disp(H_s)
-fprintf("DeNOC\n")
-disp(H1b)
+% run spart_twist_test.m
+% Cbb_spart = C_spart(1:6, 1:6);
+% 
+% M0_tilde_s = [M0_tilde(4:6, 4:6), M0_tilde(4:6, 1:3); M0_tilde(1:3, 4:6), M0_tilde(1:3, 1:3)]; 
+% H_s = [child_con_C0(4:6, 4:6), child_con_C0(4:6, 1:3); child_con_C0(1:3, 4:6), child_con_C0(1:3, 1:3)];
+% Mdot0_tilde_s = [Mdot0_tilde(4:6, 4:6), Mdot0_tilde(4:6, 1:3); Mdot0_tilde(1:3, 4:6), Mdot0_tilde(1:3, 1:3)];
+% 
+% fprintf("Base Mass Hat\n")
+% fprintf("SPART\n")
+% disp(M0_tilde_s)
+% fprintf("DeNOC\n")
+% disp(Mb_h)
+% 
+% fprintf("Base Mass Dot Hat\n")
+% fprintf("SPART\n")
+% disp(Mdot0_tilde_s)
+% fprintf("DeNOC\n")
+% disp(Mb_dot_h)
+% 
+% 
+% fprintf("H_1b\n")
+% fprintf("SPART\n")
+% disp(H_s)
+% fprintf("DeNOC\n")
+% disp(H1b)
 
 
 

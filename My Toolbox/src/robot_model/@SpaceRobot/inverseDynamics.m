@@ -1,4 +1,4 @@
-function [tau_b, tau_m] = inverseDynamics(obj, varargin)
+function [tau_b, tau_m, app_data] = inverseDynamics(obj, varargin)
     %inverseDynamics Compute required joint torques for desired motion.
     %   TAU = inverseDynamics(SR) computes joint torques TAU
     %   required for SR add current configuration. Considers joints position and speed. Assume
@@ -62,6 +62,8 @@ function [tau_b, tau_m] = inverseDynamics(obj, varargin)
     qm_ddot = q_ddot(7:end);
 
     % --- Base Twist ---
+    app_data = struct(); % Data for the whole appendage
+
     w_b = qb_dot(4:6); % Base angular rate
     Omega_b = blkdiag(skew(w_b), skew(w_b)); % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
 
@@ -70,9 +72,10 @@ function [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
     wen_cstr = zeros(6, 1); % Base constraint wrench
 
-    % --- Appendage k Dynamic --- % TODO Repeat for each appendage
-    app_data = struct(); % Data for the whole appendage
+    app_data.base.t = tb;
+    app_data.base.t_dot = tb_dot;
 
+    % --- Appendage k Dynamic --- % TODO Repeat for each appendage
     Ab_b = obj.Base.A; % Base twist propagation matrix, base frame
     Ab_k = obj.Base.RotM.' * Ab_b; % Base twist propagation matrix, Appendage frame
 
@@ -195,6 +198,9 @@ function [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
     w_base = obj.Base.M * tb_dot + Omega_b * obj.Base.M * Ev * tb - wen_cstr;
     tau_b = obj.Base.P.' * w_base;
+
+    app_data.base.wen = w_base;
+    app_data.base.tau = tau_b;
 
     tau_m = app_data.tau_array.';
 end

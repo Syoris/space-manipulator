@@ -214,9 +214,9 @@ classdef SpaceRobot < handle
             % Forward kinematic tree
             obj.forwardKinematics('symbolic', true);
 
-            % obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
+            obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
 
-            % obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
+            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
         end
@@ -244,7 +244,7 @@ classdef SpaceRobot < handle
             fig.Position(3:4) = [410, 110];
             drawnow;
 
-            obj.initMassMat(d, simplify);
+            % obj.initMassMat(d, simplify);
             obj.initCMat(d, simplify);
             obj.initQMat(d);
 
@@ -306,13 +306,15 @@ classdef SpaceRobot < handle
 
         nOk = isNSkewSym(obj)
 
-        cOk = isCOk(obj, verbose)
+        cOk = isCOk(obj)
 
         D = MassMat(obj, varargin)
 
+        [C, app_data] = CMat(obj, varargin)
+
         q_ddot = forwardDynamics(obj, F, q, q_dot)
 
-        [tau_b, tau_m] = inverseDynamics(obj, varargin)
+        [tau_b, tau_m, app_data] = inverseDynamics(obj, varargin)
 
         function inertiaM = getInertiaM(obj, varargin) % OLD
             %getInertiaM Compute Inertia matrix of all the bodies in the inertial frame
