@@ -46,7 +46,7 @@ run spart_twist_test.m
 h_S = C_spart * q_dot;
 h_Symb = C_symb * q_dot;
 h_D = C_D*q_dot;
-[tau_b, tau_m, app_data] = sr2.inverseDynamics(sr2.q, sr2.q_dot, zeros(8, 1));
+[tau_b, tau_m] = sr2.inverseDynamics(sr2.q, sr2.q_dot, zeros(8, 1));
 h_ID = [tau_b; tau_m];
 
 Rb = sr2.Ttree.spacecraftBase(1:3, 1:3);

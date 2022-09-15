@@ -1,4 +1,4 @@
-function [tau_b, tau_m, app_data] = inverseDynamics(obj, varargin)
+function [tau_b, tau_m] = inverseDynamics(obj, varargin)
     %inverseDynamics Compute required joint torques for desired motion.
     %   TAU = inverseDynamics(SR) computes joint torques TAU
     %   required for SR add current configuration. Considers joints position and speed. Assume
