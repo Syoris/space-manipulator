@@ -3,26 +3,29 @@ classdef GetJacobianBlock < matlab.System
     % Output a transform  that converts speed of generalized coordinated to
     % the speed of the body CoM
 
-    properties(Nontunable)        
+    properties (Nontunable)
         %spaceRobotStruct - SpaceRobot structure
         spaceRobotStruct = 0;
-        
+
         %BodyName - The name of the source body
         BodyName = 0;
 
         spaceRobot;
     end
-    
+
     methods
+
         function obj = GetJacobianBlock(varargin)
             %GetJacobianBlock Constructor for GetJacobianBlock system object
-            
+
             % Support name-value pair arguments when constructing object
-            setProperties(obj,nargin,varargin{:});
+            setProperties(obj, nargin, varargin{:});
         end
+
     end
 
-    methods(Access = protected)
+    methods (Access = protected)
+
         function setupImpl(obj)
             % Perform one-time calculations, such as computing constants
             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
@@ -30,9 +33,9 @@ classdef GetJacobianBlock < matlab.System
 
         function jac = stepImpl(obj, q)
             % Implement algorithm. Calculate y as a function of input u and
-            % discrete states.     
-            
-            jac = obj.spaceRobot.getJacobsCoMNum(q).(obj.BodyName);         
+            % discrete states.
+
+            jac = obj.spaceRobot.getJacobsCoMNum(q, obj.BodyName);
         end
 
         function resetImpl(~)
@@ -41,18 +44,18 @@ classdef GetJacobianBlock < matlab.System
 
         function validateInputsImpl(~, q)
             %validateInputsImpl Validate inputs to the step method at initialization
-            
-            validateattributes(q,{'single','double'},{'vector'},'GetTransformBlock','Config');            
-        end      
 
-        function flag = isInputSizeMutableImpl(~,~)
+            validateattributes(q, {'single', 'double'}, {'vector'}, 'GetTransformBlock', 'Config');
+        end
+
+        function flag = isInputSizeMutableImpl(~, ~)
             %isInputSizeMutableImpl Specify input size mutability
             %   Return false if input size cannot change
             %   between calls to the System object
             flag = false;
         end
-        
-        function flag = isInputDataTypeMutableImpl(~,~)
+
+        function flag = isInputDataTypeMutableImpl(~, ~)
             %isInputDataTypeMutableImpl Specify input type mutability
             %   Return false if input data type cannot change
             %   between calls to the System object
@@ -63,15 +66,15 @@ classdef GetJacobianBlock < matlab.System
             %getNumOutputsImpl Define total number of outputs
             num = 1;
         end
-        
+
         function out = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-            out = [6 obj.spaceRobotStruct.N];            
+            out = [6 obj.spaceRobotStruct.N];
         end
 
         function out = getOutputDataTypeImpl(obj)
             %getOutputDataTypeImpl Return data type for each output port
-            out = propagatedInputDataType(obj,1);
+            out = propagatedInputDataType(obj, 1);
         end
 
         function out = isOutputComplexImpl(~)
@@ -83,21 +86,23 @@ classdef GetJacobianBlock < matlab.System
             %isOutputFixedSizeImpl Return true for each output port with fixed size
             out = true;
         end
+
     end
 
-    methods(Access = protected, Static)
-       function header = getHeaderImpl
-           header = matlab.system.display.Header(mfilename('class'), ...
-               'Title','GetJacobian Block',...
-               'Text','System object of SpaceRobot GetJacobian');
+    methods (Access = protected, Static)
+
+        function header = getHeaderImpl
+            header = matlab.system.display.Header(mfilename('class'), ...
+                'Title', 'GetJacobian Block', ...
+                'Text', 'System object of SpaceRobot GetJacobian');
         end
 
         function group = getPropertyGroupsImpl
             %getPropertyGroupsImpl Define property section(s) for System block dialog
-            mainGroup = matlab.system.display.SectionGroup(...
-                'Title','Parameters', ...
-                'PropertyList',{'spaceRobotStruct', 'BodyName'});
-            
+            mainGroup = matlab.system.display.SectionGroup( ...
+            'Title', 'Parameters', ...
+                'PropertyList', {'spaceRobotStruct', 'BodyName'});
+
             group = mainGroup;
         end
 
@@ -105,6 +110,7 @@ classdef GetJacobianBlock < matlab.System
             %showSimulateUsingImpl Return false if simulation mode hidden in System block dialog
             flag = true;
         end
+
     end
 
 end

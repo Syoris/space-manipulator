@@ -108,7 +108,7 @@ classdef SpaceRobot < handle
         % Symbolic Function handles
         matFuncHandle % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         tTreeFuncHandle
-        JacobsCoM_FuncHandle
+        JacobsCoM_FuncHandle % Struct of symbolic function handle to convert symbolic body jacobian to numeric
 
         LogLevels = {'error', 'warning', 'info', 'debug'};
     end
@@ -204,7 +204,14 @@ classdef SpaceRobot < handle
             if initFuncs
                 obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
                 obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
-                obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+
+                f = fields(obj.JacobsCoM_symb);
+                obj.JacobsCoM_FuncHandle = struct();
+
+                for i = 1:length(f)
+                    obj.JacobsCoM_FuncHandle.(f{i}) = matlabFunction(obj.JacobsCoM_symb.(f{i}), 'Vars', {obj.q_symb});
+                end
+
             else
                 obj.tTreeFuncHandle = tTreeFuncHandle;
                 obj.matFuncHandle = [];
@@ -524,30 +531,24 @@ classdef SpaceRobot < handle
 
         end
 
-        function JacobsCoM = get.JacobsCoM(obj)
-            JacobsCoM = struct();
-            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(obj.q);
-            N = obj.NumActiveJoints + 6;
+        function JacobsCoMArray = get.JacobsCoM(obj)
+            % Output struct with jacobians of all bodies at current SR config
 
-            f = fields(obj.JacobsCoM_symb);
+            JacobsCoMArray = struct();
 
-            for i = 1:length(f)
-                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1 + (i - 1) * N:i * N);
+            JacobsCoMArray.(obj.BaseName) = obj.JacobsCoM_FuncHandle.(obj.BaseName)(obj.q);
+
+            for i = 1:obj.NumBodies
+                bodyName = obj.BodyNames{i};
+                JacobsCoMArray.(bodyName) = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q)
             end
 
         end
 
-        function JacobsCoM = getJacobsCoMNum(obj, q)
-            JacobsCoM = struct();
-            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(q);
-            N = obj.NumActiveJoints + 6;
+        function JacobBody = getJacobsCoMNum(obj, q, bodyName)
+            % Output jacobian of CoM of bodyName given configuration q
 
-            f = fields(obj.JacobsCoM_symb);
-
-            for i = 1:length(f)
-                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1 + (i - 1) * N:i * N);
-            end
-
+            JacobBody = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q);
         end
 
         % Config related
