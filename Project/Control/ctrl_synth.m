@@ -3,17 +3,17 @@
 % Doesn't consider actuator input limits
 
 % load 'SC_2DoF.mat'
-sc.homeConfig;
-n = sc.NumActiveJoints;
+sr.homeConfig;
+n = sr.NumActiveJoints;
 N = n + 6;
 
-x0 = [sc.q; sc.q_dot];
+x0 = [sr.q; sr.q_dot];
 
 % Coordinated Base controller Synthesis
 A = [zeros(N, N), eye(N);
      zeros(N, N), zeros(N, N)];
 
-B = [zeros(N, N); sc.H^-1];
+B = [zeros(N, N); sr.H^-1];
 
 C = eye(2*N);
 D = zeros(2*N, N);

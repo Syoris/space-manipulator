@@ -1,11 +1,12 @@
 %% Trajectory Tracking
 clc
 close all
-load 'SC_2DoF.mat'
-sc.homeConfig();
+load 'SR2.mat'
+sr = sr2;
+sr.homeConfig();
 
 % Parameters
-% sc.qm = [0; -pi/4];
+% sr.qm = [0; -pi/4];
 dA = 1;
 Gb = ones(6, 1)*10;
 Gm = ones(2, 1)*25;
@@ -21,14 +22,16 @@ end
 
 
 % Compute Traj
-[~, p0] = tr2rt(sc.getTransform('endeffector', 'TargetFrame',  'inertial', 'symbolic', false));
+[~, p0] = tr2rt(sr.getTransform('endeffector', 'TargetFrame',  'inertial', 'symbolic', false));
 traj = squareTraj(p0, squareLength, str2double(simTime), Nsamp, 'plane', 'xy');
 
 % Launch Sim
+tic
 fprintf("Simulating...\n")
 set_param('traj_tracking', 'StopTime', simTime)
 simRes = sim('traj_tracking');
 fprintf("Done\n")
+toc
 
 %% Animation
 clc
@@ -41,5 +44,5 @@ trajRes.ref = traj;
 trajRes.Xee = simRes.Xee;
 
 tic
-sc.animate(simRes.q, 'fps', 17, 'rate', 1, 'traj', trajRes, 'fileName', strcat(folder, fileName)); 
+sr.animate(simRes.q, 'fps', 17, 'rate', 1, 'traj', trajRes, 'fileName', strcat(folder, fileName)); 
 toc

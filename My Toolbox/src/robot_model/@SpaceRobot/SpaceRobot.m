@@ -127,6 +127,7 @@ classdef SpaceRobot < handle
                 Name = structModel.Name;
                 Base = structModel.Base;
                 Bodies = structModel.Bodies;
+
                 Ttree_symb = structModel.Ttree_symb;
                 JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
                 JacobsCoM_symb = structModel.JacobsCoM_symb;
@@ -137,6 +138,9 @@ classdef SpaceRobot < handle
 
                 KinInitialized = structModel.KinInitialized;
                 DynInitialized = structModel.DynInitialized;
+
+                tTreeFuncHandle = structModel.tTreeFuncHandle;
+                JacobsCoM_FuncHandle = structModel.JacobsCoM_FuncHandle;
 
             else
                 Name = "";
@@ -196,14 +200,15 @@ classdef SpaceRobot < handle
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
 
             % Create function handle
+
             if initFuncs
-                obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
                 obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
+                obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
                 obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
             else
+                obj.tTreeFuncHandle = tTreeFuncHandle;
                 obj.matFuncHandle = [];
-                obj.tTreeFuncHandle = [];
-                obj.JacobsCoM_FuncHandle = [];
+                obj.JacobsCoM_FuncHandle = JacobsCoM_FuncHandle;
             end
 
             % Viz
