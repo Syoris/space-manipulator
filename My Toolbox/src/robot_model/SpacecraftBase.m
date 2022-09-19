@@ -70,6 +70,14 @@ classdef SpacecraftBase < Body
 
             % M - Body mass matrix
             obj.M = [obj.Mass * eye(3), zeros(3, 3); zeros(3, 3), obj.InertiaM];
+
+            % Rotation mat
+            obj.RotM_symb = [obj.ParentRotM, zeros(3, 3); zeros(3, 3), obj.ParentRotM];
+
+            if ~isempty(obj.Joint.SymbVar)
+                obj.RotM_handle = matlabFunction(obj.RotM_symb, 'Vars', {obj.Joint.SymbVar});
+            end
+
         end
 
     end

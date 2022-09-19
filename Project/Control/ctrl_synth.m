@@ -3,17 +3,19 @@
 % Doesn't consider actuator input limits
 
 % load 'SC_2DoF.mat'
-sc.homeConfig;
-n = sc.NumActiveJoints;
+sr.homeConfig;
+n = sr.NumActiveJoints;
 N = n + 6;
 
-x0 = [sc.q; sc.q_dot];
+x0 = [sr.q; sr.q_dot];
+
+H = sr.MassMat;
 
 % Coordinated Base controller Synthesis
 A = [zeros(N, N), eye(N);
      zeros(N, N), zeros(N, N)];
 
-B = [zeros(N, N); sc.H^-1];
+B = [zeros(N, N); H^-1];
 
 C = eye(2*N);
 D = zeros(2*N, N);
@@ -25,7 +27,7 @@ mdl = 'Coordinated_ctrl_tuning';
 st0 = slTuner(mdl,{'Kp_b','Kd_b', 'Kp_m', 'Kd_m'});
 maxKpb = 3000;
 maxKdb = 3000;
-maxKpm = 1000;
+maxKpm = 500;
 maxKdm = 1000;
 
 G1 = tunableGain('Kp_b', eye(6));

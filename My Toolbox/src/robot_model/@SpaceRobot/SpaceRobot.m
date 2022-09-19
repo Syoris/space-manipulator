@@ -108,7 +108,7 @@ classdef SpaceRobot < handle
         % Symbolic Function handles
         matFuncHandle % Handle to symbolic function to compute matrices [H, C, Q] = matFuncHandle(q, q_dot)
         tTreeFuncHandle
-        JacobsCoM_FuncHandle
+        JacobsCoM_FuncHandle % Struct of symbolic function handle to convert symbolic body jacobian to numeric
 
         LogLevels = {'error', 'warning', 'info', 'debug'};
     end
@@ -117,6 +117,7 @@ classdef SpaceRobot < handle
     methods
 
         function obj = SpaceRobot(varargin)
+            initFuncs = false;
 
             if nargin == 1
                 % From Struct
@@ -126,6 +127,7 @@ classdef SpaceRobot < handle
                 Name = structModel.Name;
                 Base = structModel.Base;
                 Bodies = structModel.Bodies;
+
                 Ttree_symb = structModel.Ttree_symb;
                 JacobsCoM_Base_symb = structModel.JacobsCoM_Base_symb;
                 JacobsCoM_symb = structModel.JacobsCoM_symb;
@@ -136,6 +138,9 @@ classdef SpaceRobot < handle
 
                 KinInitialized = structModel.KinInitialized;
                 DynInitialized = structModel.DynInitialized;
+
+                tTreeFuncHandle = structModel.tTreeFuncHandle;
+                JacobsCoM_FuncHandle = structModel.JacobsCoM_FuncHandle;
 
             else
                 Name = "";
@@ -156,6 +161,8 @@ classdef SpaceRobot < handle
 
                 KinInitialized = false;
                 DynInitialized = false;
+
+                initFuncs = true;
             end
 
             % Set parameters
@@ -193,9 +200,23 @@ classdef SpaceRobot < handle
             obj.q_dot_symb = [Rx_d; Ry_d; Rz_d; wx; wy; wz; qm_dot_symb];
 
             % Create function handle
-            obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
-            obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
-            obj.JacobsCoM_FuncHandle = matlabFunction(struct2array(obj.JacobsCoM_symb), 'Vars', {obj.q_symb});
+
+            if initFuncs
+                obj.tTreeFuncHandle = matlabFunction(struct2array(obj.Ttree_symb), 'Vars', {obj.q_symb});
+                obj.matFuncHandle = matlabFunction(obj.H_symb, obj.C_symb, obj.Q_symb, 'Vars', {obj.q_symb, obj.q_dot_symb});
+
+                f = fields(obj.JacobsCoM_symb);
+                obj.JacobsCoM_FuncHandle = struct();
+
+                for i = 1:length(f)
+                    obj.JacobsCoM_FuncHandle.(f{i}) = matlabFunction(obj.JacobsCoM_symb.(f{i}), 'Vars', {obj.q_symb});
+                end
+
+            else
+                obj.tTreeFuncHandle = tTreeFuncHandle;
+                obj.matFuncHandle = [];
+                obj.JacobsCoM_FuncHandle = JacobsCoM_FuncHandle;
+            end
 
             % Viz
             obj.FastVizHelper = FastVizHelper;
@@ -216,7 +237,7 @@ classdef SpaceRobot < handle
 
             % obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
 
-            % obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
+            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
         end
@@ -244,7 +265,7 @@ classdef SpaceRobot < handle
             fig.Position(3:4) = [410, 110];
             drawnow;
 
-            obj.initMassMat(d, simplify);
+            % obj.initMassMat(d, simplify);
             obj.initCMat(d, simplify);
             obj.initQMat(d);
 
@@ -284,17 +305,20 @@ classdef SpaceRobot < handle
         JacM = comJacobiansBase(obj, varargin)
 
         AxisM = getAxisM(obj, bodyId, frame, varargin)
+
+        res = kinetics(obj, q, q_dot, q_ddot)
+
     end
 
     % Dynamcics Methods
     methods
-        initMassMat(obj, d, simplify)
+        initMassMat(obj, d, simplify) % OLD
 
-        initCMat(obj, d, simplify)
+        initCMat(obj, d, simplify) % OLD
 
-        initQMat(obj, d)
+        initQMat(obj, d) % OLD
 
-        function [H, C, Q] = getMats(obj, q, q_dot)
+        function [H, C, Q] = getMats(obj, q, q_dot) % OLD
 
             if nargin == 1
                 q = obj.q;
@@ -306,13 +330,17 @@ classdef SpaceRobot < handle
 
         nOk = isNSkewSym(obj)
 
-        cOk = isCOk(obj, verbose)
+        cOk = isCOk(obj)
+
+        D = MassMat(obj, varargin)
+
+        [C, app_data] = CMat(obj, varargin)
 
         q_ddot = forwardDynamics(obj, F, q, q_dot)
 
-        tau = inverseDynamics(obj, varargin)
+        [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
-        function inertiaM = getInertiaM(obj, varargin)
+        function inertiaM = getInertiaM(obj, varargin) % OLD
             %getInertiaM Compute Inertia matrix of all the bodies in the inertial frame
             %   I_inertial = R * I_body * R'
             parser = inputParser;
@@ -503,30 +531,24 @@ classdef SpaceRobot < handle
 
         end
 
-        function JacobsCoM = get.JacobsCoM(obj)
-            JacobsCoM = struct();
-            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(obj.q);
-            N = obj.NumActiveJoints + 6;
+        % function JacobsCoMArray = get.JacobsCoM(obj)
+        %     % Output struct with jacobians of all bodies at current SR config
 
-            f = fields(obj.JacobsCoM_symb);
+        %     JacobsCoMArray = struct();
 
-            for i = 1:length(f)
-                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1 + (i - 1) * N:i * N);
-            end
+        %     JacobsCoMArray.(obj.BaseName) = obj.JacobsCoM_FuncHandle.(obj.BaseName)(obj.q);
 
-        end
+        %     for i = 1:obj.NumBodies
+        %         bodyName = obj.BodyNames{i};
+        %         JacobsCoMArray.(bodyName) = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q);
+        %     end
 
-        function JacobsCoM = getJacobsCoMNum(obj, q)
-            JacobsCoM = struct();
-            JacobsCoM_Array = obj.JacobsCoM_FuncHandle(q);
-            N = obj.NumActiveJoints + 6;
+        % end
 
-            f = fields(obj.JacobsCoM_symb);
+        function JacobBody = getJacobsCoMNum(obj, q, bodyName)
+            % Output jacobian of CoM of bodyName given configuration q
 
-            for i = 1:length(f)
-                JacobsCoM.(f{i}) = JacobsCoM_Array(:, 1 + (i - 1) * N:i * N);
-            end
-
+            JacobBody = obj.JacobsCoM_FuncHandle.(bodyName)(q);
         end
 
         % Config related
