@@ -5,7 +5,6 @@ if ~exist('sr6', 'var')
     fprintf("Loading SR6\n")
     load 'SR6.mat'
 end
-sr = sr6;
 sr.homeConfig();
 
 n = sr.NumActiveJoints;

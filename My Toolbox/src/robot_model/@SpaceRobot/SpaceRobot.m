@@ -531,24 +531,24 @@ classdef SpaceRobot < handle
 
         end
 
-        function JacobsCoMArray = get.JacobsCoM(obj)
-            % Output struct with jacobians of all bodies at current SR config
+        % function JacobsCoMArray = get.JacobsCoM(obj)
+        %     % Output struct with jacobians of all bodies at current SR config
 
-            JacobsCoMArray = struct();
+        %     JacobsCoMArray = struct();
 
-            JacobsCoMArray.(obj.BaseName) = obj.JacobsCoM_FuncHandle.(obj.BaseName)(obj.q);
+        %     JacobsCoMArray.(obj.BaseName) = obj.JacobsCoM_FuncHandle.(obj.BaseName)(obj.q);
 
-            for i = 1:obj.NumBodies
-                bodyName = obj.BodyNames{i};
-                JacobsCoMArray.(bodyName) = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q)
-            end
+        %     for i = 1:obj.NumBodies
+        %         bodyName = obj.BodyNames{i};
+        %         JacobsCoMArray.(bodyName) = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q);
+        %     end
 
-        end
+        % end
 
         function JacobBody = getJacobsCoMNum(obj, q, bodyName)
             % Output jacobian of CoM of bodyName given configuration q
 
-            JacobBody = obj.JacobsCoM_FuncHandle.(bodyName)(obj.q);
+            JacobBody = obj.JacobsCoM_FuncHandle.(bodyName)(q);
         end
 
         % Config related
