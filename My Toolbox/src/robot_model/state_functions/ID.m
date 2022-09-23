@@ -72,8 +72,8 @@ function [tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot)
     Am = A{2};
     Am_dot = A_dot{2};
 
-    Mm = sr_info.M{2}
-    Pm = sr_info.P{2}
+    Mm = sr_info.M{2};
+    Pm = sr_info.P{2};
 
     % Force Propagation
     for i = nk:-1:1

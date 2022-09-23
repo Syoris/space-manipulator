@@ -16,20 +16,21 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
     f.linkMatlabODE('srode');
     
     
-    ocp = acado.OCP(0.0, 1, 10);
+    ocp = acado.OCP(0.0, 10, 10);
 
 
     h={q(1), q(2), q(3), q(4), q(5), q(6), q(7), q(8)};  % the LSQ-Function
 
     Q = eye(8);                             % The weighting matrix
     
-    r = sr.q';                         % The reference
+    r = sr.q;                         % The reference
+    r(7:8) = [0; 0];
     
     ocp.minimizeLSQ( Q, h, r );             % Minimize this Least Squares Term
     
     ocp.subjectTo( f );
     ocp.subjectTo( 'AT_START', q ==  sr.q );
-    ocp.subjectTo( 'AT_START', q ==  sr.q_dot);
+    ocp.subjectTo( 'AT_START', q_dot ==  sr.q_dot);
 
     ocp.subjectTo( -10 <= u <= 10);
     
@@ -40,7 +41,7 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
     % DO NOT USE EXACT HESSIAN WHEN LINKING TO MATLAB ODE
     % !!
 
-    algo.set( 'KKT_TOLERANCE', 1e-5 );
+    algo.set( 'KKT_TOLERANCE', 1e-1 );
     
 END_ACADO;           % Always end with "END_ACADO".
                      % This will generate a file problemname_ACADO.m. 
@@ -49,7 +50,7 @@ END_ACADO;           % Always end with "END_ACADO".
                      % times as you want without having to compile again.
 
 %%
-fprintf("Running opc")
+fprintf("Running ocp")
 out = nmpc_test_RUN();                % Run the test
  
 draw;

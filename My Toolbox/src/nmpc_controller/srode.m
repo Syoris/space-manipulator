@@ -1,55 +1,37 @@
 function [ dx ] = srode(t, x, u, p, w )      
 
 %% Load params
-%     load('SR2.mat', 'sr');
-    bodyNames = {'SpacecraftBase', 'Body1', 'Body2', 'endeffector'};
-
-%% 
+    load('SR2_data.mat', 'sr_info');
+    
     dx = zeros(16, 1);
     q = x(1:8);
     qb = q(1:6);
     qm = q(7:8);
-    
+
     q_dot = x(9:16); 
     qb_dot = q_dot(1:6);
     qm_dot = q_dot(7:8);
+%% 
+    % 1 - Kinematics
+    [Rb, Rm] = RFunc_SR2(q);
+    Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
+    
+    % 2 - Kinetics
+    [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, zeros(8, 1), {Rb, Rm});
+    
+    % 3 - ID
+    [tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+    h = [tau{1}; tau{2}];
+    
+    % 4 - Mass Mat
+    D = MassM(sr_info, q, A);
+    
+    % 5 - FD
+    q_ddot = D^-1 * (u - h);
 
-    % Ttree
-    tTreeArray = myfile(q);
-    tTree = struct;
-    for i = 1:length(bodyNames)
-        tTree.(bodyNames{i}) = tTreeArray(:, 1 + (i - 1) * 4:i * 4);
-    end
-    
-    
+    %% Assign outputs
     % Speed
-    dx(1:6) = qb_dot; % [vb; wb]
-    dx(7:8) = qm_dot; % [qm_dot]
-    
-    % Accel
-    q_ddot = zeros(8, 1);
-%     q_ddot = sr.forwardDynamics(u, q, q_dot);
+    dx(1:8) = q_dot;
     dx(9:16) = q_ddot;
-
-
-%%
-%     dx(1) = x(9);
-%     dx(2) = x(10);
-%     dx(3) = x(11);
-%     dx(4) = x(12);
-%     dx(5) = x(13);
-%     dx(6) = x(14);
-%     dx(7) = x(15);
-%     dx(8) = x(16);
-%     
-%     dx(9) = 0;
-%     dx(10) = 0;
-%     dx(11) = 0;
-%     dx(12) = 0;
-%     dx(13) = 0;
-%     dx(14) = 0;
-%     dx(15) = 0;
-%     dx(16) = 0;
-
 
 end

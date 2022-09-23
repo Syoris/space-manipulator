@@ -80,6 +80,8 @@ q_ddot = zeros(N, 1);
 q0_ddot = q_ddot(1:6);
 qm_ddot = q_ddot(7:end);
 
+F = zeros(8, 1);
+
 % 1 - Kinematics
 [Rb, Rm] = RFunc_SR2(q);
 Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
@@ -89,30 +91,13 @@ Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
 % 3 - ID
 [tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+h = [tau{1}; tau{2}];
 
 % 4 - Mass Mat
 D = MassM(sr_info, q, A);
-D2 = sr.MassMat(q);
-
-run spart_twist_test.m 
-
-names = {'bb', 'ba', 'ab', 'aa'};
-idx = {{1:6, 1:6}, {1:6, 7:8}, {7:8, 1:6}, {7:8, 7:8}};
-for i=1:4
-    fprintf('--- %s ---\n', names{i})
-    fprintf('NEW\n')
-    disp(D(idx{i}{1}, idx{i}{2}))
-    fprintf('OLD\n')
-    disp(D2(idx{i}{1}, idx{i}{2}))
-    fprintf('SPART\n')
-    disp(H_spart(idx{i}{1}, idx{i}{2}))
-end    
-
-isequal(D, D2)
 
 % 5 - FD
-
-
+q_ddot = D^-1 * (F - h);
 
 
 
