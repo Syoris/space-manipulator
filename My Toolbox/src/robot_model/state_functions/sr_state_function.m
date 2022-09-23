@@ -76,86 +76,18 @@ qm_dot = diag([1; 1]) * rand(2, 1);
 
 q = [q0; qm];
 q_dot = [q0_dot; qm_dot];
+q_ddot = zeros(N, 1);
 
 % 1 - Kinematics
 [Rb, Rm] = RFunc_SR2(q);
 Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
 % 2 - Kinetics
-[t, t_dot, A, A_dot] = Kin(sr_info, q, q_dot, zeros(N, 1), {Rb, Rm});
-app_data = sr.kinetics(q, q_dot, zeros(N, 1));
-
-% Compare twist
-fprintf('### TWIST ###\n')
-fprintf('--- Base: %s ---\n', body.Name)
-A1 = app_data.base.t;
-A2 = t{1};
-disp([A1, A2]) 
-
-for i=1:3
-    body = sr.Bodies{i};  
-    fprintf('--- Body: %s ---\n', body.Name)
-
-    A1 = app_data.t_array(:, :, i);
-    A2 = t{2}(:, :, i);
-
-    disp([A1, A2]) 
-end
-
-fprintf('### ACCEL ###\n')
-fprintf('--- Base: %s ---\n', body.Name)
-A1 = app_data.base.t_dot;
-A2 = t_dot{1};
-disp([A1, A2]) 
-
-for i=1:3
-    body = sr.Bodies{i};  
-    fprintf('--- Body: %s ---\n', body.Name)
-
-    A1 = app_data.t_dot_array(:, :, i);
-    A2 = t_dot{2}(:, :, i);
-
-    disp([A1, A2]) 
-end
-
-fprintf('### A ###\n')
-fprintf('--- Base: %s ---\n', body.Name)
-A1 = app_data.anchor.Ab_k;
-A2 = A{1};
-disp(A1)
-disp(A2) 
-
-for i=1:3
-    body = sr.Bodies{i};  
-    fprintf('--- Body: %s ---\n', body.Name)
-
-    A1 = app_data.A_array(:, :, i);
-    A2 = A{2}(:, :, i);
-
-    disp(A1)
-    disp(A2) 
-end
-
-fprintf('### A DOT ###\n')
-fprintf('--- Base: %s ---\n', body.Name)
-A1 = app_data.anchor.Ab_dot_k;
-A2 = A_dot{1};
-disp(A1)
-disp(A2) 
-
-for i=1:3
-    body = sr.Bodies{i};  
-    fprintf('--- Body: %s ---\n', body.Name)
-
-    A1 = app_data.A_dot_array(:, :, i);
-    A2 = A_dot{2}(:, :, i);
-
-    disp(A1)
-    disp(A2) 
-end
+[t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, {Rb, Rm});
 
 % 3 - ID
-% h = ID(sr_info, q, q_dot, q_ddot);
+[tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+
 
 % 4 - Mass Mat
 

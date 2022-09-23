@@ -1,4 +1,4 @@
-function [t, t_dot, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
+function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     % Kin   Compute kinetics of the SR
     %
     %   -sr_info    Struct w/ all fix parameter of SR w/ fields
@@ -30,6 +30,8 @@ function [t, t_dot, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     %   -t          Space Robot twist {tb, tm}. tm: (6, 1, nk)
     %
     %   -t_dot      Space Robot accel {tb_dot, tm_dot}. tm_dot: (6, 1, nk)
+    %
+    %   -Omega      Omega array {Omega_b, Omega_m}. Omega_m: (6, 6, nk)
     %
     %   -A          Twist propaagtion matrices {Ab, Am}. A_i_(i-1) in frame i
     %                   -Ab: Manipulator anchor to base, anchor frame
@@ -146,6 +148,8 @@ function [t, t_dot, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
 
     t = {tb, tm_array};
     t_dot = {tb_dot, tm_dot_array};
+
+    Omega = {Omega_b, Omegam_array};
 
     A = {Ab_k, Am_array};
     A_dot = {Ab_dot_k, Am_dot_array};
