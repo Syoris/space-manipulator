@@ -338,6 +338,8 @@ classdef SpaceRobot < handle
 
         q_ddot = forwardDynamics(obj, F, q, q_dot)
 
+        q_ddot = FD(obj, F, q, q_dot)
+
         [tau_b, tau_m] = inverseDynamics(obj, varargin)
 
         function inertiaM = getInertiaM(obj, varargin) % OLD
@@ -369,6 +371,8 @@ classdef SpaceRobot < handle
             end
 
         end
+
+        z = stateFunc(obj, x, u)
 
     end
 

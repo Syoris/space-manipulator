@@ -184,4 +184,4 @@ toc
 % <docid:mpc_ref#mw_8f9e5d62-cfe1-499a-9420-e5099dedfe76> function. In this
 % example, name the Bus object |'myBusObject'|.
 mdl = 'nmpc_sim';
-createParameterBus(nlobj,[mdl '/Nonlinear MPC Controller'],'myBusObject',{sr});
+createParameterBus(nlobj,[mdl '/Nonlinear MPC Controller'],'myBusObject',{test.Bodies});
