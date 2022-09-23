@@ -1,20 +1,20 @@
 % SPART
 filename = 'SC_2DoF.urdf';
 [robotSpart, robot_keys] = urdf2robot(filename);
-robotSpart.links(3).mass = sr2.Bodies{3}.Mass;
-robotSpart.links(3).inertia = sr2.Bodies{3}.InertiaM;
+robotSpart.links(3).mass = sr.Bodies{3}.Mass;
+robotSpart.links(3).inertia = sr.Bodies{3}.InertiaM;
 
-R0 = rpy2r(sr2.q(4:6).');
-u0 = [sr2.q0_dot(4:6); sr2.q0_dot(1:3)];
-um = sr2.qm_dot;
+R0 = rpy2r(q(4:6).');
+u0 = [q0_dot(4:6); q0_dot(1:3)];
+um = qm_dot;
 
 u0_dot = [q0_ddot(4:6); q0_ddot(1:3)];
 um_dot = qm_ddot(1:2);
 
-[RJ, RL, rJ, rL, e, g] = Kinematics(R0, sr2.q0(1:3), sr2.qm, robotSpart);
+[RJ, RL, rJ, rL, e, g] = Kinematics(R0, q0(1:3), qm, robotSpart);
 
 %Differential kinematics
-[Bij, Bi0, P0, pm] = DiffKinematics(R0, sr2.q0(1:3), rL, e, g, robotSpart);
+[Bij, Bi0, P0, pm] = DiffKinematics(R0, q0(1:3), rL, e, g, robotSpart);
 
 %Velocities
 [t0_S, tm_S] = Velocities(Bij, Bi0, P0, pm, u0, um, robotSpart);
