@@ -273,7 +273,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_M1.read( "nmpc_test_data_acadodata_M1.txt" );
     DVector acadodata_v1(8);
     acadodata_v1(0) = 5.000000E-01;
-    acadodata_v1(1) = 5.000000E-01;
+    acadodata_v1(1) = 0;
     acadodata_v1(2) = 0;
     acadodata_v1(3) = 0;
     acadodata_v1(4) = 0;
@@ -282,7 +282,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_v1(7) = 0;
     DVector acadodata_v2(8);
     acadodata_v2(0) = 5.000000E-01;
-    acadodata_v2(1) = 5.000000E-01;
+    acadodata_v2(1) = 0;
     acadodata_v2(2) = 0;
     acadodata_v2(3) = 0;
     acadodata_v2(4) = 0;
@@ -335,17 +335,17 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     CFunction cLinkModel_1( ModelFcn_1NX, genericODE1 ); 
     acadodata_f1 << cLinkModel_1(setc_is_1); 
 
-    OCP ocp1(0, 10, 10);
+    OCP ocp1(0, 1, 20);
     ocp1.minimizeLSQ(acadodata_M1, acadodata_f2, acadodata_v2);
     ocp1.subjectTo(acadodata_f1);
-    ocp1.subjectTo(AT_START, q1 == 5.00000000000000000000e-01);
-    ocp1.subjectTo(AT_START, q2 == 5.00000000000000000000e-01);
+    ocp1.subjectTo(AT_START, q1 == 0.00000000000000000000e+00);
+    ocp1.subjectTo(AT_START, q2 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q3 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q4 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q5 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q6 == 0.00000000000000000000e+00);
-    ocp1.subjectTo(AT_START, q7 == 7.85398163397448278999e-01);
-    ocp1.subjectTo(AT_START, q8 == (-1.57079632679489655800e+00));
+    ocp1.subjectTo(AT_START, q7 == 0.00000000000000000000e+00);
+    ocp1.subjectTo(AT_START, q8 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q_dot1 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q_dot2 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q_dot3 == 0.00000000000000000000e+00);
@@ -354,14 +354,6 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     ocp1.subjectTo(AT_START, q_dot6 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q_dot7 == 0.00000000000000000000e+00);
     ocp1.subjectTo(AT_START, q_dot8 == 0.00000000000000000000e+00);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u1 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u2 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u3 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u4 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u5 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u6 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u7 <= 1.00000000000000000000e+01);
-    ocp1.subjectTo((-1.00000000000000000000e+01) <= u8 <= 1.00000000000000000000e+01);
 
 
     OptimizationAlgorithm algo1(ocp1);

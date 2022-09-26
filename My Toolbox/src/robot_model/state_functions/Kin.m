@@ -56,7 +56,9 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
 
     % --- Base Twist ---
     w_b = qb_dot(4:6); % Base angular rate
-    Omega_b = blkdiag(skew(w_b), skew(w_b)); % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
+    Omega_b = zeros(6, 6);  % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
+    Omega_b(1:3, 1:3) = skewSym(w_b);
+    Omega_b(4:6, 4:6) = Omega_b(1:3, 1:3);
 
     Pb = sr_info.P{1};
     tb = Pb * qb_dot; % Base twist
@@ -74,7 +76,10 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     t0_dot = Ab_k * tb_dot + Ab_dot_k * tb; % Anchor point accel
 
     w_0 = t0(4:6);
-    Omega_0 = blkdiag(skew(w_0), skew(w_0)); % Anchor angular speed
+
+    Omega_0 = zeros(6, 6);  % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
+    Omega_0(1:3, 1:3) = skewSym(w_0);
+    Omega_0(4:6, 4:6) = Omega_0(1:3, 1:3);
 
     % Setup arrays
     tm_array = zeros(6, 1, nk);
@@ -98,8 +103,13 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
         % Body values
         jnt_idx = sr_info.jnt_idx(i);
 
-        R_i = Rm(:, :, i); % Rotation matrix from (i) to (i-1)
-        R_i = blkdiag(R_i, R_i).'; % Rotation matrix from (i-1) to (i)
+        r_i = Rm(:, :, i).'; % Rotation matrix from (i) to (i-1)
+        
+        R_i = zeros(6, 6);
+        R_i(1:3, 1:3) = r_i;
+        R_i(4:6, 4:6) = r_i;
+
+%         R_i = blkdiag(R_i, R_i).'; % Rotation matrix from (i-1) to (i)
 
         A_i = Am(:, :, i); % Propagation matrix, (i-1) frame
         A_i = R_i * A_i; % twist propagation, frame i
@@ -122,8 +132,13 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
         % twist
         ti = A_i * t_prev + P_i * qi_dot;
         wi = ti(4:6);
-        wi_skew = skew(wi);
-        Omega_i = blkdiag(wi_skew, wi_skew);
+%         wi_skew = skew(wi);
+
+        Omega_i = zeros(6, 6);
+        Omega_i(1:3, 1:3) = skewSym(wi);
+        Omega_i(4:6, 4:6) = Omega_i(1:3, 1:3);
+        
+%         Omega_i = blkdiag(wi_skew, wi_skew);
 
         ti_dot = A_i * t_dot_prev + A_dot_i * t_prev + P_i * qi_ddot + Omega_i * P_i * qi_dot;
 
