@@ -17,7 +17,7 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
     f = acado.DifferentialEquation();
     f.linkMatlabODE('srode');
     
-    ocp = acado.OCP(0.0, 1, 20);
+    ocp = acado.OCP(0.0, 1, 5);
 
 
     h={q(1), q(2), q(3), q(4), q(5), q(6), q(7), q(8)};  % the LSQ-Function

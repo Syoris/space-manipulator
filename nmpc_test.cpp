@@ -335,7 +335,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     CFunction cLinkModel_1( ModelFcn_1NX, genericODE1 ); 
     acadodata_f1 << cLinkModel_1(setc_is_1); 
 
-    OCP ocp1(0, 1, 20);
+    OCP ocp1(0, 1, 5);
     ocp1.minimizeLSQ(acadodata_M1, acadodata_f2, acadodata_v2);
     ocp1.subjectTo(acadodata_f1);
     ocp1.subjectTo(AT_START, q1 == 0.00000000000000000000e+00);

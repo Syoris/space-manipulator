@@ -1,8 +1,9 @@
 function [ dx ] = srode(t, x, u, p, w )      
 
 %% Load params
-    load('SR2_data.mat', 'sr_info');
-    
+    sr_info = SR2_info();
+
+%%    
     dx = zeros(16, 1);
     q = x(1:8);
     qb = q(1:6);
