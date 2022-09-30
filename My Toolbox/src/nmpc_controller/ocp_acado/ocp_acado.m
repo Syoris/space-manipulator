@@ -15,8 +15,9 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
     
     % Set default objects
     f = acado.DifferentialEquation();
-    f.linkMatlabODE('srode_ocp_acado');
-    
+%     f.linkMatlabODE('srode_ocp_acado');
+    f.linkMatlabODE('srode_ocp_acado_mex');
+
     ocp = acado.OCP(0.0, 1, 5);
 
 

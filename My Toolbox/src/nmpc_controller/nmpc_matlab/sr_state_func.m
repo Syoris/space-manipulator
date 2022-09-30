@@ -1,4 +1,4 @@
-function dx = sr_state_func(x,u)
+function dx = sr_state_func(x,u) %#codegen
 % z = [q_dot; q_ddot]
 % x = [q; q_dot]   
 %

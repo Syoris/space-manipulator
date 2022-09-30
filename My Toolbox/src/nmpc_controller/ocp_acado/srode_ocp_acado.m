@@ -1,4 +1,4 @@
-function [ dx ] = srode(t, x, u, p, w )      
+function [ dx ] = srode_ocp_acado(t, x, u, p, w ) %#codegen
 %% Load params
     sr_info = SR2_info();
 

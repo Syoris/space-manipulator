@@ -1,4 +1,4 @@
-function sr_info = SR2_info()
+function sr_info = SR2_info() %#codegen
 %SR2_INFO Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -11,7 +11,10 @@ function sr_info = SR2_info()
     sr_info.N = 8;
     sr_info.BodyNames = {'Body1', 'Body2', 'endeffector'};
     sr_info.jnt_idx = [1; 2; -1];
-    
+    sr_info.A = cell(1, 2);
+    sr_info.M = cell(1, 2);
+    sr_info.P = cell(1, 2);
+     
     % A
     sr_info.A{1} = [...    
                         1.0000         0         0         0         0         0;

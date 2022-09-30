@@ -305,7 +305,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     ModelFcn_1NU  = 8;
     ModelFcn_1NW  = 0;
     DifferentialEquation acadodata_f1;
-    ModelFcn_1_f = mxCreateString("srode");
+    ModelFcn_1_f = mxCreateString("srode_ocp_acado_mex");
     IntermediateState setc_is_1(25);
     setc_is_1(0) = autotime;
     setc_is_1(1) = q1;

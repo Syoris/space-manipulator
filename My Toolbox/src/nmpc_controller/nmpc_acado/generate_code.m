@@ -7,7 +7,7 @@ DifferentialState q(8) q_dot(8);
 Control u(8);
 
 f = acado.DifferentialEquation();
-f.linkMatlabODE('srode');
+f.linkMatlabODE('srode_ocp_acado_mex');
 
 %% SIMexport
 % fprintf('----------------------------\n         SIMexport         \n----------------------------\n');

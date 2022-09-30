@@ -32,7 +32,7 @@ nlobj.ControlHorizon = Tc;
 
 % Prediction Model
 nlobj.Model.NumberOfParameters = 0;
-nlobj.Model.StateFcn = "sr_state_func";
+nlobj.Model.StateFcn = "sr_state_func_mex";
 nlobj.Model.OutputFcn = "sr_output_func";
 
 nlobj.Model.IsContinuousTime = true;
@@ -75,7 +75,7 @@ nlobj.Weights.OutputVariables = [ones(1, 3)*r_W, ones(1, 3)*psi_W, ones(1, 2)*qm
 % Validate
 x0 = [sr.q; sr.q_dot];
 u0 = zeros(8, 1);
-validateFcns(nlobj, x0, u0, []);
+% validateFcns(nlobj, x0, u0, []);
 
 yref = [x0(1:6)', 0, 0];
 
