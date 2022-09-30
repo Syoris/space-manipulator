@@ -14,11 +14,12 @@ sr.q = [0; 0; 0; 0; 0; 0; 0; 0];
 % --- Create NMPC ---
 % Parameters
 Ts = 0.1;
-Tp = 10; % # of prediction steps
-Tc = 5; % # of ctrl steps
+Tp = 20; % # of prediction steps
+Tc = 10; % # of ctrl steps
 
 % 
 n = sr.NumActiveJoints;
+N = n+6;
 nx = 12 + 2*n; % Change to 24 + 2*n w/ EE
 ny = 8;
 nu = n+6;
@@ -58,26 +59,32 @@ nlobj.Weights.OutputVariables = [ones(1, 3)*r_W, ones(1, 3)*psi_W, ones(1, 2)*qm
 
 
 % --- Constraints ---
-% % Joint 1
-% nlobj.OV(7).Min = -pi/2;
-% nlobj.OV(7).Max = pi/2;
-% 
-% % Joint 2
-% nlobj.OV(8).Min = -pi/2;
-% nlobj.OV(8).Max = pi/2;
-% 
-% % Torque limits
-% for i=1:8
-%     nlobj.MV(i).Min = -10;
-%     nlobj.MV(i).Max = 10;
-% end
+% Joint positions
+for i=1:sr.NumActiveJoints
+    jnt = sr.findJointByConfigId(i);
 
-% Validate
-x0 = [sr.q; sr.q_dot];
-u0 = zeros(8, 1);
+    nlobj.OV(i+6).Min = jnt.PositionLimits(1);
+    nlobj.OV(i+6).Max = jnt.PositionLimits(2);
+end
+
+% Torques
+baseMaxForce = 10;
+baseMaxTorque = 2;
+motorMaxTorque = 5;
+maxTorques = [ones(3, 1)*baseMaxForce; ones(3, 1)*baseMaxTorque; ones(n, 1)*motorMaxTorque];
+
+% Torque limits
+for i=1:N
+    nlobj.MV(i).Min = -maxTorques(i);
+    nlobj.MV(i).Max = maxTorques(i);
+end
+
+% % Validate
+% x0 = [sr.q; sr.q_dot];
+% u0 = zeros(8, 1);
 % validateFcns(nlobj, x0, u0, []);
-
-yref = [x0(1:6)', 0, 0];
+% 
+% yref = [x0(1:6)', 0, 0];
 
 %% State Estimation
 % TODO: ADD EKF for Xe
@@ -111,7 +118,7 @@ yref1 = [0.5, 0, 0, 0, 0, 0, 0, 0];
 % --- Sim ---
 profile on
 tic
-Duration = 1.0;
+Duration = 10.0;
 hbar = waitbar(0,'Simulation Progress');
 xHistory = x;
 nloptions = nlmpcmoveopt;
@@ -163,33 +170,36 @@ profile viewer
 profile off
 
 %% Plot results
+% timeArray = timeArray;
+timeArray = 0:Ts:((size(xHistory, 2) -1 )*Ts);
+
 figure
 subplot(2,2,1)
-plot(0:Ts:Duration,xHistory(1,:))
+plot(timeArray,xHistory(1,:))
 xlabel('time')
 ylabel('[m]')
 title('SC X')
 
 subplot(2,2,2)
-plot(0:Ts:Duration,xHistory(2,:))
+plot(timeArray,xHistory(2,:))
 xlabel('time')
 ylabel('[m]')
 title('SC Y')
 
 subplot(2,2,3)
-plot(0:Ts:Duration,xHistory(7,:))
+plot(timeArray,xHistory(7,:))
 xlabel('time')
 ylabel('theta')
 title('Joint 1')
 
 subplot(2,2,4)
-plot(0:Ts:Duration,xHistory(8,:))
+plot(timeArray,xHistory(8,:))
 xlabel('time')
 ylabel('theta')
 title('Joint 2')
 
 % Animate
-data = timeseries(xHistory(1:8, :), 0:Ts:Duration);
+data = timeseries(xHistory(1:8, :), timeArray);
 figure
 tic
 sr.animate(data, 'fps', 17, 'rate', 1); 
