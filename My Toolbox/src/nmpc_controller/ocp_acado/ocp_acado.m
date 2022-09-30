@@ -15,7 +15,7 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
     
     % Set default objects
     f = acado.DifferentialEquation();
-    f.linkMatlabODE('srode');
+    f.linkMatlabODE('srode_ocp_acado');
     
     ocp = acado.OCP(0.0, 1, 5);
 
@@ -24,7 +24,7 @@ BEGIN_ACADO;                                % Always start with "BEGIN_ACADO".
 
     Q = eye(8);                             % The weighting matrix
     
-    ocp.minimizeLSQ( Q, h, ref);             % Minimize this Least Squares Term
+    ocp.minimizeLSQ(Q, h, ref);             % Minimize this Least Squares Term
     
     ocp.subjectTo( f );
     ocp.subjectTo( 'AT_START', q ==  sr.q );
@@ -48,12 +48,12 @@ END_ACADO;           % Always end with "END_ACADO".
                      % times as you want without having to compile again.
 
 %%
-profile on
-fprintf("Running ocp\n")
+% profile on
+% fprintf("Running ocp\n")
 tic;
 out = nmpc_test_RUN();                % Run the test
 toc;
-profile viewer
-profile off
+% profile viewer
+% profile off
 
-draw;
+% draw;

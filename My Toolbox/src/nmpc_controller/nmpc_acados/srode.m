@@ -1,16 +1,8 @@
-function dx = sr_state_func(x,u)
-% z = [q_dot; q_ddot]
-% x = [q; q_dot]   
-%
-% q = [rb; psi_b; qm]
-% q_dot = [vb; wb; qm_dot]
-% q_ddot = [vb_dot; wb_dot; qm_ddot]
-%
-% params: SpaceRobot
-
+function [ dx ] = srode(t, x, u, p, w )      
 %% Load params
-    load('SR2_data.mat', 'sr_info');
-    
+    sr_info = SR2_info();
+
+%%    
     dx = zeros(16, 1);
     q = x(1:8);
     qb = q(1:6);

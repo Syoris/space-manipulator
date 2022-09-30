@@ -1,5 +1,6 @@
 %% sr_state_function.m
 % To compute SR state function indenpendantly from class
+% Generates function for Rot mats
 
 %% Create Rot matrix function
 nk = sr.NumBodies;

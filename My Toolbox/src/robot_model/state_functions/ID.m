@@ -64,7 +64,9 @@ function [tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot)
 
     wen_next = zeros(6, 1); % Wrench at the end-effect
     A_next = zeros(6, 6); % ee load to ee, set to zeros
-    Ev = blkdiag(zeros(3, 3), eye(3));
+    % Ev = blkdiag(zeros(3, 3), eye(3));
+    Ev = zeros(6, 6);
+    Ev(4:6, 4:6) = [1 0 0; 0 1 0; 0 0 1];
 
     tm = t{2};
     tm_dot = t_dot{2};

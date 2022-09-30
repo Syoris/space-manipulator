@@ -30,3 +30,8 @@ codegen/
 *.slxc
 
 *.code-workspace
+
+#
+codegen/*
+
+My Toolbox/src/nmpc_controller/sr_nmpc/export_mpc/qpoases/*

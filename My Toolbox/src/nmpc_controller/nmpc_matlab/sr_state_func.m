@@ -1,4 +1,12 @@
-function [ dx ] = srode(t, x, u, p, w )      
+function dx = sr_state_func(x,u)
+% z = [q_dot; q_ddot]
+% x = [q; q_dot]   
+%
+% q = [rb; psi_b; qm]
+% q_dot = [vb; wb; qm_dot]
+% q_ddot = [vb_dot; wb_dot; qm_ddot]
+%
+% params: SpaceRobot
 
 %% Load params
     sr_info = SR2_info();
@@ -6,12 +14,12 @@ function [ dx ] = srode(t, x, u, p, w )
 %%    
     dx = zeros(16, 1);
     q = x(1:8);
-    qb = q(1:6);
-    qm = q(7:8);
+%     qb = q(1:6);
+%     qm = q(7:8);
 
     q_dot = x(9:16); 
-    qb_dot = q_dot(1:6);
-    qm_dot = q_dot(7:8);
+%     qb_dot = q_dot(1:6);
+%     qm_dot = q_dot(7:8);
 %% 
     % 1 - Kinematics
     [Rb, Rm] = RFunc_SR2(q);

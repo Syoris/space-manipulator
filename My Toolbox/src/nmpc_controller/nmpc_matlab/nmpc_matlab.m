@@ -13,7 +13,7 @@ sr.q = [0; 0; 0; 0; 0; 0; 0; 0];
 
 % --- Create NMPC ---
 % Parameters
-Ts = 0.5;
+Ts = 0.1;
 Tp = 10; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
@@ -36,7 +36,6 @@ nlobj.Model.StateFcn = "sr_state_func";
 nlobj.Model.OutputFcn = "sr_output_func";
 
 nlobj.Model.IsContinuousTime = true;
-
 
 % Cost Function
 r_W = 1; % Position position weight
@@ -91,7 +90,7 @@ yref = [x0(1:6)', 0, 0];
 % --- Initial Conds ---
 % The initial conditions are set to home config. Speeds are null
 sr.homeConfig();
-sr.q0 = [0; 0; 0; 0; 0; 0];
+sr.q = zeros(8, 1);
 x = [sr.q; sr.q_dot];
 y = [sr.q];
 
@@ -102,18 +101,24 @@ mv = zeros(8, 1);
 % From home config go to zeros(8, 1). At 10sec, move base to [0.5; 0.5; 0]
 % keeping manipulator at same position
 
-yref1 = [x(1:6)', 0, 0];
-yref2 = [0, 0, 0, zeros(1, 5)];
+yref1 = [0.5, 0, 0, 0, 0, 0, 0, 0];
+% yref2 = [0, 0, 0, zeros(1, 5)];
 
 % --- Sim Setup ---
 % nloptions = nlmpcmoveopt;
 % nloptions.Parameters = {sr};
 
-% --- Sim for 20 sec ---
-Duration = 10;
+% --- Sim ---
+profile on
+tic
+Duration = 1.0;
 hbar = waitbar(0,'Simulation Progress');
 xHistory = x;
+nloptions = nlmpcmoveopt;
+minTime = Inf;
+
 for ct = 1:(Duration/Ts)
+    tstart = tic;
     % Set references
 %     if ct*Ts<10
 %         yref = yref1;
@@ -143,10 +148,19 @@ for ct = 1:(Duration/Ts)
     xHistory = [xHistory x]; %#ok<*AGROW>
     time = ct*Ts;
     waitbar(time/Duration,hbar);
-    fprintf('Time: %.2f\n', time)
+    
 
+    tElasped = toc(tstart);
+    minTime = min(tElasped, minTime);
+    fprintf('Time: %.2f \t (computed in: %.2f)\n', time, tElasped)
 end
 close(hbar)
+averageTime = toc/(Duration/Ts);
+fprintf("Average time: %.2f\n", averageTime)
+fprintf("Min time: %.2f\n", minTime)
+
+profile viewer
+profile off
 
 %% Plot results
 figure
@@ -193,24 +207,24 @@ toc
 mdl = 'nmpc_sim';
 % createParameterBus(nlobj,[mdl '/Nonlinear MPC Controller'],'myBusObject',{test.Bodies});
 
-%% Animation
-clc
-close all
-folder = 'Project/Videos/';
-fileName = '';
-
-if ~strcmp(fileName, '')
-    savePath = strcat(folder, fileName);
-else
-    savePath = '';
-end
-
-simRes = out;
-
-% trajRes = struct();
-% trajRes.ref = traj;
-% trajRes.Xee = simRes.Xee;
-
-tic
-sr.animate(simRes.q, 'fps', 17, 'rate', 1, 'fileName', savePath); 
-toc
+% % Animation
+% % clc
+% % close all
+% folder = 'Project/Videos/';
+% fileName = '';
+% 
+% if ~strcmp(fileName, '')
+%     savePath = strcat(folder, fileName);
+% else
+%     savePath = '';
+% end
+% 
+% simRes = out;
+% 
+% % trajRes = struct();
+% % trajRes.ref = traj;
+% % trajRes.Xee = simRes.Xee;
+% 
+% tic
+% sr.animate(simRes.q, 'fps', 17, 'rate', 1, 'fileName', savePath); 
+% toc

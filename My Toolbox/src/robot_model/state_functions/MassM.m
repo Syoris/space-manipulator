@@ -23,7 +23,7 @@ function D = MassM(sr_info, q, A)
     Dbb = zeros(6, 6);
     Dba = zeros(6, n);
     Da = zeros(n, n);
-    Ev = blkdiag(zeros(3, 3), eye(3));
+    % Ev = blkdiag(zeros(3, 3), eye(3));
 
     M_array = zeros(6, 6, nk); % Mass_hat array
 
