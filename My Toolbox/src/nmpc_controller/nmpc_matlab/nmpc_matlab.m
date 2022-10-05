@@ -13,9 +13,9 @@ sr.q = [0; 0; 0; 0; 0; 0; 0; 0];
 
 % --- Create NMPC ---
 % Parameters
-Ts = 0.1;
-Tp = 20; % # of prediction steps
-Tc = 10; % # of ctrl steps
+Ts = 0.2;
+Tp = 10; % # of prediction steps
+Tc = 5; % # of ctrl steps
 
 % 
 n = sr.NumActiveJoints;
@@ -68,9 +68,9 @@ for i=1:sr.NumActiveJoints
 end
 
 % Torques
-baseMaxForce = 10;
-baseMaxTorque = 2;
-motorMaxTorque = 5;
+baseMaxForce = 5;
+baseMaxTorque = 5;
+motorMaxTorque = 200;
 maxTorques = [ones(3, 1)*baseMaxForce; ones(3, 1)*baseMaxTorque; ones(n, 1)*motorMaxTorque];
 
 % Torque limits
