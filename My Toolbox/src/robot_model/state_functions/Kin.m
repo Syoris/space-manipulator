@@ -61,20 +61,18 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     Rb = R{1}; % Rotation matrix from base to inertial
     Ra = R{2}; % Rotation matrix from appendage to base
     Rm = R{3}; % Manipulator R array
-   
-    Rb_mat = zeros(6, 6);
-    Rb_mat(1:3, 1:3) = Rb.';
-    Rb_mat(4:6, 4:6) = Rb.';
+
+    Rb_mat = [Rb.', zeros(3, 3); zeros(3, 3), eye(3)];
 
     % --- Base Twist ---
     w_b = qb_dot(4:6); % Base angular rate
     Omega_b = zeros(6, 6); % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
-%     Omega_b(1:3, 1:3) = skewSym(w_b);
+    %     Omega_b(1:3, 1:3) = skewSym(w_b);
     Omega_b(4:6, 4:6) = skewSym(w_b);
 
     Pb = sr_info.P{1};
-    tb = [Rb.', zeros(3, 3); zeros(3, 3), eye(3)]*Pb * qb_dot; % Base twist, in base frame
-    tb_dot = Rb_mat*(Pb * qb_ddot + Omega_b * Pb * qb_dot); % Base accel, in base frame
+    tb = Rb_mat * Pb * qb_dot; % Base twist, in base frame
+    tb_dot = Rb_mat * (Pb * qb_ddot + Omega_b * Pb * qb_dot); % Base accel, in base frame
 
     % --- Appendage k Dynamic --- % TODO Repeat for each appendage
     % Anchor point
