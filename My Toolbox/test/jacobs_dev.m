@@ -8,7 +8,7 @@ qm_conf = [1; 1];
 qb_dot_conf = [1; 1; 1; 1; 1; 1]; % [0; 0; 0; 0; 0; 0], [1; 1; 1; 1; 1; 1]
 qm_dot_conf = [1; 1]; % [0; 0], [1; 1]
 
-qb_ddot_conf = [1; 1; 1; 1; 1; 1];
+qb_ddot_conf = [1; 1; 1; 0; 0; 0];
 qm_ddot_conf = [1; 1];
 
 %% --- Config ---
@@ -61,11 +61,13 @@ end
 %% Compute J, DeNOC
 sr_info = SR2_info();
 % 1 - Kinematics
-[Rb, Rm] = RFunc_SR2(q);
+[Rb, Ra, Rm] = RFunc_SR2(q);
 Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
 % 2 - Kinetics
-[t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, zeros(8, 1), {Rb, Rm});
+% blkdiag(Rb.', Rb.')*[t0_dot_S(4:6); t0_dot_S(1:3)]
+
+[t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, {Rb, Ra, Rm});
 
 % --- Nkl ---
 Nkl = eye(6*nk, 6*nk);
@@ -95,7 +97,7 @@ Ab = zeros(6*nk, 6);
 [R_b_I, ~] = tr2rt(sr.getTransform('spacecraftBase', 'TargetFrame', 'inertial', 'Symbolic', false));
 
 A_0b_b = sr_info.A{1} * [R_b_I.', zeros(3, 3); zeros(3, 3), eye(3)]; % Base to anchor twist propagation matrix, base frame
-A_0b_k = Rb.' * A_0b_b;  % Base to anchor twist propagation matrix, Appendage frame
+A_0b_k = Ra.' * A_0b_b;  % Base to anchor twist propagation matrix, Appendage frame
 
 A_1b = A{2}(:, :, 1) * A_0b_k; % A_1b = A_10 * A_0b_k
 Ab(1:6, :) = A_1b;
@@ -145,19 +147,17 @@ end
 Ab_dot = zeros(6*nk, 6); % Matrix
 
 w_b = qb_dot(4:6); % Base angular rate
-Omega_b = blkdiag(skew(w_b), skew(w_b));
-Omega_b2 = blkdiag(zeros(3, 3), skew(w_b));
 
-% A_0b_dot_k = Rb.'*(Omega_b * A_0b_b - A_0b_b * Omega_b); % Appendage frame
-
-A_0b_dot_k = zeros(6, 6);
+A_0b_dot_b = zeros(6, 6);
 P_0b = [0.5; 0; 0];
-A_0b_dot_k(1:3, 4:6) = -skew((skew(w_b)*P_0b));
+
+A_0b_dot_b(1:3, 4:6) = -skew(sr_info.A{1}(1:3, 4:6)*w_b);
+A_0b_dot_a = Ra.' * A_0b_dot_b;
 
 A_10 = A{2}(:, :, 1);
 A_10_dot = A_dot{2}(:, :, 1);
 
-A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_k; % A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_k
+A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_a; % A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_a
 
 Ab_dot(1:6, :) = A_1b_dot;
 
@@ -227,12 +227,12 @@ for i=1:3
 
     ti_dot_denoc_i = J_denoc{i}*q_ddot + J_dot_denoc{i}*q_dot;
   
-%     fprintf("\n### %s ###\n", sr.BodyNames{i})
-%     fprintf("\t --- Velocities ---\n")
-%     fprintf('\t Kin     DeNOC  SPART (in body frame)\n')
-%     disp([ti, ti_denoc_i, ti_S_b])
+    fprintf("\n### %s ###\n", sr.BodyNames{i})
+    fprintf("\t --- Velocities ---\n")
+    fprintf('\t Kin     DeNOC  SPART (in body frame)\n')
+    disp([ti, ti_denoc_i, ti_S_b])
     
-    if ~isequal(round(ti_denoc_i, 5), round(ti_S_b, 5))
+    if ~isequal(round(ti_denoc_i, 5), round(ti, 5))
         fprintf("ERROR, Speed not matching between DeNOC and SPART\n")
         speedOk = false;
     end
