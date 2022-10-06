@@ -28,7 +28,7 @@ C_symb = sr2.C;
 C_D = sr2.CMat;
 
 
-run spart_twist_test.m
+run spart_script.m
 
 h_S = C_spart * q_dot;
 h_Symb = C_symb * q_dot;
