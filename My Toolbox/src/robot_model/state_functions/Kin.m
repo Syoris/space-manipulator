@@ -77,15 +77,15 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     % --- Appendage k Dynamic --- % TODO Repeat for each appendage
     % Anchor point
 
-    A_ab_b = sr_info.A{1}; % * [Rb.', zeros(3, 3); zeros(3, 3), eye(3)]; % Base to anchor twist propagation matrix, base frame
+    A_ab_b = sr_info.A{1} * [Rb.', zeros(3, 3); zeros(3, 3), eye(3)]; % Base to anchor twist propagation matrix, base frame
     A_ab_a = Ra.' * A_ab_b; % Base to anchor twist propagation matrix, anchor frame
 
     A_0b_dot_b = zeros(6, 6);
     A_0b_dot_b(1:3, 4:6) = -skew(sr_info.A{1}(1:3, 4:6) * w_b);
     A_0b_dot_a = Ra.' * A_0b_dot_b;
 
-    ta = A_ab_a * tb; % Anchor point speed
-    ta_dot = A_ab_a * tb_dot + A_0b_dot_a * tb; % Anchor point accel
+    ta = A_ab_a * qb_dot; % Anchor point speed
+    ta_dot = A_ab_a * qb_ddot + A_0b_dot_a * qb_dot; % Anchor point accel
 
     w_a = ta(4:6);
 

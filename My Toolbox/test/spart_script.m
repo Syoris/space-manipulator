@@ -62,6 +62,7 @@ wF0 = zeros(6, 1);
 wFm = zeros(6, 3);
 
 [tau0_S, taum_S, wq_tilde, wq_tilde0] = ID_test(wF0, wFm, t0_S, tm_S, t0_dot_S, tm_dot_S, P0, pm, I0, Im, Bij, Bi0, robotSpart);
+tau0_S = [tau0_S(4:6); tau0_S(1:3)];
 
 %Mass Composite Body matrix
 [M0_tilde, Mm_tilde] = MCB(I0, Im, Bij, Bi0, robotSpart);

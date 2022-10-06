@@ -68,6 +68,8 @@ Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 % blkdiag(Rb.', Rb.')*[t0_dot_S(4:6); t0_dot_S(1:3)]
 
 [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, {Rb, Ra, Rm});
+[tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+D = MassM(sr_info, q, A);
 
 % --- Nkl ---
 Nkl = eye(6*nk, 6*nk);
@@ -258,6 +260,34 @@ if accelOk
 else
     fprintf("### Accel error ###\n")
 end
+
+%% Check Matrices
+tau_b = blkdiag(Rb, eye(3))*tau{1};
+tau_m = tau{2};
+
+if isequal(round(D, 2), round(H_spart, 2))
+    fprintf("MASS MATRIX MATCHING\n")
+else
+    fprintf("ERROR, Mass mat not matching\n")
+    disp(D)
+    disp(H_spart)
+end
+
+if isequal(round(tau_b, 2), round(tau0_S, 2))
+    fprintf("BASE TORQUE MATCHING\n")
+else
+    fprintf("ERROR: base torque not matching\n")
+    disp([tau_b, tau0_S])
+end
+
+if isequal(round(tau_m, 2), round(taum_S, 2))
+    fprintf("MANIP TORQUE MATCHING\n")
+else
+    fprintf("ERROR: manip torque not matching\n")
+    disp(tau_m)
+    disp(taum_S)
+end
+
 
 %% Compare Results
 function compare_jacs(sr, J_1, J_2)
