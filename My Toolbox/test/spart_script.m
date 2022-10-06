@@ -43,7 +43,9 @@ J_S = {[[J01(4:6, 4:6), J01(4:6, 1:3); J01(1:3, 4:6), J01(1:3, 1:3)], [Jm1(4:6, 
 % Jacobians derivative
 J_dot_S = cell(3, 1);
 for i=1:3
-    [J0pdot, Jmpdot] = Jacobdot(rJ(1:3, i),tm_S(:, i), qb(1:3), t0_S, rL, tm_S, P0, pm, i, robotSpart);
+    tJi = J_S{i}*q_dot;
+    tJi = [tJi(4:6); tJi(1:3)];
+    [J0pdot, Jmpdot] = Jacobdot(rJ(1:3, i),tJi, qb(1:3), t0_S, rL, tm_S, P0, pm, i, robotSpart);
     J_dot_i_S = [[J0pdot(4:6, 4:6), J0pdot(4:6, 1:3); J0pdot(1:3, 4:6), J0pdot(1:3, 1:3)], [Jmpdot(4:6, :); Jmpdot(1:3, :)]];
     J_dot_S{i} = J_dot_i_S;
 end
