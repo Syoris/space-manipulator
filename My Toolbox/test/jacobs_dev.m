@@ -65,8 +65,6 @@ sr_info = SR2_info();
 Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
 % 2 - Kinetics
-% blkdiag(Rb.', Rb.')*[t0_dot_S(4:6); t0_dot_S(1:3)]
-
 [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, {Rb, Ra, Rm});
 [tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
 D = MassM(sr_info, q, A);
