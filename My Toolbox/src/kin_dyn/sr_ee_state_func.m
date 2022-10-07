@@ -1,23 +1,27 @@
-function dx = sr_state_func(x, u) %#codegen
-    % dx = [q_dot; q_ddot]
+function dx = sr_ee_state_func(x, u) %#codegen
     % x = [q; q_dot]
+    % dx = [q_dot; q_ddot]
+    
     %
-    % q = [rb; psi_b; qm]
-    % q_dot = [vb; wb; qm_dot]
-    % q_ddot = [vb_dot; wb_dot; qm_ddot]
-    %
-    % params: SpaceRobot
+    % q = [rb; psi_b; qm; ree; psi_ee]
+    % q_dot = [vb; wb; qm_dot; vee; wee]
+    % q_ddot = [vb_dot; wb_dot; qm_ddot; vee_dot; wee_dot]
 
     %% Load params
     sr_info = SR2_info();
 
     %%
-    dx = zeros(16, 1);
+    dx = zeros(28, 1);
+
     q = x(1:8);
+    q_ee = x(9:14);
+
     %     qb = q(1:6);
     %     qm = q(7:8);
 
-    q_dot = x(9:16);
+    q_dot = x(15:22);
+    q_ee_dot = x(23:28);
+
     %     qb_dot = q_dot(1:6);
     %     qm_dot = q_dot(7:8);
     %%
@@ -37,6 +41,15 @@ function dx = sr_state_func(x, u) %#codegen
 
     % 5 - FD
     q_ddot = D^ - 1 * (u - h);
+
+    % 6 - End Effector
+    J = Jacobian('endeffector', sr_info, A, {Rb, Ra});
+    J_inv = J^-1;
+    J_dot = Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, qb_dot(4:6), Omega);
+    
+    A = D*J_inv;
+%     B = 
+
 
     %% Assign outputs
     % Speed
