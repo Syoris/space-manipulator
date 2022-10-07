@@ -3,6 +3,9 @@ function J = Jacobian(bodyName, sr_info, A, R)
 % ti = Ji*q_dot
 %
 %   The twist ti is expressed in the body frame
+%
+%   To convert jacobian to inertial frame: J_I = blkdiag(Ri, Ri)*J_i
+%       Where Ri is the rot matrix from body i to Inertial frame
 
 %   -sr_info    Struct w/ all fix parameter of SR w/ fields
 %
@@ -32,50 +35,11 @@ function J = Jacobian(bodyName, sr_info, A, R)
 %   -R         Rot Matrice: {Rb, Ra}
 %                   Rb: from base to inertial frame 
 %                   Ra: from anchor to base frame 
-
-    N = sr_info.N;
     n = sr_info.n;
     nk = sr_info.nk; % Number of bodies in the appendage
     
-    Rb = R{1};
-    Ra = R{2};
 
-    % --- Nkl ---
-    Nkl = eye(6*nk, 6*nk);
-    for i=2:nk
-        A_i = A{2}(:, :, i) ;% A_i_(i-1)
-        
-        for j=i-1:-1:1       
-            if j==i-1
-                blkMat = A_i; % Set lower diag to A_i_(i-1)
-            else        
-                blkMat = Nkl(6*i-5:6*i, 6*(j+1)-5:6*(j+1))*Nkl(6*(j+1)-5:6*(j+1), 6*j-5:6*j);
-            end
-    
-            Nkl(6*i-5:6*i, 6*j-5:6*j) = blkMat;
-        end
-    end
-    
-    % --- Nd ---
-    Nd = zeros(6*nk, nk);
-    for i=1:nk
-        Nd(6*i-5:6*i, i) = sr_info.P{2}(:, :, i);
-    end
-    
-    
-    % --- Nbl ---
-    Ab = zeros(6*nk, 6);
-
-    A_0b_b = sr_info.A{1} * [Rb.', zeros(3, 3); zeros(3, 3), eye(3)]; % Base to anchor twist propagation matrix, base frame
-    A_0b_k = Ra.' * A_0b_b;  % Base to anchor twist propagation matrix, Appendage frame
-    
-    A_1b = A{2}(:, :, 1) * A_0b_k; % A_1b = A_10 * A_0b_k
-    Ab(1:6, :) = A_1b;
-    
-    Nbl = Nkl*Ab;
-    
-    % --- Ndb ---
-    Ndb = sr_info.P{1};
+    [Nkl, Nd, Nbl, Ndb] = DeNOC(sr_info, A, R);      
     
     % --- Jacobians ---   
     bodyIdx = find(strcmp(sr_info.BodyNames, bodyName));

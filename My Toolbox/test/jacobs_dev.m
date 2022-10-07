@@ -50,12 +50,13 @@ n = sr.NumActiveJoints;
 nk = sr.NumBodies;
 N = n + 6;
 
-run spart_script
-%% Compute J
-J = cell(nk, 1);
+spart_res = spart_script(sr, 'SC_2DoF.urdf', q, q_dot, q_ddot);
+
+%% Compute J, symbolic way, old
+J_old = cell(nk, 1);
 for i=1:nk
     bodyName = sr.BodyNames{i};
-    J{i} = sr.JacobsCoM_FuncHandle.(bodyName)(sr.q);
+    J_old{i} = sr.JacobsCoM_FuncHandle.(bodyName)(sr.q);
 end
 
 %% Compute J, DeNOC
@@ -76,90 +77,27 @@ D = MassM(sr_info, q, A);
 [R_3, ~] = tr2rt(sr.getTransform(sr.BodyNames{3}, 'TargetFrame', 'inertial', 'Symbolic', false));
 
 
-J_denoc = cell(3, 1);
-J_denoc{1} = blkdiag(R_1, R_1)*Jacobian('Body1', sr_info, A, {Rb, Ra});
-J_denoc{2} = blkdiag(R_2, R_2)*Jacobian('Body2', sr_info, A, {Rb, Ra});
-J_denoc{3} = blkdiag(R_3, R_3)*Jacobian('endeffector', sr_info, A, {Rb, Ra});
+J_i = cell(3, 1);
+J_I = cell(3, 1);
 
+J_I{1} = blkdiag(R_1, R_1)*Jacobian('Body1', sr_info, A, {Rb, Ra});
+J_I{2} = blkdiag(R_2, R_2)*Jacobian('Body2', sr_info, A, {Rb, Ra});
+J_I{3} = blkdiag(R_3, R_3)*Jacobian('endeffector', sr_info, A, {Rb, Ra});
 
-compare_jacs(sr, J_S, J_denoc);
+J_i{1} = Jacobian('Body1', sr_info, A, {Rb, Ra});
+J_i{2} = Jacobian('Body2', sr_info, A, {Rb, Ra});
+J_i{3} = Jacobian('endeffector', sr_info, A, {Rb, Ra});
+
+compare_jacs(sr, spart_res.J_i, J_i);
+% compare_jacs(sr, spart_res.J_I, J_I);
 
 %% Compute J_dot
-% --- Nkl_dot ---
-Nkl_dot = zeros(6*nk, 6*nk);
-for i=2:nk
-    A_dot_i = A_dot{2}(:, :, i) ;% A_dot_i_(i-1)
-    
-    for j=i-1:-1:1       
-        if j==i-1
-            blkMat = A_dot_i; % Set lower diag to A_i_(i-1)
-        else        
-            t1 = Nkl_dot(6*i-5:6*i, 6*(j+1)-5:6*(j+1))*Nkl(6*(j+1)-5:6*(j+1), 6*j-5:6*j); % A_dot_i_(j+1) * A_(j+1)_(j)
-            t2 = Nkl(6*i-5:6*i, 6*(j+1)-5:6*(j+1))*Nkl_dot(6*(j+1)-5:6*(j+1), 6*j-5:6*j); % A_i_(j+1) * A_dot_(j+1)_(j)
-            blkMat = t1 + t2;
-        end
+J_dot_i = cell(3, 1);
+J_dot_i{1} = Jacobian_dot('Body1', sr_info, A, A_dot, {Rb, Ra}, qb_dot(4:6), Omega);
+J_dot_i{2} = Jacobian_dot('Body2', sr_info, A, A_dot, {Rb, Ra}, qb_dot(4:6), Omega);
+J_dot_i{3} = Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, qb_dot(4:6), Omega);
 
-        Nkl_dot(6*i-5:6*i, 6*j-5:6*j) = blkMat;
-    end
-end
-
-% --- Nbl_dot ---
-Ab_dot = zeros(6*nk, 6); % Matrix
-
-w_b = qb_dot(4:6); % Base angular rate
-
-A_0b_dot_b = zeros(6, 6);
-P_0b = [0.5; 0; 0];
-
-A_0b_dot_b(1:3, 4:6) = -skew(sr_info.A{1}(1:3, 4:6)*w_b);
-A_0b_dot_a = Ra.' * A_0b_dot_b;
-
-A_10 = A{2}(:, :, 1);
-A_10_dot = A_dot{2}(:, :, 1);
-
-A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_a; % A_1b_dot = A_10_dot * A_0b_k + A_10 * A_0b_dot_a
-
-Ab_dot(1:6, :) = A_1b_dot;
-
-Nbl_dot = Nkl_dot*Ab + Nkl*Ab_dot;
-
-% --- Nd_dot ---
-Nd_dot = zeros(6*nk, nk);
-for i=1:3
-    Nd_dot(6*i-5:6*i, i) = Omega{2}(:, :, i)*sr_info.P{2}(:, :, i);
-end
-
-% Ndb_dot = Omega{1}*sr_info.P{1};
-Ndb_dot = blkdiag(zeros(3, 3), skew(w_b))*sr_info.P{1};
-
-% --- Jacobians derivative ---
-J_dot_denoc = cell(3, 1);
-J_dot_denoc_I = cell(3, 1);
-
-for i=1:3
-    Jb_dot = Nbl_dot(6*i-5:6*i, :) * Ndb + Nbl(6*i-5:6*i, :) * Ndb_dot;
-
-    Jk_dot = Nkl_dot(6*i-5:6*i, :) * Nd + Nkl(6*i-5:6*i, :)*Nd_dot;
-    
-
-    Jk_dot = Jk_dot(:, 1:end-1); % TODO, handle fix joints
-    
-    J_dot_denoc{i} = [Jb_dot, Jk_dot]; 
-
-    [R_I, ~] = tr2rt(sr.getTransform(sr.BodyNames{i}, 'TargetFrame', 'inertial', 'Symbolic', false));
-    J_dot_denoc_I{i} = blkdiag(R_I, R_I)*[Jb_dot, Jk_dot]; 
-end
-%% Check Jacobians
-% J, comp w/ symbolic
-% compare_jacs(sr, J_S_com, J);
-
-% J, computed with DeNOC
-compare_jacs(sr, J_S, J_denoc);
-% compare_jacs(sr, J_S, J_denoc_I);
-
-% J_dot
-% compare_jacs(sr, J_dot_S, J_dot_denoc);
-% compare_jacs(sr, J_dot_S, J_dot_denoc_I);
+compare_jacs(sr, spart_res.J_dot_i, J_dot_i);
 
 %% ### Check Velocities and Accel ###
 fprintf("\n\n ### Comparing velocities ###\n")
@@ -170,27 +108,26 @@ for i=1:3
     ti = t{2}(:, :, i);
     ti_dot = t_dot{2}(:, :, i);
 
-%     ti_S = [tm_S(4:6, i); tm_S(1:3, i)];
-%     ti_dot_S = [tm_dot_S(4:6, i); tm_dot_S(1:3, i)];
+    
+    % Spart speed, body frame
+    ti_S = spart_res.J_i{i}*q_dot;
+    ti_dot_S = spart_res.J_i{i}*q_ddot + spart_res.J_dot_i{i} * q_dot;
+% 
+%     [R, ~] = tr2rt(sr.getTransform(sr.BodyNames{i}, 'TargetFrame', 'inertial', 'Symbolic', false));
+% 
+%     ti_S_b = blkdiag(R, R).'*ti_S;
+%     ti_dot_S_b = blkdiag(R, R).'*ti_dot_S;
 
-    ti_S = J_S{i}*q_dot;
-    ti_dot_S = J_S{i}*q_ddot + J_dot_S{i} * q_dot;
 
-    [R, ~] = tr2rt(sr.getTransform(sr.BodyNames{i}, 'TargetFrame', 'inertial', 'Symbolic', false));
+    ti_denoc_i = J_i{i}*q_dot; % In frame i
+    ti_denoc_I = J_I{i}*q_dot; % In inertial frame
 
-    ti_S_b = blkdiag(R, R).'*ti_S;
-    ti_dot_S_b = blkdiag(R, R).'*ti_dot_S;
-
-
-    ti_denoc_i = J_denoc{i}*q_dot; % In frame i
-    ti_denoc_I = J_denoc_I{i}*q_dot; % In inertial frame
-
-    ti_dot_denoc_i = J_denoc{i}*q_ddot + J_dot_denoc{i}*q_dot;
+    ti_dot_denoc_i = J_i{i}*q_ddot + J_dot_i{i}*q_dot;
   
     fprintf("\n### %s ###\n", sr.BodyNames{i})
     fprintf("\t --- Velocities ---\n")
     fprintf('\t Kin     DeNOC  SPART (in body frame)\n')
-    disp([ti, ti_denoc_i, ti_S_b])
+    disp([ti, ti_denoc_i, ti_S])
     
     if ~isequal(round(ti_denoc_i, 5), round(ti, 5))
         fprintf("ERROR, Speed not matching between DeNOC and SPART\n")
@@ -199,7 +136,7 @@ for i=1:3
 
     fprintf("\t --- Accel ---\n")
     fprintf('\t Kin     DeNOC      SPART (in body frame)\n')
-    disp([ti_dot, ti_dot_denoc_i, ti_dot_S_b])
+    disp([ti_dot, ti_dot_denoc_i, ti_dot_S])
 
     if ~isequal(round(ti_dot, 5), round(ti_dot_denoc_i, 5))
         fprintf("ERROR, Accels not matching\n")
@@ -223,27 +160,27 @@ end
 tau_b = blkdiag(Rb, eye(3))*tau{1};
 tau_m = tau{2};
 
-if isequal(round(D, 2), round(H_spart, 2))
+if isequal(round(D, 2), round(spart_res.H, 2))
     fprintf("MASS MATRIX MATCHING\n")
 else
     fprintf("ERROR, Mass mat not matching\n")
     disp(D)
-    disp(H_spart)
+    disp(spart_res.H)
 end
 
-if isequal(round(tau_b, 2), round(tau0_S, 2))
+if isequal(round(tau_b, 2), round(spart_res.tau.tau_b, 2))
     fprintf("BASE TORQUE MATCHING\n")
 else
     fprintf("ERROR: base torque not matching\n")
-    disp([tau_b, tau0_S])
+    disp([tau_b, spart_res.tau.tau_b])
 end
 
-if isequal(round(tau_m, 2), round(taum_S, 2))
+if isequal(round(tau_m, 2), round(spart_res.tau.tau_m, 2))
     fprintf("MANIP TORQUE MATCHING\n")
 else
     fprintf("ERROR: manip torque not matching\n")
     disp(tau_m)
-    disp(taum_S)
+    disp(spart_res.tau.tau_m)
 end
 
 
