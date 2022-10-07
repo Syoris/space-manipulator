@@ -69,60 +69,20 @@ Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 [tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
 D = MassM(sr_info, q, A);
 
-% --- Nkl ---
-Nkl = eye(6*nk, 6*nk);
-for i=2:nk
-    A_i = A{2}(:, :, i) ;% A_i_(i-1)
-    
-    for j=i-1:-1:1       
-        if j==i-1
-            blkMat = A_i; % Set lower diag to A_i_(i-1)
-        else        
-            blkMat = Nkl(6*i-5:6*i, 6*(j+1)-5:6*(j+1))*Nkl(6*(j+1)-5:6*(j+1), 6*j-5:6*j);
-        end
-
-        Nkl(6*i-5:6*i, 6*j-5:6*j) = blkMat;
-    end
-end
-
-% --- Nd ---
-Nd = zeros(6*nk, nk);
-for i=1:nk
-    Nd(6*i-5:6*i, i) = sr_info.P{2}(:, :, i);
-end
 
 
-% --- Nbl ---
-Ab = zeros(6*nk, 6);
-[R_b_I, ~] = tr2rt(sr.getTransform('spacecraftBase', 'TargetFrame', 'inertial', 'Symbolic', false));
+[R_1, ~] = tr2rt(sr.getTransform(sr.BodyNames{1}, 'TargetFrame', 'inertial', 'Symbolic', false));
+[R_2, ~] = tr2rt(sr.getTransform(sr.BodyNames{2}, 'TargetFrame', 'inertial', 'Symbolic', false));
+[R_3, ~] = tr2rt(sr.getTransform(sr.BodyNames{3}, 'TargetFrame', 'inertial', 'Symbolic', false));
 
-A_0b_b = sr_info.A{1} * [R_b_I.', zeros(3, 3); zeros(3, 3), eye(3)]; % Base to anchor twist propagation matrix, base frame
-A_0b_k = Ra.' * A_0b_b;  % Base to anchor twist propagation matrix, Appendage frame
 
-A_1b = A{2}(:, :, 1) * A_0b_k; % A_1b = A_10 * A_0b_k
-Ab(1:6, :) = A_1b;
-
-Nbl = Nkl*Ab;
-
-% --- Ndb ---
-Ndb = sr_info.P{1};
-
-% --- Jacobians ---
 J_denoc = cell(3, 1);
-J_denoc_I = cell(3, 1);
-J_denoc_B = cell(3, 1);
+J_denoc{1} = blkdiag(R_1, R_1)*Jacobian('Body1', sr_info, A, {Rb, Ra});
+J_denoc{2} = blkdiag(R_2, R_2)*Jacobian('Body2', sr_info, A, {Rb, Ra});
+J_denoc{3} = blkdiag(R_3, R_3)*Jacobian('endeffector', sr_info, A, {Rb, Ra});
 
-for i=1:3
-    Jk = Nkl(6*i-5:6*i, :) * Nd;
-    Jb = Nbl(6*i-5:6*i, :) * Ndb;
 
-    Jk = Jk(:, 1:end-1); % TODO, handle fixed joints
-    
-    J_denoc{i} = [Jb, Jk]; 
-
-    [R_I, ~] = tr2rt(sr.getTransform(sr.BodyNames{i}, 'TargetFrame', 'inertial', 'Symbolic', false));
-    J_denoc_I{i} = blkdiag(R_I, R_I)*[Jb, Jk]; 
-end
+compare_jacs(sr, J_S, J_denoc);
 
 %% Compute J_dot
 % --- Nkl_dot ---
@@ -194,12 +154,12 @@ end
 % compare_jacs(sr, J_S_com, J);
 
 % J, computed with DeNOC
-% compare_jacs(sr, J_S, J_denoc);
+compare_jacs(sr, J_S, J_denoc);
 % compare_jacs(sr, J_S, J_denoc_I);
 
 % J_dot
 % compare_jacs(sr, J_dot_S, J_dot_denoc);
-compare_jacs(sr, J_dot_S, J_dot_denoc_I);
+% compare_jacs(sr, J_dot_S, J_dot_denoc_I);
 
 %% ### Check Velocities and Accel ###
 fprintf("\n\n ### Comparing velocities ###\n")
