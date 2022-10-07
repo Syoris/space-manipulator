@@ -2,11 +2,11 @@
 % Jacobians and their derivatives development using DeNOC
 
 NEW_CONF = 1;
-qb_conf = [0; 0; 0; 0; 0; 0];
-qm_conf = [0; 0];
+qb_conf = [1; 1; 1; 1; 1; 1];
+qm_conf = [1; 1];
 
-qb_dot_conf = [0; 0; 0; 1; 0; 0]; % [0; 0; 0; 0; 0; 0], [1; 1; 1; 1; 1; 1]
-qm_dot_conf = [0; 0]; % [0; 0], [1; 1]
+qb_dot_conf = [1; 1; 1; 1; 1; 1]; % [0; 0; 0; 0; 0; 0], [1; 1; 1; 1; 1; 1]
+qm_dot_conf = [1; 1]; % [0; 0], [1; 1]
 
 qb_ddot_conf = [0; 0; 0; 0; 0; 0];
 qm_ddot_conf = [0; 0];
@@ -214,14 +214,24 @@ end
 
 h_S = spart_res.C*q_dot;
 h = C*q_dot;
-if isequal(round(h, 2), round(h_S, 2))
-    fprintf("h MATRIX MATCHING\n")
-    disp([h, h_S])
-else    
-    fprintf("ERROR: h matrices not matching\n")
-    fprintf("\th\t\tSPART\n")
-    disp([h, h_S])
-end
+
+[tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+h2 = [blkdiag(Rb, eye(3))*tau{1}; tau{2}];
+
+hS2 = [spart_res.tau.tau_b; spart_res.tau.tau_m];
+fprintf("h MATRIX\n")
+fprintf("[FromC \t FromID \t C, SPART\t ID, SPART]\n")
+disp([h, h2, h_S, hS2])
+
+
+% if isequal(round(h, 2), round(h_S, 2))
+%     fprintf("h MATRIX MATCHING\n")
+%     disp([h, h_S])
+% else    
+%     fprintf("ERROR: h matrices not matching\n")
+%     fprintf("\th\t\tSPART\n")
+%     disp([h, h_S])
+% end
 
 
 %% Functions

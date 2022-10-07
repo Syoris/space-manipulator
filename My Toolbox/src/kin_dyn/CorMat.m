@@ -189,10 +189,22 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
 
         % --- Cba, Cab ---
         if jnt_idx_i > 0
-            Cba(:, jnt_idx_i) = Pb.' * A_1b.' * (A_ij.' * Hi + A_ij.' * Mi_h * Omega_i + A_ij.' * Mi_dot_h) * Pi;
+            A_bj = A_1b.' * A_ij.';
+            
+            A_i1 = A_ij;
+            A_i1_dot = A_dot_ij;
+            
+%             A_1b;
+%             A_1b_dot;
+            
+            A_ib = A_i1*A_1b;
+            A_ib_dot = A_i1_dot*A_1b + A_i1*A_1b_dot;
 
-            Cab(jnt_idx_i, :) = Pi.' * ((Mi_h * A_dot_ij + (Hi + Mi_dot_h) * A_ij) * A_1b ...
-                + Mi_h * A_ij * (Omega_b * A_1b + A_1b * Omega_b)) * Pb;
+            Cba(:, jnt_idx_i) = Pb.' * A_bj * (Hi + Mi_h * Omega_i + Mi_dot_h) * Pi;           
+                  
+            Cab(jnt_idx_i, :) = Pi.' * ( Mi_h*A_ib_dot + Mi_h*A_ib*Omega_b + Mi_dot_h*A_ib + Hi*A_ib);
+           
+             
         end
 
         % Update values
@@ -214,10 +226,6 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
     % C Mat
     Mb_dot = Omega_b * Mb * Ev;
     Cbb = Pb.' * (Mb * Omega_b + Mb_dot + Ha) * Pb;
-
-    % Mb_h = Mb + A_1_b' * M1_h * A_1_b;
-    % Mb_dot_h = Mb_dot + A_1_b' * M1_dot_h * A_1_b;
-    % H1b = A_1_b' * (M1_h * A_1b_dot + H1 * A_1_b);
 
     C = [Cbb, Cba; Cab, Ca];
 
