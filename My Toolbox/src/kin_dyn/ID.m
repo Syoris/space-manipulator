@@ -53,10 +53,12 @@ function [tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot)
     tb = t{1};
     tb_dot = t_dot{1};
     Omega_b = Omega{1}; % blkdiag(skew(w_b), skew(w_b)) TODO IMPORTANT: CHECK DEFINITION
+    % Omega_b(1:3, 1:3) = Omega_b(4:6, 4:6);
 
     Mb = sr_info.M{1};
     Pb = sr_info.P{1};
-    A_0b = A{1}; % Twist propagation matrix, base to anchor, anchor frame
+    % A_0b = A{1}; % Twist propagation matrix, base to anchor, anchor frame
+    A_0b = sr_info.A{1};
 
     wen_cstr = zeros(6, 1); % Base constraint wrench
     wen_array = zeros(6, 1, nk); % Wrench array

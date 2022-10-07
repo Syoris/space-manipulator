@@ -1,4 +1,7 @@
 classdef SpacecraftBase < Body
+    % SpacecraftBase Object representing the spacecraft base
+    %
+    % Currently, RotM correponds to the rotation matrix between Base and Manipulator anchor point
 
     properties
         R % Base position wrt parent frame    [Rx; Ry; Rz]
