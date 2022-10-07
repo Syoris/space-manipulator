@@ -3,10 +3,10 @@
 
 NEW_CONF = 1;
 qb_conf = [0; 0; 0; 0; 0; 0];
-qm_conf = [1; 1];
+qm_conf = [0; 0];
 
-qb_dot_conf = [1; 1; 1; 0; 0; 0]; % [0; 0; 0; 0; 0; 0], [1; 1; 1; 1; 1; 1]
-qm_dot_conf = [1; 1]; % [0; 0], [1; 1]
+qb_dot_conf = [0; 0; 0; 1; 0; 0]; % [0; 0; 0; 0; 0; 0], [1; 1; 1; 1; 1; 1]
+qm_dot_conf = [0; 0]; % [0; 0], [1; 1]
 
 qb_ddot_conf = [0; 0; 0; 0; 0; 0];
 qm_ddot_conf = [0; 0];
@@ -200,11 +200,15 @@ C = CorMat(sr_info, qb_dot(4:6), Omega, A, A_dot, {Rb, Ra});
 
 if isequal(round(C, 2), round(spart_res.C, 2))
     fprintf("C MATRIX MATCHING\n")
+    fprintf("C\n")
     disp(C)
+    fprintf("SPART\n")
     disp(spart_res.C)
 else
     fprintf("ERROR: C matrices not matching\n")
+    fprintf("C\n")
     disp(C)
+    fprintf("SPART\n")
     disp(spart_res.C)
 end
 
@@ -213,8 +217,9 @@ h = C*q_dot;
 if isequal(round(h, 2), round(h_S, 2))
     fprintf("h MATRIX MATCHING\n")
     disp([h, h_S])
-else
+else    
     fprintf("ERROR: h matrices not matching\n")
+    fprintf("\th\t\tSPART\n")
     disp([h, h_S])
 end
 

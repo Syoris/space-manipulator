@@ -134,6 +134,11 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
         % Hi
         Hi = Ai_next.' * (Mi_h_next * Ai_dot_next + Hi_next * Ai_next);
 
+        % Update Arrays
+        M_h_array(:, :, i) = Mi_h;
+        M_dot_h_array(:, :, i) = Mi_dot_h;
+        H_array(:, :, i) = Hi;
+
         % --- Ca, LHS ---
         A_ij = eye(6);
         A_dot_ij = zeros(6);
@@ -141,8 +146,8 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
         for j = i - 1:-1:1
             jnt_idx_j = sr_info.jnt_idx(j);
 
-            Pj = Pm(:, :, i);
-            Omega_j = Omega_m(:, :, i);
+            Pj = Pm(:, :, j);
+            Omega_j = Omega_m(:, :, j);
 
             A_j = Am(:, :, j + 1); % A_(j+1)_j
             Adot_j = Am_dot(:, :, j + 1); % Adot_(j+1)_j
@@ -162,8 +167,8 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
 
         for j = i:nk
             jnt_idx_j = sr_info.jnt_idx(j);
-            Pj = Pm(:, :, i);
-            Omega_j = Omega_m(:, :, i);
+            Pj = Pm(:, :, j);
+            Omega_j = Omega_m(:, :, j);
 
             Mj_h = M_h_array(:, :, j);
             Mj_dot_h = M_dot_h_array(:, :, j);
@@ -172,12 +177,13 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
             if jnt_idx_j > 0
                 Ca(jnt_idx_i, jnt_idx_j) = Pi.' * A_ji.' * (Hj + Mj_h * Omega_j + Mj_dot_h) * Pj;
             end
-            
-            if j==nk
+
+            if j == nk
                 A_j = A_payload;
             else
                 A_j = Am(:, :, j + 1);
             end
+
             A_ji = A_j * A_ji; % A_(j+1)_i = A_(j+1)_j * A_j_i
         end
 
@@ -196,10 +202,6 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
         Mi_h_next = Mi_h;
         Mi_dot_h_next = Mi_dot_h;
         Hi_next = Hi;
-
-        M_h_array(:, :, i) = Mi_h;
-        M_dot_h_array(:, :, i) = Mi_dot_h;
-        H_array(:, :, i) = Hi;
     end
 
     % Impact on base
