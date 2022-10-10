@@ -220,7 +220,7 @@ h2 = [blkdiag(Rb, eye(3))*tau{1}; tau{2}];
 
 hS2 = [spart_res.tau.tau_b; spart_res.tau.tau_m];
 fprintf("h MATRIX\n")
-fprintf("[FromC \t FromID \t C, SPART\t ID, SPART]\n")
+fprintf("[FromC \t\t FromID \t C, SPART\t ID, SPART]\n")
 disp([h, h2, h_S, hS2])
 
 
