@@ -28,10 +28,12 @@ function dx = sr_state_func(x, u) %#codegen
     % 2 - Kinetics
     [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, zeros(8, 1), {Rb, Ra, Rm});
 
-    % 3 - ID  
-    [tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
-    tau_b = blkdiag(Rb, zeros(3, 3)) * tau{1}; % Express base torque in intertial frame
-    h = [tau_b; tau{2}];
+    % 3 - ID
+    wb = t{1}(4:6);
+    C = CorMat(sr_info, wb, Omega, A, A_dot, {Rb, Ra, Rm});
+%     [tau, ~] = ID(sr_info, t, t_dot, Omega, A, A_dot);
+%     h = [tau{1}; tau{2}];
+    h = C*q_dot;
 
     % 4 - Mass Mat
     D = MassM(sr_info, q, A);

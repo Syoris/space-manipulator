@@ -27,8 +27,11 @@ classdef ForwardDynBlock < matlab.System
             F = [f0; n0; taum];
             x = [q; q_dot];
 
-%             q_ddot = obj.spaceRobot.forwardDynamics(F, q, q_dot);
             q_ddot = sr_state_func_mex(x, F);
+            
+%             q_ddot = sr_state_func(x, F);
+%             q_ddot = sr_state_func_test(x, F);
+
             q_ddot = q_ddot(9:16);
         end
 
