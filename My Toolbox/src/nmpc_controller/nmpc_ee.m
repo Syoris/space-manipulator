@@ -6,7 +6,7 @@
 %
 
 % ### OPTIONS ###
-GEN_MEX = 0;
+GEN_MEX = 1;
 SIM = 1;
 
 simTime = '7.0'; 
@@ -25,7 +25,7 @@ sr.homeConfig();
 conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
 conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
 
-sr.q = conf1;
+sr.q = conf2;
 
 mdl = 'nmpc_sim_ee'; 
 
@@ -38,8 +38,9 @@ xee0 = [xee0; zeros(3, 1)];
 xee0_dot = zeros(6, 1);
 
 % xee_ref = [xee0(1)+0.2; 0; 0];
-xee_ref = [xee0(1)+0.2; 0; 0];
+xee_ref = [1.1180; 0; 0]; 
 
+fprintf('--- Config ---\n')
 fprintf('SR initial state set to:\n')
 fprintf('\t-q0:')
 disp(q0.')
@@ -49,7 +50,7 @@ fprintf('\t-Xee_ref:')
 disp(xee_ref.')
 
 %% NMPC Controller
-fprintf('--- Creating NMPC Controller\n ---')
+fprintf('--- Creating NMPC Controller ---\n')
 % Parameters
 Ts = 0.1;
 Tp = 20; % # of prediction steps
@@ -126,7 +127,7 @@ u0 = zeros(8, 1);
 
 %% Generate MEX file
 if GEN_MEX
-    fprintf('--- MEX file generation ---\n')
+    fprintf('\n--- MEX file generation ---\n')
     path = fullfile('My Toolbox/src/nmpc_controller/');
     ctrl_save_name = 'nlmpc_ee_mex';
 
@@ -155,7 +156,7 @@ if SIM
     
     % Sim Time Timer
     fprintf('Launching Simulation...\n')
-    fprintf('\tCurrent simulation time: 0.00');
+    fprintf('Current simulation time: 0.00');
     t = timer;
     t.Period = 2;
     t.ExecutionMode = 'fixedRate';
@@ -170,8 +171,25 @@ if SIM
 end
 
 %% Animate
-data = simRes.q.getsampleusingtime(0, str2double(simTime));
+clc
+close all
+data = simRes.q;
 
+trajRes = struct();
+
+trajRes.ref = ts2timetable(simRes.Xee_ref);
+trajRes.ref.Properties.VariableNames{1} = 'EE_desired';
+
+trajRes.Xee = simRes.Xee;
+
+% Prediction data
+xSeq = simRes.logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
+Xee_idx = [9, 10, 11];
+pred = struct();
+pred.Xee = xSeq;
+pred.Xee.Data = xSeq.Data(:, Xee_idx, :); %Select ee states
+
+% Save
 fileName = '';
 if ~strcmp(fileName, '')
     savePath = strcat(folder, fileName);
@@ -179,7 +197,8 @@ else
     savePath = '';
 end
 
+% Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath); 
+sr.animate(data, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred); 
 toc
 
