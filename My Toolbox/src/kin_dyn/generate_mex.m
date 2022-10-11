@@ -8,7 +8,7 @@ codegen -report sr_state_func.m -args {x, u}
 x = zeros(28, 1);
 u = zeros(8, 1);
 
-codegen -report sr_ee_state_func.m -args {x, u}
+codegen -report sr_ee_state_func.m -args {x, u} -o 'My Toolbox'\src\kin_dyn\sr_ee_state_func_mex.mexw64
 
 %% Generate mex for acado ocp
 t = 0;

@@ -1,5 +1,5 @@
-function y = sr_output_func(x, ~)
+function y = sr_ee_output_func(x, ~)
 
-y = x(9:14);
+y = x(9:11);
 
 end

@@ -5,32 +5,66 @@
 % To open: openExample('mpc/SwingupControlOfPendulumUsingNMPCExample')
 %
 
+% ### OPTIONS ###
+GEN_MEX = 0;
+SIM = 1;
+
+simTime = '7.0'; 
+tStep = 0.2;
+
+%% Config
 clc
 close all
-load 'SR2.mat'
+
+if ~exist('sr', 'var')
+    fprintf("Loading SR\n")
+    load 'SR2.mat'
+end
 sr.homeConfig();
-sr.q0 = zeros(6, 1);
+
+conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
+conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
+
+sr.q = conf1;
+
+mdl = 'nmpc_sim_ee'; 
 
 q0 = sr.q;
 q_dot_0 = sr.q_dot;
+
 
 [~, xee0] = tr2rt(sr.Ttree.endeffector);
 xee0 = [xee0; zeros(3, 1)];
 xee0_dot = zeros(6, 1);
 
-xee_ref = [1.1180; 0; 0];
+% xee_ref = [xee0(1)+0.2; 0; 0];
+xee_ref = [xee0(1)+0.2; 0; 0];
 
-% --- Create NMPC ---
+fprintf('SR initial state set to:\n')
+fprintf('\t-q0:')
+disp(q0.')
+fprintf('\t-Xee0:')
+disp(xee0.')
+fprintf('\t-Xee_ref:')
+disp(xee_ref.')
+
+%% NMPC Controller
+fprintf('--- Creating NMPC Controller\n ---')
 % Parameters
-Ts = 0.2;
-Tp = 10; % # of prediction steps
-Tc = 5; % # of ctrl steps
+Ts = 0.1;
+Tp = 20; % # of prediction steps
+Tc = 10; % # of ctrl steps
+
+fprintf('Parameters:\n')
+fprintf('\tTs: %.2f\n', Ts)
+fprintf('\tTp: %i (%.2f sec)\n', Tp, Tp*Ts)
+fprintf('\tTc: %i (%.2f sec)\n', Tc, Tc*Ts)
 
 % 
 n = sr.NumActiveJoints;
 N = n+6;
 nx = 12 + 2*n + 12; % Change to 24 + 2*n w/ EE
-ny = 6; % EE states
+ny = 3; % EE states
 nu = n+6;
 
 nlmpc_ee = nlmpc(nx,ny,nu);
@@ -42,20 +76,20 @@ nlmpc_ee.ControlHorizon = Tc;
 
 % Prediction Model
 nlmpc_ee.Model.NumberOfParameters = 0;
-nlmpc_ee.Model.StateFcn = "sr_ee_state_func_mex";
+nlmpc_ee.Model.StateFcn = "sr_ee_state_func";
 nlmpc_ee.Model.OutputFcn = "sr_ee_output_func";
 
 nlmpc_ee.Model.IsContinuousTime = true;
 
 % Cost Function
-r_ee_W = 10; % Position position weight
+r_ee_W = 1; % Position position weight
 psi_ee_W = 0; % Position orientation weight
 
 fb_rate_W = 1;
 nb_rate_W = 1;
 taum_rate_W = 1; 
 
-nlmpc_ee.Weights.OutputVariables = [ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
+nlmpc_ee.Weights.OutputVariables = ones(1, 3)*r_ee_W; %[ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 
 % nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
 
@@ -90,155 +124,62 @@ u0 = zeros(8, 1);
 % 
 % yref = [x0(1:6)', 0, 0];
 
+%% Generate MEX file
+if GEN_MEX
+    fprintf('--- MEX file generation ---\n')
+    path = fullfile('My Toolbox/src/nmpc_controller/');
+    ctrl_save_name = 'nlmpc_ee_mex';
+
+    save_path = fullfile(path, ctrl_save_name);
+    
+    set_param([mdl, '/NMPC Controller'],'UseMEX', 'on')
+    set_param([mdl, '/NMPC Controller'],'mexname', ctrl_save_name)
+
+    % path = []
+    [coreData,onlineData] = getCodeGenerationData(nlmpc_ee,x0,u0);
+    mexFcn = buildMEX(nlmpc_ee, save_path, coreData, onlineData);
+else
+%     set_param([mdl, '/NMPC Controller'],'UseMEX', 'off')
+end
+
+
 %% State Estimation
 % TODO: ADD EKF for Xe
 
-%% Closed-Loop Simulation in MATLAB(R)
-% Specify the initial conditions for simulations by setting the initial
-% plant state and output values. Also, specify the initial state of the
-% extended Kalman filter.
 
-% --- Initial Conds ---
-% The initial conditions are set to home config. Speeds are null
-sr.homeConfig();
-sr.q = zeros(8, 1);
-x = [sr.q; sr.q_dot];
-y = [sr.q];
-
-% Input torques to zeros
-mv = zeros(8, 1);
-
-% --- Reference ---
-% From home config go to zeros(8, 1). At 10sec, move base to [0.5; 0.5; 0]
-% keeping manipulator at same position
-
-yref1 = [0.5, 0, 0, 0, 0, 0, 0, 0];
-% yref2 = [0, 0, 0, zeros(1, 5)];
-
-% --- Sim Setup ---
-% nloptions = nlmpcmoveopt;
-% nloptions.Parameters = {sr};
-
-% --- Sim ---
-profile on
-tic
-Duration = 10.0;
-hbar = waitbar(0,'Simulation Progress');
-xHistory = x;
-nloptions = nlmpcmoveopt;
-minTime = Inf;
-
-for ct = 1:(Duration/Ts)
-    tstart = tic;
-    % Set references
-%     if ct*Ts<10
-%         yref = yref1;
-%     else
-%         yref = yref2;
-%     end
-    yref = yref1;
-
-    % Correct previous prediction using current measurement.
-%     xk = correct(EKF, y);
-    xk = x;
-
-    % Compute optimal control moves.
-    [mv,nloptions,info] = nlmpcmove(nlmpc_ee,xk,mv,yref,[],nloptions);
-    
-    % Predict prediction model states for the next iteration.
-%     predict(EKF, [mv; Ts]);
-    
-    % Implement first optimal control move and update plant states.
-    x = sr_state_func(x,mv);
-    
-    % Generate sensor data with some white noise.
-%     y = x([1 3]) + randn(2,1)*0.01; 
-    y = sr_output_func(x, mv); 
-    
-    % Save plant states for display.
-    xHistory = [xHistory x]; %#ok<*AGROW>
-    time = ct*Ts;
-    waitbar(time/Duration,hbar);
-    
-
-    tElasped = toc(tstart);
-    minTime = min(tElasped, minTime);
-    fprintf('Time: %.2f \t (computed in: %.2f)\n', time, tElasped)
-end
-close(hbar)
-averageTime = toc/(Duration/Ts);
-fprintf("Average time: %.2f\n", averageTime)
-fprintf("Min time: %.2f\n", minTime)
-
-profile viewer
-profile off
-
-%% Plot results
-% timeArray = timeArray;
-timeArray = 0:Ts:((size(xHistory, 2) -1 )*Ts);
-
-figure
-subplot(2,2,1)
-plot(timeArray,xHistory(1,:))
-xlabel('time')
-ylabel('[m]')
-title('SC X')
-
-subplot(2,2,2)
-plot(timeArray,xHistory(2,:))
-xlabel('time')
-ylabel('[m]')
-title('SC Y')
-
-subplot(2,2,3)
-plot(timeArray,xHistory(7,:))
-xlabel('time')
-ylabel('theta')
-title('Joint 1')
-
-subplot(2,2,4)
-plot(timeArray,xHistory(8,:))
-xlabel('time')
-ylabel('theta')
-title('Joint 2')
-
-% Animate
-data = timeseries(xHistory(1:8, :), timeArray);
-figure
-tic
-sr.animate(data, 'fps', 17, 'rate', 1); 
-toc
 
 %% Simulink
+if SIM
+    fprintf('\n--- SIM ---\n')
+    set_param(mdl, 'StopTime', simTime)
+    
+    % Sim Time Timer
+    fprintf('Launching Simulation...\n')
+    fprintf('\tCurrent simulation time: 0.00');
+    t = timer;
+    t.Period = 2;
+    t.ExecutionMode = 'fixedRate';
+    t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
+    start(t)
+    
+    % Start Sim    
+    simRes = sim(mdl);      
+    stop(t);
+    delete(t);
+    fprintf('\nTotal Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);
+end
 
-% To use optional parameters in the prediction model, the model has a
-% Simulink Bus block connected to the |params| input port of the Nonlinear
-% MPC Controller block. To configure this bus block to use the |Ts|
-% parameter, create a Bus object in the MATLAB workspace and configure
-% the Bus Creator block to use this object. To do so, use the
-% <docid:mpc_ref#mw_8f9e5d62-cfe1-499a-9420-e5099dedfe76> function. In this
-% example, name the Bus object |'myBusObject'|.
-mdl = 'nmpc_sim';
-% createParameterBus(nlobj,[mdl '/Nonlinear MPC Controller'],'myBusObject',{test.Bodies});
+%% Animate
+data = simRes.q.getsampleusingtime(0, str2double(simTime));
 
-% % Animation
-% % clc
-% % close all
-% folder = 'Project/Videos/';
-% fileName = '';
-% 
-% if ~strcmp(fileName, '')
-%     savePath = strcat(folder, fileName);
-% else
-%     savePath = '';
-% end
-% 
-% simRes = out;
-% 
-% % trajRes = struct();
-% % trajRes.ref = traj;
-% % trajRes.Xee = simRes.Xee;
-% 
-% tic
-% sr.animate(simRes.q, 'fps', 17, 'rate', 1, 'fileName', savePath); 
-% toc
+fileName = '';
+if ~strcmp(fileName, '')
+    savePath = strcat(folder, fileName);
+else
+    savePath = '';
+end
+
+tic
+sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath); 
+toc
+

@@ -21,7 +21,7 @@ function dx = sr_ee_state_func(x, u) %#codegen
 
     %%
     % 1 - Kinematics
-    [Rb, Ra, Rm] = RFunc_SR2(q);
+    [Rb, Ra, Rm, Ree] = RFunc_SR2(q);
     Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
     % 2 - Kinetics
@@ -39,13 +39,15 @@ function dx = sr_ee_state_func(x, u) %#codegen
     q_ddot = D^ - 1 * (u - h);
 
     % 6 - End Effector
-    J = Jacobian('endeffector', sr_info, A, {Rb, Ra});
+    Ree = Ree(1:3, 1:3);
+    Ree = blkdiag(Ree, Ree);
+    J = Ree*Jacobian('endeffector', sr_info, A, {Rb, Ra});
     J_inv = pinv(J);
-    J_dot = Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
+    J_dot = Ree*Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
     
-    A = J*D;
+    A = D*J_inv;
     B = C*J_inv - D*J_inv*J_dot*J_inv;
-    q_ee_ddot = A * (u - B*q_ee_dot);
+    q_ee_ddot = pinv(A) * (u - B*q_ee_dot);
 
 
     %% Assign outputs
