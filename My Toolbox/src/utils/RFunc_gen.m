@@ -4,6 +4,7 @@
 % RbI: Rotation matrix from base to inertial frame (3x3)
 % Ra: Rotation matrix from anchor to base (6x6)
 % Rm: Rotation matrix from i to i-1 (3x nk*3)
+% Tee: Hom. transformation matrix for ee (4x4)
 
 %% Create Rot matrix function
 nk = sr.NumBodies;
@@ -12,6 +13,7 @@ fileName = ['RFunc_', sr.Name];
 [R_bI, ~] = tr2rt(sr.Base.BaseToParentTransform_symb);
 Ra_symb = sr.Base.RotM_symb; % Anchor to base RotM
 R_array_symb = sym(zeros(3, 3 * nk));
+Tee = sr.getTransform('endeffector', 'TargetFrame', 'inertial', 'symbolic', true);
 
 for i = 1:nk
     body = sr.Bodies{i};
@@ -22,4 +24,4 @@ for i = 1:nk
     R_array_symb(:, 3 * body_idx - 2:body_idx * 3) = R_i;
 end
 
-matlabFunction(R_bI, Ra_symb, R_array_symb, 'File', fileName, 'Vars', {sr.q_symb}, 'Outputs', {'Rb', 'Ra', 'Rm'});
+matlabFunction(R_bI, Ra_symb, R_array_symb, Tee, 'File', fileName, 'Vars', {sr.q_symb}, 'Outputs', {'Rb', 'Ra', 'Rm', 'Tee'});

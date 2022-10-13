@@ -36,8 +36,8 @@ um_dot = qm_ddot(1:2);
 
 %Velocities of CoM, Expressed in inertial frame
 [t0_S, tm_S] = Velocities(Bij, Bi0, P0, pm, u0, um, robotSpart);
-spart_res.twist.tb = t0_S;
-spart_res.twist.tm = tm_S;
+spart_res.twist.tb = [t0_S(4:6, :); t0_S(1:3, :)];
+spart_res.twist.tm = [tm_S(4:6, :); tm_S(1:3, :)];
 
 % Jacobians, com. Inertial frame
 [J00_com, Jm0_com] = Jacob(qb(1:3), qb(1:3), rL, P0, pm, 0, robotSpart);
@@ -85,8 +85,8 @@ spart_res.J_dot_i = J_dot_i;
 
 %Accelerations of CoM, twist-rate. Inertial frame
 [t0_dot_S, tm_dot_S] = Accelerations(t0_S, tm_S, P0, pm, Bi0, Bij, u0, um, u0_dot, um_dot, robotSpart);
-spart_res.accel.tb_dot = t0_dot_S;
-spart_res.accel.tm_dot = tm_dot_S;
+spart_res.accel.tb_dot = [t0_dot_S(4:6, :); t0_dot_S(1:3, :)];
+spart_res.accel.tm_dot = [tm_dot_S(4:6, :); tm_dot_S(1:3, :)];
 
 %Inertias projected in the inertial frame
 [I0, Im] = I_I(R0, RL, robotSpart);

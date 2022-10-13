@@ -21,15 +21,18 @@ classdef ForwardDynBlock < matlab.System
             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
-        function q_ddot = stepImpl(obj, q, q_dot, f0, n0, taum)
+        function [x_dot, q_ddot] = stepImpl(obj, q, q_dot, f0, n0, taum)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.            
             F = [f0; n0; taum];
             x = [q; q_dot];
 
-%             q_ddot = obj.spaceRobot.forwardDynamics(F, q, q_dot);
-            q_ddot = sr_state_func_mex(x, F);
-            q_ddot = q_ddot(9:16);
+            dx = sr_state_func_mex(x, F);
+            
+%             dx = sr_state_func(x, F);
+            
+            x_dot = dx(1:8);
+            q_ddot = dx(9:16);
         end
 
         function resetImpl(~)
@@ -62,27 +65,31 @@ classdef ForwardDynBlock < matlab.System
 
         function num = getNumOutputsImpl(~)
             %getNumOutputsImpl Define total number of outputs
-            num = 1;
+            num = 2;
         end
         
-        function out = getOutputSizeImpl(obj)
+        function [out1, out2] = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-            out = [obj.spaceRobotStruct.N 1];
+            out1 = [obj.spaceRobotStruct.N 1];
+            out2 = [obj.spaceRobotStruct.N 1];
         end
 
-        function out = getOutputDataTypeImpl(obj)
+        function [out1, out2] = getOutputDataTypeImpl(obj)
             %getOutputDataTypeImpl Return data type for each output port
-            out = propagatedInputDataType(obj,1);
+            out1 = propagatedInputDataType(obj,1);
+            out2 = propagatedInputDataType(obj,1);
         end
 
-        function out = isOutputComplexImpl(~)
+        function [out1, out2] = isOutputComplexImpl(~)
             %isOutputComplexImpl Return true for each output port with complex data
-            out = false;
+            out1 = false;
+            out2 = false;
         end
 
-        function out = isOutputFixedSizeImpl(~)
+        function [out1, out2] = isOutputFixedSizeImpl(~)
             %isOutputFixedSizeImpl Return true for each output port with fixed size
-            out = true;
+            out1 = true;
+            out2 = true;
         end
     end
 
