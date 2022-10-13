@@ -10,12 +10,12 @@ xee0 = [xee0; tr2rpy(Ree).'];
 xee_dot0 = zeros(6, 1);
 
 % Forces
-fx = 0.5;
+fx = 0;
 fy = 0;
 fz = 0;
 
 nx = 0;
-ny = 0;
+ny = 2;
 nz = 0;
 
 tau1 = 0;

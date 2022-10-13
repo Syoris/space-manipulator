@@ -135,7 +135,7 @@ if GEN_MEX
     tic
     fprintf('\n--- MEX file generation ---\n')
     path = fullfile('My Toolbox/src/nmpc_controller/');
-    ctrl_save_name = 'nlmpc_ee_mex';
+    ctrl_save_name = 'nlmpc_ee_mex.mexw64';
 
     save_path = fullfile(path, ctrl_save_name);
     
@@ -146,7 +146,7 @@ if GEN_MEX
     [coreData,onlineData] = getCodeGenerationData(nlmpc_ee,x0,u0);
     mexFcn = buildMEX(nlmpc_ee, save_path, coreData, onlineData);
     tMex = toc;
-    fprintf('Time to generate: %.2f (min)', tMex/60);
+    fprintf('Time to generate: %.2f (min)\n', tMex/60);
 else
     set_param([mdl, '/NMPC Controller'],'UseMEX', 'off')
 end

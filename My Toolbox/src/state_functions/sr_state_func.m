@@ -44,8 +44,11 @@ function dx = sr_state_func(x, u) %#codegen
     q_ddot = D^ - 1 * (u - h);
 
     %% Assign outputs
-    % Speed
-    dx(1:8) = q_dot;
+    % x1_dot, x1 = [xb; qm]
+    dx(1:3) = q_dot(1:3); % rb_dot = rb
+    dx(4:6) = omega2euler(q(4:6), q_dot(4:6)); % psi_b_dot = R_psi^-1*w_b
+    dx(7:8) = q_dot(7:8); % qm_d0t
+    
+    % x2_dot, x3 = [qb_dot, qm_dot]
     dx(9:16) = q_ddot;
-
 end
