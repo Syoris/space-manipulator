@@ -18,12 +18,16 @@ Tp = 10; % # of prediction steps
 Tc = 7; % # of ctrl steps
 
 % Weights
-r_ee_W = 1; % Position position weight
+r_ee_W = 10; % Position position weight
 psi_ee_W = 0; % Position orientation weight
 
 fb_W = 100;
 nb_W = 100;
 taum_W = 0.1; 
+
+% Traj
+trajTime = 10;
+circleRadius = 0.25;
 
 %% Config
 clc
@@ -135,7 +139,7 @@ if GEN_MEX
     tic
     fprintf('\n--- MEX file generation ---\n')
     path = fullfile('My Toolbox/src/nmpc_controller/');
-    ctrl_save_name = 'nlmpc_ee_mex.mexw64';
+    ctrl_save_name = 'nlmpc_ee_mex';
 
     save_path = fullfile(path, ctrl_save_name);
     
@@ -156,27 +160,49 @@ end
 % TODO: ADD EKF for Xe
 
 %% Traj
-trajTime = 10;
-
 Nsamp = 205;  % Make sure (Nsamp - 5) is multiple of 4
-squareLength = 0.5;
-circleRadius = 0.25;
-
 traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', 'xy', 'tStart', tStart);
+trajRes = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+
+% ref = trajRes.EE_desired;
+ref = struct();
+ref.time = seconds(trajRes.Time);
+ref.signals.values = trajRes.EE_desired;
+
+% Nsteps = ceil(str2double(simTime)/Ts) + 1;
+% refArr = zeros(Tp+1, 3, Nsteps);
+% 
+% for i=1:Nsteps
+%     if i+Tp+1 <= Nsteps+1
+%         refArr(:, :, i) = trajArray.EE_desired(i:i+Tp, :);
+%     else
+%         nS = Nsteps-i+1;% nS missing till the end
+%         nP = Tp + 1 - nS; %Steps missing in ref array
+% 
+%         refArr(1:nS, :, i) = trajArray.EE_desired(i:end, :);
+%         refArr(nS+1:Tp+1, :, i) = repmat(trajArray.EE_desired(end, :), nP, 1); % Fill the end
+%     end
+% end
 
 
 %% Simulink
 if SIM
     fprintf('\n--- SIM ---\n')
     set_param(mdl, 'StopTime', simTime)
+    waitBar = waitbar(0,'Simulation in progress...');
     
     % Sim Time Timer
     fprintf('Launching Simulation...\n')
-    fprintf('Current simulation time: 0.00');
+%     fprintf('Current simulation time: 0.00');
     t = timer;
     t.Period = 2;
     t.ExecutionMode = 'fixedRate';
-    t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
+%     t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
+
+    t.TimerFcn = @(myTimerObj, thisEvent)waitbar(get_param(mdl, 'SimulationTime')/str2double(simTime), ...
+        waitBar, {'Simulation in progress...', ...
+        [num2str(get_param(mdl, 'SimulationTime')), '/', simTime]});
+
     start(t)
     
     % Start Sim
@@ -184,7 +210,8 @@ if SIM
     simRes = sim(mdl);      
 %     profile off   
     stop(t);
-    delete(t);    
+    delete(t);   
+    delete(waitBar)
     fprintf('\nTotal Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);
 
 %     profile viewer
