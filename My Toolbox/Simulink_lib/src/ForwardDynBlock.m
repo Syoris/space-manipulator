@@ -30,7 +30,6 @@ classdef ForwardDynBlock < matlab.System
             q_ddot = sr_state_func_mex(x, F);
             
 %             q_ddot = sr_state_func(x, F);
-%             q_ddot = sr_state_func_test(x, F);
 
             q_ddot = q_ddot(9:16);
         end

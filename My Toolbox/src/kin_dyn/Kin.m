@@ -81,7 +81,7 @@ function [t, t_dot, Omega, A, A_dot] = Kin(sr_info, q, q_dot, q_ddot, R)
     A_ab_a = Ra.' * A_ab_b; % Base to anchor twist propagation matrix, anchor frame
 
     A_0b_dot_b = zeros(6, 6);
-    A_0b_dot_b(1:3, 4:6) = -skew(sr_info.A{1}(1:3, 4:6) * w_b);
+    A_0b_dot_b(1:3, 4:6) = -skewSym(sr_info.A{1}(1:3, 4:6) * w_b);
     A_0b_dot_a = Ra.' * A_0b_dot_b;
 
     ta = A_ab_a * qb_dot; % Anchor point speed

@@ -17,6 +17,8 @@ function animate(obj, ts, varargin)
     %
     %      'fileName'       - To save animation as .avi video file to specified file name
     %
+    %      'viz'            - Show space robot visualization
+    %
     %
     %      'pred'           - Specify prediction trajectories. struct with fields:
     %                         pred.Xee: Prediction of the ee trajectory as a `timeseries`.
@@ -40,6 +42,9 @@ function animate(obj, ts, varargin)
 
     parser.addParameter('fileName', '');
 
+    parser.addParameter('viz', 'on', ...
+        @(x)any(validatestring(x, {'on', 'off'})));
+
     parser.addParameter('pred', [], @(x)(validateattributes(x, {'struct'}, ...
         {'nonempty'})));
 
@@ -50,6 +55,7 @@ function animate(obj, ts, varargin)
     pred = parser.Results.pred;
     rate = parser.Results.rate;
     fileName = parser.Results.fileName;
+    viz = parser.Results.viz;
 
     % Setup
     dim = [.2 .5 .3 .3]; % For annotation
@@ -57,8 +63,6 @@ function animate(obj, ts, varargin)
     fpsSet = false;
     plotTraj = false;
     plotPred = false;
-
-    viz = 'off';
 
     if ~isempty(traj)
         plotTraj = true;
@@ -80,11 +84,11 @@ function animate(obj, ts, varargin)
         ts = resample(ts, tVect);
 
         if plotTraj
-            traj.Xee = resample(traj.Xee, tVect);
+            traj.XeeResamp = resample(traj.Xee, tVect);
         end
 
         if plotPred
-            pred.Xee = pred.Xee.resample(tVect);
+            % pred.Xee = pred.Xee.resample(tVect);
         end
 
         r = rateControl(fps);
@@ -102,10 +106,11 @@ function animate(obj, ts, varargin)
     obj.q = ts.Data(:, :, 1);
     h_annot = annotation('textbox', dim, 'String', str, 'FitBoxToText', 'on');
     obj.show('preserve', false, 'fast', true, 'visuals', viz);
-    
+
     hold on
+
     if plotTraj
-        
+
         plot3(traj.ref.EE_desired(:, 1), traj.ref.EE_desired(:, 2), traj.ref.EE_desired(:, 3), 'r')
         traj_line = animatedline('Color', 'b', 'LineWidth', 2);
     end
@@ -115,6 +120,7 @@ function animate(obj, ts, varargin)
         startPred = plot3(pred.Xee.Data(1, 1, 1), pred.Xee.Data(1, 2, 1), pred.Xee.Data(1, 3, 1), 'gX', 'LineWidth', 1.5);
         startXee = plot3(traj.Xee.Data(1, :, 1), traj.Xee.Data(2, :, 1), traj.Xee.Data(3, :, 1), 'bX', 'LineWidth', 1.5);
     end
+
     hold off
 
     drawnow
@@ -125,64 +131,73 @@ function animate(obj, ts, varargin)
         for i = 1:nFrame
             curT = tVect(i);
             str = sprintf('t = %.2fs', curT);
-    
+
             obj.q = ts.Data(:, :, i);
             obj.show('preserve', false, 'fast', true, 'visuals', viz);
-    
-            h_annot.set('String', str);
-    
-            if plotTraj
-                addpoints(traj_line, traj.Xee.Data(1, :, i), traj.Xee.Data(2, :, i), traj.Xee.Data(3, :, i));
-            end
-    
-            if plotPred
-                lPred.XData = pred.Xee.Data(:, 1, i);
-                lPred.YData = pred.Xee.Data(:, 2, i);
-                lPred.ZData = pred.Xee.Data(:, 2, i);         
-                
-                startPred.XData = pred.Xee.Data(1, 1, i);
-                startPred.YData = pred.Xee.Data(1, 2, i);
-                startPred.ZData = pred.Xee.Data(1, 2, i);
 
-                startXee.XData = traj.Xee.Data(1, :, i);
-                startXee.YData = traj.Xee.Data(2, :, i);
-                startXee.ZData = traj.Xee.Data(3, :, i);
+            h_annot.set('String', str);
+
+            if plotTraj
+                addpoints(traj_line, traj.XeeResamp.Data(1, :, i), traj.XeeResamp.Data(2, :, i), traj.XeeResamp.Data(3, :, i));
             end
-    
+
+            if plotPred
+                XeePredData = pred.Xee.getsampleusingtime(curT).Data;
+                XeeData = traj.Xee.getsampleusingtime(curT).Data;
+
+                if ~isempty(XeePredData)
+                    lPred.XData = XeePredData(:, 1);
+                    lPred.YData = XeePredData(:, 2);
+                    lPred.ZData = XeePredData(:, 3);
+
+                    startPred.XData = XeePredData(1, 1);
+                    startPred.YData = XeePredData(1, 2);
+                    startPred.ZData = XeePredData(1, 3);
+                end
+                if ~isempty(XeeData)
+                    startXee.XData = XeeData(1, :);
+                    startXee.YData = XeeData(2, :);
+                    startXee.ZData = XeeData(3, :);
+                end
+
+            end
+
             drawnow;
-    
+
             if ~isempty(fileName)
                 frame = getframe(gcf);
                 writeVideo(myVideo, frame);
             end
-    
+
             if fpsSet
                 waitfor(r);
             end
-    
+
         end
-    
+
         % Add one frame at the end
         obj.show('preserve', false, 'fast', true, 'visuals', viz);
         drawnow;
-    
+
         if ~isempty(fileName)
             writeVideo(myVideo, frame);
         end
-    
+
         waitfor(r);
-    
+
         if ~isempty(fileName)
             close(myVideo)
         end
 
     catch ME
+
         switch ME.identifier
             case 'MATLAB:class:InvalidHandle'
                 obj.logger("Animation ended early", 'warning')
             otherwise
                 rethrow(ME)
-        end          
+        end
+
     end
 
 end

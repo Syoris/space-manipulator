@@ -9,8 +9,21 @@
 GEN_MEX = 1;
 SIM = 1;
 
-simTime = '7.0'; 
-tStep = 0.2;
+simTime = '10.2'; 
+tStart = 0.2;
+
+% --- NMPC ---
+Ts = 0.5;
+Tp = 10; % # of prediction steps
+Tc = 7; % # of ctrl steps
+
+% Weights
+r_ee_W = 1; % Position position weight
+psi_ee_W = 0; % Position orientation weight
+
+fb_W = 100;
+nb_W = 100;
+taum_W = 0.1; 
 
 %% Config
 clc
@@ -38,7 +51,7 @@ xee0 = [xee0; zeros(3, 1)];
 xee0_dot = zeros(6, 1);
 
 % xee_ref = [xee0(1)+0.2; 0; 0];
-xee_ref = [1.1180; 0; 0]; 
+xee_ref = [1.1180+0.5; 0; 0]; 
 
 fprintf('--- Config ---\n')
 fprintf('SR initial state set to:\n')
@@ -52,10 +65,6 @@ disp(xee_ref.')
 %% NMPC Controller
 fprintf('--- Creating NMPC Controller ---\n')
 % Parameters
-Ts = 0.1;
-Tp = 20; % # of prediction steps
-Tc = 10; % # of ctrl steps
-
 fprintf('Parameters:\n')
 fprintf('\tTs: %.2f\n', Ts)
 fprintf('\tTp: %i (%.2f sec)\n', Tp, Tp*Ts)
@@ -70,29 +79,25 @@ nu = n+6;
 
 nlmpc_ee = nlmpc(nx,ny,nu);
 
-
 nlmpc_ee.Ts = Ts;
 nlmpc_ee.PredictionHorizon = Tp;
 nlmpc_ee.ControlHorizon = Tc;
 
 % Prediction Model
 nlmpc_ee.Model.NumberOfParameters = 0;
-nlmpc_ee.Model.StateFcn = "sr_ee_state_func";
+if GEN_MEX
+    nlmpc_ee.Model.StateFcn = "sr_ee_state_func";
+else
+    nlmpc_ee.Model.StateFcn = "sr_ee_state_func_mex";
+end
 nlmpc_ee.Model.OutputFcn = "sr_ee_output_func";
 
 nlmpc_ee.Model.IsContinuousTime = true;
 
 % Cost Function
-r_ee_W = 1; % Position position weight
-psi_ee_W = 0; % Position orientation weight
-
-fb_rate_W = 1;
-nb_rate_W = 1;
-taum_rate_W = 1; 
-
 nlmpc_ee.Weights.OutputVariables = ones(1, 3)*r_ee_W; %[ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 
-% nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
+nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
 
 % nlobj.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, 2)*qm_W];
 
@@ -127,6 +132,7 @@ u0 = zeros(8, 1);
 
 %% Generate MEX file
 if GEN_MEX
+    tic
     fprintf('\n--- MEX file generation ---\n')
     path = fullfile('My Toolbox/src/nmpc_controller/');
     ctrl_save_name = 'nlmpc_ee_mex';
@@ -139,14 +145,24 @@ if GEN_MEX
     % path = []
     [coreData,onlineData] = getCodeGenerationData(nlmpc_ee,x0,u0);
     mexFcn = buildMEX(nlmpc_ee, save_path, coreData, onlineData);
+    tMex = toc;
+    fprintf('Time to generate: %.2f (min)', tMex/60);
 else
-%     set_param([mdl, '/NMPC Controller'],'UseMEX', 'off')
+    set_param([mdl, '/NMPC Controller'],'UseMEX', 'off')
 end
 
 
 %% State Estimation
 % TODO: ADD EKF for Xe
 
+%% Traj
+trajTime = 10;
+
+Nsamp = 205;  % Make sure (Nsamp - 5) is multiple of 4
+squareLength = 0.5;
+circleRadius = 0.25;
+
+traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', 'xy', 'tStart', tStart);
 
 
 %% Simulink
@@ -163,16 +179,19 @@ if SIM
     t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
     start(t)
     
-    % Start Sim    
+    % Start Sim
+%     profile on
     simRes = sim(mdl);      
+%     profile off   
     stop(t);
-    delete(t);
+    delete(t);    
     fprintf('\nTotal Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);
+
+%     profile viewer
 end
 
 %% Animate
-clc
-close all
+fprintf('\n--- Animation ---\n')
 data = simRes.q;
 
 trajRes = struct();
@@ -199,6 +218,6 @@ end
 
 % Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred); 
+sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 

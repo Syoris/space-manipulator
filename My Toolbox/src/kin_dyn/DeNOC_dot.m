@@ -79,7 +79,9 @@ for i=1:3
 end
 
 % Ndb_dot = Omega{1}*sr_info.P{1};
-Ndb_dot = blkdiag(zeros(3, 3), skew(wb))*sr_info.P{1};
+Ndb_dot = zeros(6, 6);
+Ndb_dot(4:6, 4:6) = skewSym(wb);
+Ndb_dot = Ndb_dot*sr_info.P{1};
 
 end
 

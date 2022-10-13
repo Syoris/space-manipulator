@@ -33,6 +33,10 @@ function dx = sr_state_func(x, u) %#codegen
     tau_b = blkdiag(Rb, zeros(3, 3)) * tau{1}; % Express base torque in intertial frame
     h = [tau_b; tau{2}];
 
+%     wb = t{1}(4:6);
+%     C = CorMat(sr_info, wb, Omega, A, A_dot, {Rb, Ra, Rm});
+%     h = C*q_dot;
+
     % 4 - Mass Mat
     D = MassM(sr_info, q, A);
 

@@ -67,7 +67,7 @@ function C = CorMat(sr_info, wb, Omega, A, A_dot, R)
     A_ab_a = Ra.' * A_ab_b; % Base to anchor twist propagation matrix, Appendage frame
 
     A_ab_dot_b = zeros(6, 6);
-    A_ab_dot_b(1:3, 4:6) = -skew(sr_info.A{1}(1:3, 4:6) * wb);
+    A_ab_dot_b(1:3, 4:6) = -skewSym(sr_info.A{1}(1:3, 4:6) * wb);
     A_ab_dot_a = Ra.' * A_ab_dot_b;
 
     % Body 1 to base
