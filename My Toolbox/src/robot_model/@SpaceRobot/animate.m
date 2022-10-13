@@ -154,6 +154,7 @@ function animate(obj, ts, varargin)
                     startPred.YData = XeePredData(1, 2);
                     startPred.ZData = XeePredData(1, 3);
                 end
+
                 if ~isempty(XeeData)
                     startXee.XData = XeeData(1, :);
                     startXee.YData = XeeData(2, :);
@@ -194,6 +195,7 @@ function animate(obj, ts, varargin)
         switch ME.identifier
             case 'MATLAB:class:InvalidHandle'
                 obj.logger("Animation ended early", 'warning')
+                return
             otherwise
                 rethrow(ME)
         end

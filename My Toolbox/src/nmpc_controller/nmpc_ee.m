@@ -9,8 +9,8 @@
 GEN_MEX = 1;
 SIM = 1;
 
-simTime = '10.2'; 
-tStart = 0.2;
+simTime = '10.5'; 
+tStart = 0.5;
 
 % --- NMPC ---
 Ts = 0.5;
@@ -164,27 +164,9 @@ Nsamp = 205;  % Make sure (Nsamp - 5) is multiple of 4
 traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', 'xy', 'tStart', tStart);
 trajRes = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
 
-% ref = trajRes.EE_desired;
 ref = struct();
 ref.time = seconds(trajRes.Time);
 ref.signals.values = trajRes.EE_desired;
-
-% Nsteps = ceil(str2double(simTime)/Ts) + 1;
-% refArr = zeros(Tp+1, 3, Nsteps);
-% 
-% for i=1:Nsteps
-%     if i+Tp+1 <= Nsteps+1
-%         refArr(:, :, i) = trajArray.EE_desired(i:i+Tp, :);
-%     else
-%         nS = Nsteps-i+1;% nS missing till the end
-%         nP = Tp + 1 - nS; %Steps missing in ref array
-% 
-%         refArr(1:nS, :, i) = trajArray.EE_desired(i:end, :);
-%         refArr(nS+1:Tp+1, :, i) = repmat(trajArray.EE_desired(end, :), nP, 1); % Fill the end
-%     end
-% end
-
-
 %% Simulink
 if SIM
     fprintf('\n--- SIM ---\n')
@@ -247,4 +229,79 @@ end
 tic
 sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
+
+%% Plots
+% --- Tracking ---
+figure
+hold on
+title("EE Trajectory Tracking")
+xlabel('X [m]')
+ylabel('Y [m]')
+grid on
+axis equal
+plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
+plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
+legend('Ref', 'NMPC')
+hold off
+
+% --- Joint ---
+figure
+hold on 
+for i=1:n
+    subplot(n, 1, i)
+    hold on
+    grid on
+    title(sprintf('Jnt%i', i))
+    xlabel('Time [sec]')
+    ylabel('Joint Angle [deg]')
+    xlim([0, str2double(simTime)])
+
+    tVect = simRes.q.Time;
+    plot(tVect, reshape(rad2deg(simRes.q.Data(7, :, :)), [], 1))
+    
+    jnt = sr.findJointByConfigId(i);
+    jntMin = rad2deg(jnt.PositionLimits(1));
+    jntMax = rad2deg(jnt.PositionLimits(2));
+    plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
+    plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
+end
+hold off
+
+% --- Torques ---
+tau = simRes.logsout.getElement('tau').Values;
+tau_tt = {8, 1};
+for i=1:8
+    tau_tt{i} = tau;
+    tau_tt{i}.Data = tau.Data(:, i);
+end
+figure
+subplot(3, 1, 1)
+title('Base force')
+hold on
+plot(tau_tt{1})
+plot(tau_tt{2})
+plot(tau_tt{3})
+legend('Fx', 'Fy', 'Fz')
+hold off
+
+subplot(3, 1, 2)
+title('Base torque')
+hold on
+plot(tau_tt{4})
+plot(tau_tt{5})
+plot(tau_tt{6})
+legend('nx', 'ny', 'nz')
+hold off
+
+
+subplot(3, 1, 3)
+title('Joint torques')
+hold on
+plot(tau_tt{7})
+plot(tau_tt{8})
+legend('tau_1', 'tau_2')
+hold off
+
+
+
 
