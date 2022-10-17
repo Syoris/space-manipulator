@@ -4,6 +4,10 @@ classdef ForwardDynBlock < matlab.System
     properties(Nontunable)
         srInfo = 0;
         srInfoFunc = 0;
+        
+        srStateFunc;
+        srStateFuncMex;
+
     end
     
     methods
@@ -28,9 +32,10 @@ classdef ForwardDynBlock < matlab.System
             F = [f0; n0; taum];
             x = [q; q_dot];
 
-%             dx = sr_state_func_mex(x, F);
+%             dx = obj.srStateFunc(x, F);
+
+            dx = obj.srStateFuncMex(x, F);
             
-            dx = sr_state_func(x, F, obj.srInfoFunc);
             
             x_dot = dx(1:obj.srInfo.N);
             q_ddot = dx(obj.srInfo.N+1:end);
@@ -105,7 +110,7 @@ classdef ForwardDynBlock < matlab.System
             %getPropertyGroupsImpl Define property section(s) for System block dialog
             mainGroup = matlab.system.display.SectionGroup(...
                 'Title','Parameters', ...
-                'PropertyList',{'srInfo', 'srInfoFunc'});
+                'PropertyList',{'srInfo', 'srInfoFunc', 'srStateFunc', 'srStateFuncMex'});
             
             group = mainGroup;
         end

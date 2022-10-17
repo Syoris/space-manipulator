@@ -1,4 +1,4 @@
-function dx = sr_state_func(x, u, p) %#codegen
+function dx = sr_state_func(x, u, sr_info) % #codegen
     % dx = [q_dot; q_ddot]
     % x = [q; q_dot]
     %
@@ -6,18 +6,13 @@ function dx = sr_state_func(x, u, p) %#codegen
     % q_dot = [vb; wb; qm_dot]
     % q_ddot = [vb_dot; wb_dot; qm_ddot]
     %
-    % params: srInfoFunc.   Function name to load SpaceRobot information
-
-    %% Load params
-    sr_info = eval(p);
-    
+    % sr_info   SpaceRobot static information
+     
     N = sr_info.N;
 %     n = sr_info.n;
-    nk = sr_info.nk;
+    nk = sr_info.nk;   
 
-    %%
-    
-
+    %%    
     dx = zeros(2*N, 1);
     q = x(1:N);
 

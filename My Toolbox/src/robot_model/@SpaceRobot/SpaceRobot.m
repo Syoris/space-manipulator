@@ -59,6 +59,8 @@ classdef SpaceRobot < handle
         Logging % Verbose level: 'error', 'warning', 'info', 'debug'. Default:'warning'
 
         InfoFunc
+        StateFunc
+        StateFuncMex
     end
 
     % TODO: SetAccess = private
