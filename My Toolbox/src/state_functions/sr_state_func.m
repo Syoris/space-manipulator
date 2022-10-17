@@ -24,7 +24,10 @@ function dx = sr_state_func(x, u, sr_info) % #codegen
     %     qm_dot = q_dot(7:8);
     %%
     % 1 - Kinematics
-    [Rb, Ra, Rm] = sr_info.RFunc(q);
+    Rb = zeros(3, 3);
+    Ra = zeros(6, 6);
+    Rm = zeros(3, 3*nk);
+    [Rb, Ra, Rm] = feval(sr_info.RFunc, q);
     Rm = reshape(Rm, 3, 3, nk); % Split Rm to nk 3x3 arrays
 
     % 2 - Kinetics

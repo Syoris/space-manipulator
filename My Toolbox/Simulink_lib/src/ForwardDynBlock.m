@@ -5,8 +5,8 @@ classdef ForwardDynBlock < matlab.System
         srInfo = 0;
         srInfoFunc = 0;
         
-        srStateFunc;
-        srStateFuncMex;
+        srStateFunc = 0;
+        srStateFuncMex = 0;
 
     end
     

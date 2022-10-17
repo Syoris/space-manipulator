@@ -15,7 +15,7 @@ function sr_info = SR2_info() %#codegen
     sr_info.M = cell(1, 2);
     sr_info.P = cell(1, 2);
 
-    sr_info.RFunc = @RFunc_SR2;
+    sr_info.RFunc = 'RFunc_SR2';
      
     % A
     sr_info.A{1} = [...    

@@ -230,14 +230,20 @@ modelPath = fullfile('Project/Models/SR6');
 RFunc_gen(sr6, modelPath);
 
 sr6_info = srInfoInit(sr6);
-sr6_info.RFunc = @RFunc_SR6;
-% sr6_info.RFunc = 'RFunc_SR6';
+% sr6_info.RFunc = @RFunc_SR6;
+sr6_info.RFunc = 'RFunc_SR6';
 
 save(fullfile(modelPath, 'SR6_data.mat'), 'sr6_info')
 
 sr6.InfoFunc = @SR6_info;
 sr6.StateFunc = @SR6_state_func;
 sr6.StateFuncMex = @SR6_state_func_mex;
+
+%% Generate mex for SR6
+x = zeros(24, 1);
+u = zeros(12, 1);
+
+codegen -report SR6_state_func.m -args {x, u} -o Project\Models\SR6\SR6_state_func_mex.mexw64
 
 %% Save Robot
 fprintf('Saving robot\n')
