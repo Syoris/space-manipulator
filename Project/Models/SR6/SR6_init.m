@@ -1,14 +1,12 @@
 %% SC_6DoF_init
 % 6 DoF SpaceRobot initialization from DH parameters. Using the 6 DoF arm
 % designed by MDA. See [2016, Dubanchet] p.338
-
-modelPath = fullfile('Project/Models/SR6');
 sr6 = SpaceRobot;
 sr6.Name = 'SR6';
 sr6.Logging = 'debug';
 nBodies = 7; % 6DoF + ee
 
-% --- Manipulator Parameters ---
+%% --- Manipulator Parameters ---
 % ## Dynamic Parameters ##
 % i   ρi      li      mi      Jx_i    Jy_i    Jz_i
 % 1   2250    0.10    0.36    0.82    1.00    0.82
@@ -226,8 +224,16 @@ end
 
 sr6.homeConfig;
 
+modelPath = fullfile('Project/Models/SR6');
+
 % Create rotation matrix function handle
 RFunc_gen(sr6, modelPath);
+
+sr6_info = srInfoInit(sr6);
+sr6_info.RFunc = @RFunc_SR6;
+save(fullfile(modelPath, 'SR6_data.mat'), 'sr6_info')
+
+sr6.InfoFunc = 'SR6_info()';
 
 %% Save Robot
 fprintf('Saving robot\n')

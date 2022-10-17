@@ -57,6 +57,8 @@ classdef SpaceRobot < handle
         qm_dot % Manipulator speed config (Nx1): [qm1_dot; ... ;qmN_dot]
 
         Logging % Verbose level: 'error', 'warning', 'info', 'debug'. Default:'warning'
+
+        InfoFunc
     end
 
     % TODO: SetAccess = private
@@ -221,6 +223,8 @@ classdef SpaceRobot < handle
             % Viz
             obj.FastVizHelper = FastVizHelper;
             obj.ShowTag = ['SHOW_TAG_', randomString(5)];
+
+            obj.InfoFunc = '';
         end
 
         addBody(obj, bodyIn, parentName)

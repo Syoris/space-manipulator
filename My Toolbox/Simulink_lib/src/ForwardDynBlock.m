@@ -2,8 +2,8 @@ classdef ForwardDynBlock < matlab.System
     % ForwardDynBlock FowardDyn of a SpaceRobot
 
     properties(Nontunable)
-        spaceRobotStruct = 0;
-        spaceRobot;
+        srInfo = 0;
+        srInfoFunc = 0;
     end
     
     methods
@@ -18,21 +18,22 @@ classdef ForwardDynBlock < matlab.System
     methods(Access = protected)
         function setupImpl(obj)
             % Perform one-time calculations, such as computing constants
-            obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
+%             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
         function [x_dot, q_ddot] = stepImpl(obj, q, q_dot, f0, n0, taum)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.            
+            
             F = [f0; n0; taum];
             x = [q; q_dot];
 
-            dx = sr_state_func_mex(x, F);
+%             dx = sr_state_func_mex(x, F);
             
-%             dx = sr_state_func(x, F);
+            dx = sr_state_func(x, F, obj.srInfoFunc);
             
-            x_dot = dx(1:8);
-            q_ddot = dx(9:16);
+            x_dot = dx(1:obj.srInfo.N);
+            q_ddot = dx(obj.srInfo.N+1:end);
         end
 
         function resetImpl(~)
@@ -70,8 +71,8 @@ classdef ForwardDynBlock < matlab.System
         
         function [out1, out2] = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-            out1 = [obj.spaceRobotStruct.N 1];
-            out2 = [obj.spaceRobotStruct.N 1];
+            out1 = [obj.srInfo.N 1];
+            out2 = [obj.srInfo.N 1];
         end
 
         function [out1, out2] = getOutputDataTypeImpl(obj)
@@ -104,7 +105,7 @@ classdef ForwardDynBlock < matlab.System
             %getPropertyGroupsImpl Define property section(s) for System block dialog
             mainGroup = matlab.system.display.SectionGroup(...
                 'Title','Parameters', ...
-                'PropertyList',{'spaceRobotStruct'});
+                'PropertyList',{'srInfo', 'srInfoFunc'});
             
             group = mainGroup;
         end

@@ -12,6 +12,7 @@ function sr_info = srInfoInit(sr)
     sr_info.n = sr.NumActiveJoints;
     sr_info.N = 6 + sr_info.n;
     sr_info.BodyNames = sr.BodyNames;
+    sr_info.RFunc = '';
     
     % Find joint config idx for each body
     sr_info.jnt_idx = arrayfun(@(name) sr.Bodies{sr.findBodyIdxByName(name)}.Joint.Q_id, sr.BodyNames);
