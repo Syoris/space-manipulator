@@ -18,15 +18,14 @@ function saveSR(sr, varargin)
     savePath = parser.Results.Path;
 
     if ~isempty(savePath)
-        saveName = strcat(savePath, fileName);
+        saveName = fullfile(savePath, fileName);
     else
         saveName = fileName;
     end
     
     saveName = strcat(saveName, '.mat');
 
-    msg = sprintf('Saving to: %s\n', saveName);
-    fprintf(msg);
+    fprintf('Saving to: %s \n', saveName);
 
     save(saveName, 'sr');
 

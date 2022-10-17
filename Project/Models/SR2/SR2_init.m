@@ -2,7 +2,8 @@
 % SpaceRobot initialization from DH parameters
 
 sr2 = SpaceRobot;
-sr2.Name = 'spaceRobotDH';
+sr2.Name = 'SR2';
+modelPath = fullfile('Project/Models/SR2');
 
 L0 = 0.5;
 L1 = 1;
@@ -154,7 +155,8 @@ end
 
 sr2.homeConfig;
 
+RFunc_gen(sr2, modelPath);
+
 %% Save Robot
 fprintf('Saving robot\n')
-clearvars -except sr2
-save 'Project/Models/SR2.mat'
+saveSR(sr2, 'FileName', 'SR2', 'Path', modelPath)
