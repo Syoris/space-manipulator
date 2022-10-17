@@ -161,11 +161,18 @@ modelPath = fullfile('Project/Models/SR2');
 RFunc_gen(sr2, modelPath);
 
 
-%% Generate mex for SR6
+%% Generate mex for SR2
 x = zeros(16, 1);
 u = zeros(8, 1);
 
 codegen -report SR2_state_func.m -args {x, u} -o Project\Models\SR2\SR2_state_func_mex.mexw64
+
+%% Generate mex for SR2 ee
+x = zeros(28, 1);
+u = zeros(8, 1);
+
+codegen -report SR2_ee_state_func.m -args {x, u} -o Project\Models\SR2\SR2_ee_state_func_mex.mexw64
+
 %%
 sr2.InfoFunc = @SR2_info;
 sr2.StateFunc = @SR2_state_func;

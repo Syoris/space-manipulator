@@ -14,6 +14,7 @@ nk = sr_info.nk; % Number of bodies in the appendage
 
 % --- Jacobians derivative ---
 bodyIdx = find(strcmp(sr_info.BodyNames, bodyName));
+bodyIdx = bodyIdx(1);
 assert(bodyIdx>0, 'ERROR: Invalid body name')
 
 i = bodyIdx;

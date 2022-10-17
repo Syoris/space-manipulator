@@ -245,6 +245,11 @@ u = zeros(12, 1);
 
 codegen -report SR6_state_func.m -args {x, u} -o Project\Models\SR6\SR6_state_func_mex.mexw64
 
+%% Generate mex for SR6 ee
+x = zeros(36, 1);
+u = zeros(12, 1);
+
+codegen -report SR6_ee_state_func.m -args {x, u} -o Project\Models\SR6\SR6_ee_state_func_mex.mexw64
 %% Save Robot
 fprintf('Saving robot\n')
 saveSR(sr6, 'FileName', 'SR6', 'Path', modelPath)

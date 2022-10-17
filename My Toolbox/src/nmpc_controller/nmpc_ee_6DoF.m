@@ -9,13 +9,13 @@
 GEN_MEX = 1;
 SIM = 1;
 
-simTime = '10.5'; 
+simTime = '5'; 
 tStart = 0.5;
 
 % --- NMPC ---
 Ts = 0.5;
-Tp = 10; % # of prediction steps
-Tc = 7; % # of ctrl steps
+Tp = 5; % # of prediction steps
+Tc = 2; % # of ctrl steps
 
 % Weights
 r_ee_W = 10; % Position position weight
@@ -26,7 +26,7 @@ nb_W = 100;
 taum_W = 0.1; 
 
 % Traj
-trajTime = 10;
+trajTime = 5;
 circleRadius = 0.25;
 
 %% Config
@@ -35,14 +35,14 @@ close all
 
 if ~exist('sr', 'var')
     fprintf("Loading SR\n")
-    load 'SR2.mat'
+    load 'SR6.mat'
 end
 sr.homeConfig();
 
-conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
-conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
-
-sr.q = conf2;
+% conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
+% conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
+% 
+% sr.q = conf2;
 
 mdl = 'nmpc_sim_ee'; 
 
@@ -55,9 +55,10 @@ xee0 = [xee0; zeros(3, 1)];
 xee0_dot = zeros(6, 1);
 
 % xee_ref = [xee0(1)+0.2; 0; 0];
-xee_ref = [1.1180+0.5; 0; 0]; 
+xee_ref = xee0; 
 
 fprintf('--- Config ---\n')
+fprintf('Loaded SpaceRobot: %s\n', sr.Name)
 fprintf('SR initial state set to:\n')
 fprintf('\t-q0:')
 disp(q0.')
@@ -90,9 +91,9 @@ nlmpc_ee.ControlHorizon = Tc;
 % Prediction Model
 nlmpc_ee.Model.NumberOfParameters = 0;
 if GEN_MEX
-    nlmpc_ee.Model.StateFcn = "sr_ee_state_func";
+    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func";
 else
-    nlmpc_ee.Model.StateFcn = "sr_ee_state_func_mex";
+    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
 end
 nlmpc_ee.Model.OutputFcn = "sr_ee_output_func";
 
@@ -101,7 +102,7 @@ nlmpc_ee.Model.IsContinuousTime = true;
 % Cost Function
 nlmpc_ee.Weights.OutputVariables = ones(1, 3)*r_ee_W; %[ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 
-nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
+nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, n)*taum_W];
 
 % nlobj.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, 2)*qm_W];
 
@@ -129,7 +130,7 @@ end
 
 % % Validate
 x0 = [sr.q; xee0; sr.q_dot; xee0_dot];
-u0 = zeros(8, 1);
+u0 = zeros(N, 1);
 % validateFcns(nlmpc_ee, x0, u0, []);
 % 
 % yref = [x0(1:6)', 0, 0];
@@ -139,7 +140,7 @@ if GEN_MEX
     tic
     fprintf('\n--- MEX file generation ---\n')
     path = fullfile('My Toolbox/src/nmpc_controller/');
-    ctrl_save_name = 'nlmpc_ee_mex';
+    ctrl_save_name = 'nlmpc_ee_SR6_mex';
 
     save_path = fullfile(path, ctrl_save_name);
     
@@ -212,7 +213,9 @@ trajRes.Xee = simRes.Xee;
 
 % Prediction data
 xSeq = simRes.logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
-Xee_idx = [9, 10, 11];
+% Xee_idx = [9, 10, 11];
+Xee_idx = [13, 14, 15];
+
 pred = struct();
 pred.Xee = xSeq;
 pred.Xee.Data = xSeq.Data(:, Xee_idx, :); %Select ee states
@@ -227,7 +230,7 @@ end
 
 % Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(data, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots

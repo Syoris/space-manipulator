@@ -1,4 +1,4 @@
-classdef ForwardDynBlock < matlab.System
+classdef EEDynBlock < matlab.System
     % ForwardDynBlock FowardDyn of a SpaceRobot
 
     properties(Nontunable)
@@ -10,7 +10,7 @@ classdef ForwardDynBlock < matlab.System
     end
     
     methods
-        function obj = ForwardDynsBlock(varargin)
+        function obj = EEDynBlock(varargin)
             %ForwardDynsBlock Constructor for Forward Dynamics block system object
             
             % Support name-value pair arguments when constructing object
@@ -24,34 +24,48 @@ classdef ForwardDynBlock < matlab.System
 %             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
-        function [x_dot, q_ddot] = stepImpl(obj, q, q_dot, f0, n0, taum)
+        function [Xee, Xee_dot] = stepImpl(obj, q, q_dot)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.            
+            sr_info = obj.srInfo;
             
-            F = [f0; n0; taum];
-            x = [q; q_dot];
+            % 1 - EE Position
+            [Rb, Ra, Rm, Tee] = feval(sr_info.RFunc, q);          
+            Rm = reshape(Rm, 3, 3, []); % Split Rm to nk 3x3 arrays
 
-%             dx = obj.srStateFunc(x, F);
+            [Ree, ree] = tr2rt(Tee);
+            Ree_blk = blkdiag(Ree, Ree);
 
-            dx = obj.srStateFuncMex(x, F);
             
+            psi_ee = tr2rpy(Ree, 'zyx');
+            Xee = [ree; psi_ee.'];
+%             psi = zeros(3, 1);
+% 
+%             temp = rotm2eul(R, 'ZYX');
+%             psi(1) = temp(3);
+%             psi(2) = temp(2);
+%             psi(3) = temp(1);
             
-            x_dot = dx(1:obj.srInfo.N);
-            q_ddot = dx(obj.srInfo.N+1:end);
+            % 2 - Kinetics
+            [~, ~, ~, A, ~] = Kin(sr_info, q, zeros(sr_info.N, 1), zeros(sr_info.N, 1), {Rb, Ra, Rm});
+            
+            % 3 - J
+            J = Ree_blk*Jacobian('endeffector', sr_info, A, {Rb, Ra});            
+            % J_dot = Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
+
+            % 4 - Xee_dot
+            Xee_dot = J*q_dot;
         end
 
         function resetImpl(~)
             % Initialize / reset discrete-state properties
         end
 
-        function validateInputsImpl(~, q, q_dot, f0, n0, taum)
+        function validateInputsImpl(~, q, q_dot)
             %validateInputsImpl Validate inputs to the step method at initialization
             
-            validateattributes(q,{'single','double'},{'vector'},'ForwardDynamicsBlock','Config');
-            validateattributes(q_dot,{'single','double'},{'vector'},'ForwardDynamicsBlock','JointVel');
-            validateattributes(f0,{'single','double'},{'vector'},'ForwardDynamicsBlock','BaseForce');
-            validateattributes(n0,{'single','double'},{'vector'},'ForwardDynamicsBlock','BaseTorque');
-            validateattributes(taum,{'single','double'},{'vector'},'ForwardDynamicsBlock','JointToruqe');
+            validateattributes(q,{'single','double'},{'vector'},'EEDynBlock','Joint config');
+            validateattributes(q_dot,{'single','double'},{'vector'},'EEDynBlock','Joint velocities');
         end
 
         function flag = isInputSizeMutableImpl(~,~)
@@ -75,8 +89,8 @@ classdef ForwardDynBlock < matlab.System
         
         function [out1, out2] = getOutputSizeImpl(obj)
             %getOutputSizeImpl Return size for each output port
-            out1 = [obj.srInfo.N 1];
-            out2 = [obj.srInfo.N 1];
+            out1 = [6 1];
+            out2 = [6 1];
         end
 
         function [out1, out2] = getOutputDataTypeImpl(obj)
@@ -101,8 +115,8 @@ classdef ForwardDynBlock < matlab.System
     methods(Access = protected, Static)
        function header = getHeaderImpl
            header = matlab.system.display.Header(mfilename('class'), ...
-               'Title','Forward Dynamics Block',...
-               'Text','System object of SpaceRobot forward dynamics');
+               'Title','EE Dynamic Block',...
+               'Text','System object of SpaceRobot end-effector dynamics computation');
         end
 
         function group = getPropertyGroupsImpl

@@ -42,7 +42,9 @@ function J = Jacobian(bodyName, sr_info, A, R)
     [Nkl, Nd, Nbl, Ndb] = DeNOC(sr_info, A, R);      
     
     % --- Jacobians ---   
+%     bodyIdx = -1;
     bodyIdx = find(strcmp(sr_info.BodyNames, bodyName));
+    bodyIdx = bodyIdx(1);
     assert(bodyIdx>0, 'ERROR: Invalid body name')
 
     i = bodyIdx;
