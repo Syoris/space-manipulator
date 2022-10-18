@@ -1,5 +1,6 @@
 clc
-load 'SR2.mat'
+% load 'SR2.mat'
+load 'SR6.mat'
 
 sr.homeConfig();
 q0 = sr.q;
@@ -21,6 +22,8 @@ nz = 0;
 tau1 = 0;
 tau2 = 0;
 tau = [tau1; tau2];
+
+tau = zeros(6, 1);
 
 
 %% Xee ddot test

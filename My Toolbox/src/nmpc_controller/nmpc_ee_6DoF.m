@@ -1,21 +1,18 @@
 %% nmpc_matlab.m  NMPC First tests
 % Design and test of NMPC controller for SR
 %
-% Following Pendulum SwingUp examples
-% To open: openExample('mpc/SwingupControlOfPendulumUsingNMPCExample')
-%
 
 % ### OPTIONS ###
 GEN_MEX = 1;
 SIM = 1;
 
-simTime = '5.25'; 
-tStart = 0.25;
+simTime = '5.5'; 
+tStart = 0.5;
 
 % --- NMPC ---
-Ts = 0.25;
-Tp = 4; % # of prediction steps
-Tc = 3; % # of ctrl steps
+Ts = 0.5;
+Tp = 10; % # of prediction steps
+Tc = 7; % # of ctrl steps
 
 % Weights
 r_ee_W = 10; % Position position weight
@@ -26,9 +23,9 @@ nb_W = 100;
 taum_W = 0.1; 
 
 % Traj
-trajTime = 20;
-circleRadius = 1;
-plane = 'xy';
+trajTime = 10;
+circleRadius = 0.25;
+plane = 'yz';
 
 %% Config
 clc
@@ -182,15 +179,15 @@ if SIM
     start(t)
     
     % Start Sim
-%     profile on
+    profile on
     simRes = sim(mdl);      
-%     profile off   
+    profile off   
     stop(t);
     delete(t);   
     delete(waitBar)
-    fprintf('\nTotal Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);
-
-%     profile viewer
+    fprintf('Simulation DONE\n')
+    fprintf('Total Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);    
+    profile viewer
 end
 
 %% Animate
@@ -235,7 +232,11 @@ ylabel('Y [m]')
 grid on
 axis equal
 plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
-plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
+if strcmp(plane, 'xy')
+    plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
+elseif strcmp(plane, 'yz')
+    plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
+end
 legend('Ref', 'NMPC')
 hold off
 
