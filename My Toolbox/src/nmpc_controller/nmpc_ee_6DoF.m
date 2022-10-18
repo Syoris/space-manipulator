@@ -9,13 +9,13 @@
 GEN_MEX = 1;
 SIM = 1;
 
-simTime = '5'; 
-tStart = 0.5;
+simTime = '5.25'; 
+tStart = 0.25;
 
 % --- NMPC ---
-Ts = 0.5;
-Tp = 5; % # of prediction steps
-Tc = 2; % # of ctrl steps
+Ts = 0.25;
+Tp = 4; % # of prediction steps
+Tc = 3; % # of ctrl steps
 
 % Weights
 r_ee_W = 10; % Position position weight
@@ -26,8 +26,9 @@ nb_W = 100;
 taum_W = 0.1; 
 
 % Traj
-trajTime = 5;
-circleRadius = 0.25;
+trajTime = 20;
+circleRadius = 1;
+plane = 'xy';
 
 %% Config
 clc
@@ -54,18 +55,13 @@ q_dot_0 = sr.q_dot;
 xee0 = [xee0; zeros(3, 1)];
 xee0_dot = zeros(6, 1);
 
-% xee_ref = [xee0(1)+0.2; 0; 0];
-xee_ref = xee0; 
-
 fprintf('--- Config ---\n')
-fprintf('Loaded SpaceRobot: %s\n', sr.Name)
-fprintf('SR initial state set to:\n')
+fprintf('SpaceRobot: %s\n', sr.Name)
+fprintf('SR initial config:\n')
 fprintf('\t-q0:')
 disp(q0.')
 fprintf('\t-Xee0:')
 disp(xee0.')
-fprintf('\t-Xee_ref:')
-disp(xee_ref.')
 
 %% NMPC Controller
 fprintf('--- Creating NMPC Controller ---\n')
@@ -95,7 +91,7 @@ if GEN_MEX
 else
     nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
 end
-nlmpc_ee.Model.OutputFcn = "sr_ee_output_func";
+nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
 
 nlmpc_ee.Model.IsContinuousTime = true;
 
@@ -162,12 +158,12 @@ end
 
 %% Traj
 Nsamp = 205;  % Make sure (Nsamp - 5) is multiple of 4
-traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', 'xy', 'tStart', tStart);
-trajRes = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', tStart);
+traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
 
 ref = struct();
-ref.time = seconds(trajRes.Time);
-ref.signals.values = trajRes.EE_desired;
+ref.time = seconds(traj.Time);
+ref.signals.values = traj.EE_desired;
 %% Simulink
 if SIM
     fprintf('\n--- SIM ---\n')
@@ -176,12 +172,9 @@ if SIM
     
     % Sim Time Timer
     fprintf('Launching Simulation...\n')
-%     fprintf('Current simulation time: 0.00');
     t = timer;
     t.Period = 2;
     t.ExecutionMode = 'fixedRate';
-%     t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
-
     t.TimerFcn = @(myTimerObj, thisEvent)waitbar(get_param(mdl, 'SimulationTime')/str2double(simTime), ...
         waitBar, {'Simulation in progress...', ...
         [num2str(get_param(mdl, 'SimulationTime')), '/', simTime]});
@@ -213,7 +206,6 @@ trajRes.Xee = simRes.Xee;
 
 % Prediction data
 xSeq = simRes.logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
-% Xee_idx = [9, 10, 11];
 Xee_idx = [13, 14, 15];
 
 pred = struct();
@@ -230,7 +222,7 @@ end
 
 % Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(data, 'fps', 17, 'rate', 0.2, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots
@@ -260,7 +252,7 @@ for i=1:n
     xlim([0, str2double(simTime)])
 
     tVect = simRes.q.Time;
-    plot(tVect, reshape(rad2deg(simRes.q.Data(7, :, :)), [], 1))
+    plot(tVect, reshape(rad2deg(simRes.q.Data(6+i, :, :)), [], 1))
     
     jnt = sr.findJointByConfigId(i);
     jntMin = rad2deg(jnt.PositionLimits(1));
@@ -272,8 +264,8 @@ hold off
 
 % --- Torques ---
 tau = simRes.logsout.getElement('tau').Values;
-tau_tt = {8, 1};
-for i=1:8
+tau_tt = {N, 1};
+for i=1:N
     tau_tt{i} = tau;
     tau_tt{i}.Data = tau.Data(:, i);
 end
@@ -300,9 +292,11 @@ hold off
 subplot(3, 1, 3)
 title('Joint torques')
 hold on
-plot(tau_tt{7})
-plot(tau_tt{8})
-legend('tau_1', 'tau_2')
+for i=7:N
+    name = sprintf('taum_%i', i-6);
+    plot(tau_tt{i}, 'DisplayName', name)
+end
+legend
 hold off
 
 

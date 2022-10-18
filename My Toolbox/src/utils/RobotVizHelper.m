@@ -245,7 +245,7 @@ classdef RobotVizHelper < handle
             %TODO estimate 'a' value, axis range
             a = 5;
 
-            set(ax, 'xlim', [-2, 5], 'ylim', [-2, 5], 'zlim', [-3, 3]);
+            set(ax, 'xlim', [0, 6], 'ylim', [-3, 3], 'zlim', [-1, 4]);
 
             xlabel(ax, 'X');
             ylabel(ax, 'Y');
