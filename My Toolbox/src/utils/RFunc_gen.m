@@ -45,4 +45,7 @@ for i = 1:nk
 end
 
 matlabFunction(R_bI, Ra_symb, R_array_symb, Tee, 'File', fullPath, 'Vars', {sr.q_symb}, 'Outputs', {'Rb', 'Ra', 'Rm', 'Tee'});
+
+codegen(fileName, '-args',{sr.q},'-report', '-o', [fullPath, '_mex']);
+
 end

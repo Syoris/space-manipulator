@@ -35,5 +35,7 @@ function sr_info = srInfoInit(sr)
         sr_info.M{2}(:, :, i) = sr.Bodies{i}.M;
         sr_info.P{2}(:, :, i) = sr.Bodies{i}.P;
     end  
+
+    sr_info.RFunc = ['RFunc_', sr.Name, '_mex'];
 end
 

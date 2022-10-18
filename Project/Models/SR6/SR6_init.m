@@ -231,9 +231,10 @@ RFunc_gen(sr6, modelPath);
 
 sr6_info = srInfoInit(sr6);
 % sr6_info.RFunc = @RFunc_SR6;
-sr6_info.RFunc = 'RFunc_SR6';
+% sr6_info.RFunc = 'RFunc_SR6_mex';
 
 save(fullfile(modelPath, 'SR6_data.mat'), 'sr6_info')
+Struct2File(sr6_info, modelPath);
 
 sr6.InfoFunc = @SR6_info;
 sr6.StateFunc = @SR6_state_func;
