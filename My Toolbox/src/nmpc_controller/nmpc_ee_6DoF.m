@@ -11,7 +11,7 @@ tStart = 0.5;
 
 % --- NMPC ---
 Ts = 0.5;
-Tp = 10; % # of prediction steps
+Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
 % Weights
@@ -40,6 +40,13 @@ if ~exist('sr', 'var')
     load 'SR6.mat'
 end
 sr.homeConfig();
+
+close all
+qb0 = [0; 0; 0; 0; 0; 0];
+qm0 = [0; deg2rad(60); deg2rad(-100); deg2rad(-50); 0; 0];
+
+sr.q = [qb0; qm0];
+% sr.show;
 
 % conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
 % conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
@@ -219,27 +226,25 @@ end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
-data = simRes.q;
 
-trajRes = struct();
-
-trajRes.ref = ts2timetable(simRes.Xee_ref);
-trajRes.ref.Properties.VariableNames{1} = 'EE_desired';
-
-trajRes.Xee = simRes.Xee;
-
-% Prediction data
+% Extract signals from sim
+q = logsout.getElement('q').Values;
 xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
 ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
-Xee_idx = [13, 14, 15];
+Xee = logsout.getElement('Xee').Values;
+Xee_ref = logsout.getElement('Xee_ref').Values;
+tau = simRes.logsout.getElement('tau').Values;
+
+% Setup signals for animation
+trajRes = struct();
+trajRes.ref = ts2timetable(Xee_ref);
+trajRes.ref.Properties.VariableNames{1} = 'EE_desired';
+trajRes.Xee = Xee;
 
 pred = struct();
-% pred.Xee = xSeq;
-% pred.Xee.Data = xSeq.Data(:, Xee_idx, :); %Select ee states
-
 pred.Xee = ySeq;
 
-% Save
+% Save options
 fileName = '';
 if ~strcmp(fileName, '')
     savePath = strcat(folder, fileName);
@@ -249,52 +254,61 @@ end
 
 % Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(q, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots
 % --- Tracking ---
 figure
-hold on
+
 title("EE Trajectory Tracking")
+
+subplot(1, 2, 1)
 xlabel('X [m]')
 ylabel('Y [m]')
 grid on
 axis equal
+hold on
 plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
-if strcmp(plane, 'xy')
-    plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
-elseif strcmp(plane, 'yz')
-    plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
-end
+plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
 legend('Ref', 'NMPC')
 hold off
 
-% --- Joint ---
-figure
-hold on 
-for i=1:n
-    subplot(n, 1, i)
-    hold on
-    grid on
-    title(sprintf('Jnt%i', i))
-    xlabel('Time [sec]')
-    ylabel('Joint Angle [deg]')
-    xlim([0, str2double(simTime)])
-
-    tVect = simRes.q.Time;
-    plot(tVect, reshape(rad2deg(simRes.q.Data(6+i, :, :)), [], 1))
-    
-    jnt = sr.findJointByConfigId(i);
-    jntMin = rad2deg(jnt.PositionLimits(1));
-    jntMax = rad2deg(jnt.PositionLimits(2));
-    plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
-    plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
-end
+subplot(1, 2, 2)
+xlabel('X [m]')
+ylabel('Z [m]')
+grid on
+axis equal
+hold on
+plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 3))
+plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
+legend('Ref', 'NMPC')
 hold off
 
+% % --- Joint ---
+% figure
+% hold on 
+% for i=1:n
+%     subplot(n, 1, i)
+%     hold on
+%     grid on
+%     title(sprintf('Jnt%i', i))
+%     xlabel('Time [sec]')
+%     ylabel('Joint Angle [deg]')
+%     xlim([0, str2double(simTime)])
+% 
+%     tVect = q.Time;
+%     plot(tVect, reshape(rad2deg(q.Data(6+i, :, :)), [], 1))
+%     
+%     jnt = sr.findJointByConfigId(i);
+%     jntMin = rad2deg(jnt.PositionLimits(1));
+%     jntMax = rad2deg(jnt.PositionLimits(2));
+%     plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
+%     plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
+% end
+% hold off
+
 % % --- Torques ---
-% tau = simRes.logsout.getElement('tau').Values;
 % tau_tt = {N, 1};
 % for i=1:N
 %     tau_tt{i} = tau;
@@ -324,12 +338,12 @@ hold off
 % title('Joint torques')
 % hold on
 % for i=7:N
-%     name = sprintf('taum_%i', i-6);
+%     name = sprintf('Body%i', i-6);
 %     plot(tau_tt{i}, 'DisplayName', name)
 % end
 % legend
 % hold off
-% 
+
 
 
 
