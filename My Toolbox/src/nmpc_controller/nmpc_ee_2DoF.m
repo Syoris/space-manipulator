@@ -94,7 +94,7 @@ if GEN_MEX
 else
     nlmpc_ee.Model.StateFcn = "SR2_ee_state_func_mex";
 end
-nlmpc_ee.Model.OutputFcn = "sr_ee_output_func";
+nlmpc_ee.Model.OutputFcn = "SR2_ee_output_func";
 
 nlmpc_ee.Model.IsContinuousTime = true;
 
