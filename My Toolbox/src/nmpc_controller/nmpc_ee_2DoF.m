@@ -9,10 +9,10 @@
 GEN_MEX = 0;
 SIM = 1;
 
-simTime = '0.5'; 
+simTime = '0.3'; 
 tStart = 0.2;
 
-% --- NMPC ---
+% --- NMPC ---s
 Ts = 0.1;
 Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
@@ -79,7 +79,7 @@ n = sr.NumActiveJoints;
 N = n+6;
 nx = 12 + 2*n + 12; % Change to 24 + 2*n w/ EE
 ny = 3; % EE states
-nu = n+6;
+nu = N;
 
 nlmpc_ee = nlmpc(nx,ny,nu);
 
