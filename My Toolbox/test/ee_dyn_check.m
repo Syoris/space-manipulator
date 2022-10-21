@@ -20,8 +20,8 @@ N = n+6;
 q0 = zeros(N, 1);
 q_dot_0 = zeros(N, 1);
 
-taub = diag([0; 0; 0; 0; 0; 0]) * rand(6, 1);
-taum = diag([0; 0; 0; 0; 0; 1]) * rand(n, 1);
+taub = diag([1; 1; 1; 1; 1; 1]) * rand(6, 1);
+taum = diag([1; 1; 1; 1; 1; 1]) * rand(n, 1);
 tau = [taub; taum];
 
 

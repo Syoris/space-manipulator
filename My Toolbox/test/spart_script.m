@@ -43,15 +43,15 @@ spart_res.twist.tb = [t0_S(4:6, :); t0_S(1:3, :)];
 spart_res.twist.tm = [tm_S(4:6, :); tm_S(1:3, :)];
 
 % Jacobians, com. Inertial frame
-[J00_com, Jm0_com] = Jacob(qb(1:3), qb(1:3), rL, P0, pm, 0, robotSpart);
-[J01_com, Jm1_com] = Jacob(rL(1:3, 1), qb(1:3), rL, P0, pm, 1, robotSpart);
-[J02_com, Jm2_com] = Jacob(rL(1:3, 2), qb(1:3), rL, P0, pm, 2, robotSpart);
-[J03_com, Jm3_com] = Jacob(rL(1:3, 3), qb(1:3), rL, P0, pm, 3, robotSpart);
-J_S_com = {[[J01_com(4:6, 4:6), J01_com(4:6, 1:3); J01_com(1:3, 4:6), J01_com(1:3, 1:3)], [Jm1_com(4:6, :); Jm1_com(1:3, :)]];
-        [[J02_com(4:6, 4:6), J02_com(4:6, 1:3); J02_com(1:3, 4:6), J02_com(1:3, 1:3)], [Jm2_com(4:6, :); Jm2_com(1:3, :)]];
-        [[J03_com(4:6, 4:6), J03_com(4:6, 1:3); J03_com(1:3, 4:6), J03_com(1:3, 1:3)], [Jm3_com(4:6, :); Jm3_com(1:3, :)]]};
-% J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
-spart_res.J_com = J_S_com;
+J_com = cell(nk, 1);
+for i=1:nk
+    [J0i_com, Jmi_com] = Jacob(rL(1:3, i), qb(1:3), rL, P0, pm, i, robotSpart);
+
+    Jcom_i = [[J0i_com(4:6, 4:6), J0i_com(4:6, 1:3); J0i_com(1:3, 4:6), J0i_com(1:3, 1:3)], [Jmi_com(4:6, :); Jmi_com(1:3, :)]];
+    J_com{i} = Jcom_i;
+end
+% [J00_com, Jm0_com] = Jacob(qb(1:3), qb(1:3), rL, P0, pm, 0, robotSpart);
+spart_res.J_com = J_com;
 
 % Jacobians, joint
 J_I = cell(nk, 1);

@@ -6,7 +6,7 @@
 GEN_MEX = 0;
 SIM = 1;
 
-simTime = '0.3'; 
+simTime = '10.2'; 
 tStart = 0.2;
 
 % --- NMPC ---

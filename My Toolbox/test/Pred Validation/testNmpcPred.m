@@ -2,7 +2,7 @@
 % Check output if MV seq is applied in OL to SR
 
 % % 6
-logsout = logsout6;
+logsoutComp = logsout6;
 N = 12;
 sr = sr6;
 
@@ -14,7 +14,7 @@ sr = sr6;
 time = 0.2;
 
 % Get parameters
-mvSeq = logsout.getElement('mvSeq').Values; %  Sequence of all
+mvSeq = logsoutComp.getElement('mvSeq').Values; %  Sequence of all
 mvKSeq = mvSeq.getsampleusingtime(time).Data; % (Tpx12)
 % tt = ts2timetable(mvSeq);
 mvTT = timetable(mvKSeq, 'TimeStep',seconds(Ts),'VariableNames',{'mv'});
@@ -22,7 +22,7 @@ mvTT = retime(mvTT,'regular','previous','TimeStep',seconds(0.001));
 
 % Access specific time: mvTT(seconds(0.1), :)
 
-xSeq = logsout.getElement('xSeq').Values; %  Sequence of all
+xSeq = logsoutComp.getElement('xSeq').Values; %  Sequence of all
 xKSeq = xSeq.getsampleusingtime(time).Data; % (Tpx12)
 % tt = ts2timetable(mvSeq);
 xTT = timetable(xKSeq, 'TimeStep',seconds(Ts),'VariableNames',{'xk'});
@@ -44,10 +44,10 @@ predLogsout = simRes.logsout;
 tau = predLogsout.getElement('tau').Values;
 x = predLogsout.getElement('x').Values;
 xPred = predLogsout.getElement('xPred').Values;
-x2 = predLogsout.getElement('x2').Values;
+% x2 = predLogsout.getElement('x2').Values;
 
-xee3 = predLogsout.getElement('Xee3').Values;
-xee_dot3 = predLogsout.getElement('Xee_dot3').Values;
+% xee3 = predLogsout.getElement('Xee3').Values;
+% xee_dot3 = predLogsout.getElement('Xee_dot3').Values;
 
 % % ### Base Position ###
 % idx = 1:6;
@@ -92,9 +92,9 @@ for i=1:6
     hold on
     grid on
     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
-    plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, []), 'DisplayName', 'SF')
-    plot(xee3.Time, reshape(xee3.Data(idx(i)-N, :, :), 1, []), 'k--','DisplayName', 'Xee3')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
+%     plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, []), 'DisplayName', 'SF')
+%     plot(xee3.Time, reshape(xee3.Data(idx(i)-N, :, :), 1, []), 'k--','DisplayName', 'Xee3')
     legend;
     hold off
 end
@@ -145,8 +145,8 @@ for i=1:6
     hold on
     grid on
     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
-    plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, []), 'DisplayName', 'SF')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
+%     plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, []), 'DisplayName', 'SF')
 %     plot(xee_dot3.Time, reshape(xee_dot3.Data(idx(i)-(2*N+6), :, :), 1, []), 'k--','DisplayName', 'Xee3')
     legend;
     hold off

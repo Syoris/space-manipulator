@@ -33,7 +33,8 @@ Jz = [0.82, 5.24, 5.24, 0.82, 1, 0.01, 0];
 % E     0       0       0       0
 
 %          [a                   alpha       d           theta]      i
-dhparams = [bodyLength(1) pi / 2 0.06 0; %   1
+dhparams = [...
+        bodyLength(1) pi / 2 0.06 0; %   1
         bodyLength(2) 0 0.10 0; %   2
         bodyLength(3) 0 0.10 0; %   3
         bodyLength(4) -pi / 2 0.10 0; %   4
@@ -241,16 +242,19 @@ sr6.StateFunc = @SR6_state_func;
 sr6.StateFuncMex = @SR6_state_func_mex;
 
 %% Generate mex for SR6
+fprintf("Generating code for state function...\n")
 x = zeros(24, 1);
 u = zeros(12, 1);
 
 codegen -report SR6_state_func.m -args {x, u} -o Project\Models\SR6\SR6_state_func_mex.mexw64
 
 % Generate mex for SR6 ee
+fprintf("Generating code for endeffector state function...\n")
 x = zeros(36, 1);
 u = zeros(12, 1);
 
 codegen -report SR6_ee_state_func.m -args {x, u} -o Project\Models\SR6\SR6_ee_state_func_mex.mexw64
+fprintf("Code generation done\n")
 %% Save Robot
 fprintf('Saving robot\n')
 saveSR(sr6, 'FileName', 'SR6', 'Path', modelPath)
