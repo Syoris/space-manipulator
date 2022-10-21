@@ -1,6 +1,7 @@
 function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     % x = [q; q_dot]
     % dx = [q_dot; q_ddot]
+    % Where  *** q_dot = [vb, psi_b_dot] ***
     
     %
     % q = [rb; psi_b; qm; ree; psi_ee], 6+6+n
@@ -20,6 +21,9 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
 
     q_dot = x(N+7:2*N+6);
     q_ee_dot = x(end-5:end);
+
+    q_dot(4:6) = euler2omega(q(4:6), q_dot(4:6)); % wb = R_psi*psi_b_dot
+    q_ee_dot(4:6) = euler2omega(q_ee(4:6), q_ee_dot(4:6)); % wee = R_psi*psi_ee_dot
 
     %%
     % 1 - Kinematics

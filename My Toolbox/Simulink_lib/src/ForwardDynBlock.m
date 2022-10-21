@@ -31,9 +31,9 @@ classdef ForwardDynBlock < matlab.System
             F = [f0; n0; taum];
             x = [q; q_dot];
 
-%             dx = obj.srStateFunc(x, F);
+            dx = obj.srStateFunc(x, F);
 
-            dx = obj.srStateFuncMex(x, F);
+%             dx = obj.srStateFuncMex(x, F);
             
             
             x_dot = dx(1:obj.srInfo.N);

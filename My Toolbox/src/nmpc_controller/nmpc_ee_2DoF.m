@@ -6,16 +6,16 @@
 %
 
 % ### OPTIONS ###
-GEN_MEX = 1;
+GEN_MEX = 0;
 SIM = 1;
 
-simTime = '10.5'; 
-tStart = 0.5;
+simTime = '0.5'; 
+tStart = 0.2;
 
 % --- NMPC ---
-Ts = 0.5;
-Tp = 10; % # of prediction steps
-Tc = 7; % # of ctrl steps
+Ts = 0.1;
+Tp = 5; % # of prediction steps
+Tc = 5; % # of ctrl steps
 
 % Weights
 r_ee_W = 10; % Position position weight
@@ -101,19 +101,25 @@ nlmpc_ee.Model.IsContinuousTime = true;
 % Cost Function
 nlmpc_ee.Weights.OutputVariables = ones(1, 3)*r_ee_W; %[ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 
-nlobj.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
+nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3)*fb_W, ones(1, 3)*nb_W, ones(1, 2)*taum_W];
 
 % nlobj.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, 2)*qm_W];
 
+% --- Solver parameters ---
+nlmpc_ee.Optimization.UseSuboptimalSolution = true;
+% nlmpc_ee.Optimization.SolverOptions.MaxIterations = 400;
+nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed';
+nlmpc_ee.Optimization.SolverOptions.Algorithm = 'interior-point';
+nlmpc_ee.Optimization.SolverOptions.MaxFunctionEvaluations = 10000;
 
 % --- Constraints ---
-% Joint positions
-for i=1:sr.NumActiveJoints
-    jnt = sr.findJointByConfigId(i);
-
-    nlmpc_ee.States(i+6).Min = jnt.PositionLimits(1);
-    nlmpc_ee.States(i+6).Max = jnt.PositionLimits(2);
-end
+% % Joint positions
+% for i=1:sr.NumActiveJoints
+%     jnt = sr.findJointByConfigId(i);
+% 
+%     nlmpc_ee.States(i+6).Min = jnt.PositionLimits(1);
+%     nlmpc_ee.States(i+6).Max = jnt.PositionLimits(2);
+% end
 
 % Torques
 baseMaxForce = 5;
@@ -168,6 +174,7 @@ ref = struct();
 ref.time = seconds(trajRes.Time);
 ref.signals.values = trajRes.EE_desired;
 %% Simulink
+%% Simulink
 if SIM
     fprintf('\n--- SIM ---\n')
     set_param(mdl, 'StopTime', simTime)
@@ -175,49 +182,68 @@ if SIM
     
     % Sim Time Timer
     fprintf('Launching Simulation...\n')
-%     fprintf('Current simulation time: 0.00');
     t = timer;
     t.Period = 2;
     t.ExecutionMode = 'fixedRate';
-%     t.TimerFcn = @(myTimerObj, thisEvent)fprintf('\b\b\b\b%.2f', get_param(mdl, 'SimulationTime'));
-
     t.TimerFcn = @(myTimerObj, thisEvent)waitbar(get_param(mdl, 'SimulationTime')/str2double(simTime), ...
         waitBar, {'Simulation in progress...', ...
         [num2str(get_param(mdl, 'SimulationTime')), '/', simTime]});
 
     start(t)
     
+    try
     % Start Sim
 %     profile on
     simRes = sim(mdl);      
-%     profile off   
+    logsout = simRes.logsout;
+    catch ME
+        fprintf("ERROR during simulation:\n")
+        disp(ME.identifier)
+        runIDs = Simulink.sdi.getAllRunIDs;
+        logsout  = Simulink.sdi.exportRun(runIDs(end)); 
+    end
+    %     profile off   
     stop(t);
     delete(t);   
     delete(waitBar)
-    fprintf('\nTotal Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);
-
+    fprintf('Simulation DONE\n')
+    fprintf('Total Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime/60);    
 %     profile viewer
+    
+    solverStatus = logsout.getElement('nlpStat').Values;  
+    failedIdx = find(solverStatus.Data <= 0);
+    if ~isempty(failedIdx)
+        fprintf('Solver failed at time steps:\n')
+        arrayfun(@(idx) fprintf('\t - %.2f sec (flag %i)\n', solverStatus.Time(idx),  solverStatus.Data(idx)), failedIdx);
+    else
+        fprintf('Solver succesfull at every time step\n')
+    end
+
+    fprintf("Press a key to continue...\n");
+    pause;
 end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
-data = simRes.q;
 
+% Extract signals from sim
+q = logsout.getElement('q').Values;
+xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
+ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
+Xee = logsout.getElement('Xee').Values;
+Xee_ref = logsout.getElement('Xee_ref').Values;
+tau = logsout.getElement('tau').Values;
+
+% Setup signals for animation
 trajRes = struct();
-
-trajRes.ref = ts2timetable(simRes.Xee_ref);
+trajRes.ref = ts2timetable(Xee_ref);
 trajRes.ref.Properties.VariableNames{1} = 'EE_desired';
+trajRes.Xee = Xee;
 
-trajRes.Xee = simRes.Xee;
-
-% Prediction data
-xSeq = simRes.logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
-Xee_idx = [9, 10, 11];
 pred = struct();
-pred.Xee = xSeq;
-pred.Xee.Data = xSeq.Data(:, Xee_idx, :); %Select ee states
+pred.Xee = ySeq;
 
-% Save
+% Save options
 fileName = '';
 if ~strcmp(fileName, '')
     savePath = strcat(folder, fileName);
@@ -227,80 +253,95 @@ end
 
 % Animate
 tic
-sr.animate(data, 'fps', 17, 'rate', 1, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(q, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots
 % --- Tracking ---
 figure
-hold on
+
 title("EE Trajectory Tracking")
+
+subplot(1, 2, 1)
 xlabel('X [m]')
 ylabel('Y [m]')
 grid on
 axis equal
+hold on
 plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
 plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
 legend('Ref', 'NMPC')
 hold off
 
-% --- Joint ---
-figure
-hold on 
-for i=1:n
-    subplot(n, 1, i)
-    hold on
-    grid on
-    title(sprintf('Jnt%i', i))
-    xlabel('Time [sec]')
-    ylabel('Joint Angle [deg]')
-    xlim([0, str2double(simTime)])
-
-    tVect = simRes.q.Time;
-    plot(tVect, reshape(rad2deg(simRes.q.Data(7, :, :)), [], 1))
-    
-    jnt = sr.findJointByConfigId(i);
-    jntMin = rad2deg(jnt.PositionLimits(1));
-    jntMax = rad2deg(jnt.PositionLimits(2));
-    plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
-    plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
-end
-hold off
-
-% --- Torques ---
-tau = simRes.logsout.getElement('tau').Values;
-tau_tt = {8, 1};
-for i=1:8
-    tau_tt{i} = tau;
-    tau_tt{i}.Data = tau.Data(:, i);
-end
-figure
-subplot(3, 1, 1)
-title('Base force')
+subplot(1, 2, 2)
+xlabel('X [m]')
+ylabel('Z [m]')
+grid on
+axis equal
 hold on
-plot(tau_tt{1})
-plot(tau_tt{2})
-plot(tau_tt{3})
-legend('Fx', 'Fy', 'Fz')
+plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 3))
+plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
+legend('Ref', 'NMPC')
 hold off
 
-subplot(3, 1, 2)
-title('Base torque')
-hold on
-plot(tau_tt{4})
-plot(tau_tt{5})
-plot(tau_tt{6})
-legend('nx', 'ny', 'nz')
-hold off
+% % --- Joint ---
+% figure
+% hold on 
+% for i=1:n
+%     subplot(n, 1, i)
+%     hold on
+%     grid on
+%     title(sprintf('Jnt%i', i))
+%     xlabel('Time [sec]')
+%     ylabel('Joint Angle [deg]')
+%     xlim([0, str2double(simTime)])
+% 
+%     tVect = q.Time;
+%     plot(tVect, reshape(rad2deg(q.Data(6+i, :, :)), [], 1))
+%     
+%     jnt = sr.findJointByConfigId(i);
+%     jntMin = rad2deg(jnt.PositionLimits(1));
+%     jntMax = rad2deg(jnt.PositionLimits(2));
+%     plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
+%     plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
+% end
+% hold off
 
-
-subplot(3, 1, 3)
-title('Joint torques')
-hold on
-plot(tau_tt{7})
-plot(tau_tt{8})
-legend('tau_1', 'tau_2')
-hold off
+% % --- Torques ---
+% tau_tt = {N, 1};
+% for i=1:N
+%     tau_tt{i} = tau;
+%     tau_tt{i}.Data = tau.Data(:, i);
+% end
+% figure
+% subplot(3, 1, 1)
+% title('Base force')
+% hold on
+% plot(tau_tt{1})
+% plot(tau_tt{2})
+% plot(tau_tt{3})
+% legend('Fx', 'Fy', 'Fz')
+% hold off
+% 
+% subplot(3, 1, 2)
+% title('Base torque')
+% hold on
+% plot(tau_tt{4})
+% plot(tau_tt{5})
+% plot(tau_tt{6})
+% legend('nx', 'ny', 'nz')
+% hold off
+% 
+% 
+% subplot(3, 1, 3)
+% title('Joint torques')
+% hold on
+% for i=7:N
+%     name = sprintf('Body%i', i-6);
+%     plot(tau_tt{i}, 'DisplayName', name)
+% end
+% legend
+% hold off
 
 
 

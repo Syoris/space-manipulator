@@ -167,7 +167,7 @@ u = zeros(8, 1);
 
 codegen -report SR2_state_func.m -args {x, u} -o Project\Models\SR2\SR2_state_func_mex.mexw64
 
-%% Generate mex for SR2 ee
+% Generate mex for SR2 ee
 x = zeros(28, 1);
 u = zeros(8, 1);
 

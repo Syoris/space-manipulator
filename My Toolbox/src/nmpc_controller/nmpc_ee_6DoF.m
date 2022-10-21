@@ -6,11 +6,11 @@
 GEN_MEX = 0;
 SIM = 1;
 
-simTime = '10.5'; 
-tStart = 0.5;
+simTime = '0.5'; 
+tStart = 0.2;
 
 % --- NMPC ---
-Ts = 0.5;
+Ts = 0.1;
 Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
@@ -233,7 +233,7 @@ xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeS
 ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
 Xee = logsout.getElement('Xee').Values;
 Xee_ref = logsout.getElement('Xee_ref').Values;
-tau = simRes.logsout.getElement('tau').Values;
+tau = logsout.getElement('tau').Values;
 
 % Setup signals for animation
 trajRes = struct();

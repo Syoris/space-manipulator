@@ -246,7 +246,7 @@ u = zeros(12, 1);
 
 codegen -report SR6_state_func.m -args {x, u} -o Project\Models\SR6\SR6_state_func_mex.mexw64
 
-%% Generate mex for SR6 ee
+% Generate mex for SR6 ee
 x = zeros(36, 1);
 u = zeros(12, 1);
 
