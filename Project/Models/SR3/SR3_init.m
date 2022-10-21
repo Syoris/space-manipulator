@@ -172,30 +172,30 @@ end
 sr3_info = srInfoInit(sr3);
 Struct2File(sr3_info, modelPath);
 
+sr3.InfoFunc = @SR3_info;
+sr3.StateFunc = @SR3_state_func;
+sr3.StateFuncMex = @SR3_state_func_mex;
+
 sr3.homeConfig;
 
 %% --- Function ---
 % Create rotation matrix function handle
 fprintf("Generating rotation matrix function...\n")
-% RFunc_gen(sr3, modelPath);
+RFunc_gen(sr3, modelPath);
 
 
 %% Generate mex for SR3
-% x = zeros(16, 1);
-% u = zeros(8, 1);
-% 
-% codegen -report SR3_state_func.m -args {x, u} -o Project\Models\SR3\SR3_state_func_mex.mexw64
-% 
-% % Generate mex for SR2 ee
+x = zeros(2*sr3_info.N, 1);
+u = zeros(sr3_info.N, 1);
+
+codegen -report SR3_state_func.m -args {x, u} -o Project\Models\SR3\SR3_state_func_mex.mexw64
+
+% % Generate mex for SR3 ee
 % x = zeros(28, 1);
 % u = zeros(8, 1);
 % 
 % codegen -report SR3_ee_state_func.m -args {x, u} -o Project\Models\SR3\SR3_ee_state_func_mex.mexw64
-% 
-% %%
-% sr3.InfoFunc = @SR2_info;
-% sr3.StateFunc = @SR2_state_func;
-% sr3.StateFuncMex = @SR2_state_func_mex;
+
 
 %% Save Robot
 fprintf('Saving robot\n')
