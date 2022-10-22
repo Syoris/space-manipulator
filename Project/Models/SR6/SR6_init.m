@@ -1,13 +1,12 @@
 %% SC_6DoF_init
 % 6 DoF SpaceRobot initialization from DH parameters. Using the 6 DoF arm
 % designed by MDA. See [2016, Dubanchet] p.338
-
 sr6 = SpaceRobot;
-sr6.Name = 'spaceRobot_6DoF';
+sr6.Name = 'SR6';
 sr6.Logging = 'debug';
 nBodies = 7; % 6DoF + ee
-
-% --- Manipulator Parameters ---
+modelPath = fullfile('Project/Models/SR6');
+%% --- Manipulator Parameters ---
 % ## Dynamic Parameters ##
 % i   ρi      li      mi      Jx_i    Jy_i    Jz_i
 % 1   2250    0.10    0.36    0.82    1.00    0.82
@@ -34,7 +33,8 @@ Jz = [0.82, 5.24, 5.24, 0.82, 1, 0.01, 0];
 % E     0       0       0       0
 
 %          [a                   alpha       d           theta]      i
-dhparams = [bodyLength(1) pi / 2 0.06 0; %   1
+dhparams = [...
+        bodyLength(1) pi / 2 0.06 0; %   1
         bodyLength(2) 0 0.10 0; %   2
         bodyLength(3) 0 0.10 0; %   3
         bodyLength(4) -pi / 2 0.10 0; %   4
@@ -225,7 +225,35 @@ end
 
 sr6.homeConfig;
 
+
+% Create rotation matrix function handle
+RFunc_gen(sr6, modelPath);
+
+sr6_info = srInfoInit(sr6);
+% sr6_info.RFunc = @RFunc_SR6;
+% sr6_info.RFunc = 'RFunc_SR6_mex';
+
+save(fullfile(modelPath, 'SR6_data.mat'), 'sr6_info')
+Struct2File(sr6_info, modelPath);
+
+sr6.InfoFunc = @SR6_info;
+sr6.StateFunc = @SR6_state_func;
+sr6.StateFuncMex = @SR6_state_func_mex;
+
+%% Generate mex for SR6
+fprintf("Generating code for state function...\n")
+x = zeros(24, 1);
+u = zeros(12, 1);
+
+codegen -report SR6_state_func.m -args {x, u} -o Project\Models\SR6\SR6_state_func_mex.mexw64
+
+% Generate mex for SR6 ee
+fprintf("Generating code for endeffector state function...\n")
+x = zeros(36, 1);
+u = zeros(12, 1);
+
+codegen -report SR6_ee_state_func.m -args {x, u} -o Project\Models\SR6\SR6_ee_state_func_mex.mexw64
+fprintf("Code generation done\n")
 %% Save Robot
 fprintf('Saving robot\n')
-clearvars -except sr6
-save 'Project/Models/SR6.mat'
+saveSR(sr6, 'FileName', 'SR6', 'Path', modelPath)

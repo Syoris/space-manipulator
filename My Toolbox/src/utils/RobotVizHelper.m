@@ -18,6 +18,11 @@ classdef RobotVizHelper < handle
         magicLength % magicLength, found to produce good visual for most common robots
         r
         l
+
+        % Plot axis limits
+        xLim
+        yLim
+        zLim
     end
 
     methods
@@ -29,6 +34,9 @@ classdef RobotVizHelper < handle
             obj.r = 0.005 * obj.magicLength; % axis arrow radius
             obj.l = 15 * obj.r; % axis arrow length
 
+            obj.xLim = [-2, 5];
+            obj.yLim = [-3, 3];
+            obj.zLim = [-2, 6];
         end
 
         function [ax, bodyDisplayObjArray, fmanager] = drawRobot(obj, ax, Ttree, displayFrames, displayVisuals)
@@ -245,7 +253,7 @@ classdef RobotVizHelper < handle
             %TODO estimate 'a' value, axis range
             a = 5;
 
-            set(ax, 'xlim', [-2, 5], 'ylim', [-2, 5], 'zlim', [-3, 3]);
+            set(ax, 'xlim', obj.xLim, 'ylim', obj.yLim, 'zlim', obj.zLim);
 
             xlabel(ax, 'X');
             ylabel(ax, 'Y');

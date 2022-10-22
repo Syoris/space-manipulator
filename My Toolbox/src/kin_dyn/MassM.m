@@ -30,6 +30,7 @@ function D = MassM(sr_info, q, A)
     % Payload
     M_next = zeros(6, 6); % Payload mass matrix, Next link M_hat matrix
     A_next = zeros(6, 6); % A matrix from payload to ee, % A_(i+1)_i, in i+1 frame
+    M_ik = zeros(6, 6);
 
     % --- Computation ---
     for i = nk:-1:1

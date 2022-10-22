@@ -74,7 +74,7 @@ Nbl_dot = Nkl_dot*Ab + Nkl*Ab_dot;
 
 % --- Nd_dot ---
 Nd_dot = zeros(6*nk, nk);
-for i=1:3
+for i=1:nk
     Nd_dot(6*i-5:6*i, i) = Omega{2}(:, :, i)*sr_info.P{2}(:, :, i);
 end
 

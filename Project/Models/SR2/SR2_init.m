@@ -2,7 +2,8 @@
 % SpaceRobot initialization from DH parameters
 
 sr2 = SpaceRobot;
-sr2.Name = 'spaceRobotDH';
+sr2.Name = 'SR2';
+modelPath = fullfile('Project/Models/SR2');
 
 L0 = 0.5;
 L1 = 1;
@@ -151,10 +152,32 @@ for i = 1:length(sr2.Bodies)
     sr2.Bodies{i}.initBody();
 end
 
-
 sr2.homeConfig;
+
+%% --- Function ---
+modelPath = fullfile('Project/Models/SR2');
+
+% Create rotation matrix function handle
+RFunc_gen(sr2, modelPath);
+
+
+%% Generate mex for SR2
+x = zeros(16, 1);
+u = zeros(8, 1);
+
+codegen -report SR2_state_func.m -args {x, u} -o Project\Models\SR2\SR2_state_func_mex.mexw64
+
+% Generate mex for SR2 ee
+x = zeros(28, 1);
+u = zeros(8, 1);
+
+codegen -report SR2_ee_state_func.m -args {x, u} -o Project\Models\SR2\SR2_ee_state_func_mex.mexw64
+
+%%
+sr2.InfoFunc = @SR2_info;
+sr2.StateFunc = @SR2_state_func;
+sr2.StateFuncMex = @SR2_state_func_mex;
 
 %% Save Robot
 fprintf('Saving robot\n')
-clearvars -except sr2
-save 'Project/Models/SR2.mat'
+saveSR(sr2, 'FileName', 'SR2', 'Path', modelPath)

@@ -10,8 +10,11 @@ function spart_res = spart_script(sr, fileName, q, q_dot, q_ddot)
 
 % SPART
 [robotSpart, ~] = urdf2robot(fileName);
-robotSpart.links(3).mass = sr.Bodies{3}.Mass;
-robotSpart.links(3).inertia = sr.Bodies{3}.InertiaM;
+% robotSpart.links(3).mass = sr.Bodies{3}.Mass;
+% robotSpart.links(3).inertia = sr.Bodies{3}.InertiaM;
+
+n = sr.NumActiveJoints;
+nk = sr.NumBodies;
 
 qb = q(1:6);
 qm = q(7:end);
@@ -27,7 +30,7 @@ u0 = [qb_dot(4:6); qb_dot(1:3)];
 um = qm_dot;
 
 u0_dot = [qb_ddot(4:6); qb_ddot(1:3)];
-um_dot = qm_ddot(1:2);
+um_dot = qm_ddot;
 
 [RJ, RL, rJ, rL, e, g] = Kinematics(R0, qb(1:3), qm, robotSpart);
 
@@ -40,20 +43,20 @@ spart_res.twist.tb = [t0_S(4:6, :); t0_S(1:3, :)];
 spart_res.twist.tm = [tm_S(4:6, :); tm_S(1:3, :)];
 
 % Jacobians, com. Inertial frame
-[J00_com, Jm0_com] = Jacob(qb(1:3), qb(1:3), rL, P0, pm, 0, robotSpart);
-[J01_com, Jm1_com] = Jacob(rL(1:3, 1), qb(1:3), rL, P0, pm, 1, robotSpart);
-[J02_com, Jm2_com] = Jacob(rL(1:3, 2), qb(1:3), rL, P0, pm, 2, robotSpart);
-[J03_com, Jm3_com] = Jacob(rL(1:3, 3), qb(1:3), rL, P0, pm, 3, robotSpart);
-J_S_com = {[[J01_com(4:6, 4:6), J01_com(4:6, 1:3); J01_com(1:3, 4:6), J01_com(1:3, 1:3)], [Jm1_com(4:6, :); Jm1_com(1:3, :)]];
-        [[J02_com(4:6, 4:6), J02_com(4:6, 1:3); J02_com(1:3, 4:6), J02_com(1:3, 1:3)], [Jm2_com(4:6, :); Jm2_com(1:3, :)]];
-        [[J03_com(4:6, 4:6), J03_com(4:6, 1:3); J03_com(1:3, 4:6), J03_com(1:3, 1:3)], [Jm3_com(4:6, :); Jm3_com(1:3, :)]]};
-% J_S_ori = {[J01, Jm1], [J02, Jm2], [J03, Jm3]};
-spart_res.J_com = J_S_com;
+J_com = cell(nk, 1);
+for i=1:nk
+    [J0i_com, Jmi_com] = Jacob(rL(1:3, i), qb(1:3), rL, P0, pm, i, robotSpart);
+
+    Jcom_i = [[J0i_com(4:6, 4:6), J0i_com(4:6, 1:3); J0i_com(1:3, 4:6), J0i_com(1:3, 1:3)], [Jmi_com(4:6, :); Jmi_com(1:3, :)]];
+    J_com{i} = Jcom_i;
+end
+% [J00_com, Jm0_com] = Jacob(qb(1:3), qb(1:3), rL, P0, pm, 0, robotSpart);
+spart_res.J_com = J_com;
 
 % Jacobians, joint
-J_I = cell(3, 1);
-J_i = cell(3, 1);
-for i=1:3
+J_I = cell(nk, 1);
+J_i = cell(nk, 1);
+for i=1:nk
     [J0i, Jmi] = Jacob(rJ(1:3, i), qb(1:3), rL, P0, pm, i, robotSpart);
 
     Ji_I = [[J0i(4:6, 4:6), J0i(4:6, 1:3); J0i(1:3, 4:6), J0i(1:3, 1:3)], [Jmi(4:6, :); Jmi(1:3, :)]];
@@ -68,9 +71,9 @@ spart_res.J_i = J_i;
 
 
 % Jacobians derivative
-J_dot_I = cell(3, 1);
-J_dot_i = cell(3, 1);
-for i=1:3
+J_dot_I = cell(nk, 1);
+J_dot_i = cell(nk, 1);
+for i=1:nk
     tJi = J_I{i}*q_dot;
     tJi = [tJi(4:6); tJi(1:3)];
     [J0pdot, Jmpdot] = Jacobdot(rJ(1:3, i),tJi, qb(1:3), t0_S, rL, tm_S, P0, pm, i, robotSpart);
@@ -93,7 +96,7 @@ spart_res.accel.tm_dot = [tm_dot_S(4:6, :); tm_dot_S(1:3, :)];
 
 %Inverse Dynamics - Flying base
 wF0 = zeros(6, 1);
-wFm = zeros(6, 3);
+wFm = zeros(6, nk);
 
 [tau0_S, taum_S, wq_tilde, wq_tilde0] = ID_test(wF0, wFm, t0_S, tm_S, t0_dot_S, tm_dot_S, P0, pm, I0, Im, Bij, Bi0, robotSpart);
 tau0_S = [tau0_S(4:6); tau0_S(1:3)];

@@ -88,13 +88,13 @@ function [tau, wen] = ID(sr_info, t, t_dot, Omega, A, A_dot)
         ti = tm(:, :, i);
         ti_dot = tm_dot(:, :, i);
         Mi = Mm(:, :, i);
-        P_i = Pm(:, :, i);
+        Pi = Pm(:, :, i);
 
         gamma = Omega_i * Mi * Ev * ti;
         wen_i = Mi * ti_dot + gamma;
         wen_i = wen_i + A_next.' * wen_next;
 
-        tau_i = P_i' * wen_i;
+        tau_i = Pi' * wen_i;
 
         % Update mats
         wen_array(:, :, i) = wen_i;
