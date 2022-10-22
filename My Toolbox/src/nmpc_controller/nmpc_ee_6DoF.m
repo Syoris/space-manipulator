@@ -6,12 +6,12 @@
 GEN_MEX = 0;
 SIM = 1;
 
-simTime = '10.2'; 
-tStart = 0.2;
+simTime = '20.5'; 
+tStart = 0.5;
 
 % --- NMPC ---
-Ts = 0.1;
-Tp = 5; % # of prediction steps
+Ts = 0.5;
+Tp = 10; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
 % Weights
@@ -27,9 +27,9 @@ baseMaxTorque = 200; % 5
 motorMaxTorque = 200; % 200
 
 % Traj
-trajTime = 10;
-circleRadius = 0.25;
-plane = 'xy';
+trajTime = 20;
+circleRadius = 1.0;
+plane = 'yz';
 
 %% Config
 clc
@@ -118,13 +118,13 @@ nlmpc_ee.Optimization.SolverOptions.Algorithm = 'interior-point';
 nlmpc_ee.Optimization.SolverOptions.MaxFunctionEvaluations = 10000;
 
 % --- Constraints ---
-% % Joint positions
-% for i=1:sr.NumActiveJoints
-%     jnt = sr.findJointByConfigId(i);
-% 
-%     nlmpc_ee.States(i+6).Min = jnt.PositionLimits(1);
-%     nlmpc_ee.States(i+6).Max = jnt.PositionLimits(2);
-% end
+% Joint positions
+for i=1:sr.NumActiveJoints
+    jnt = sr.findJointByConfigId(i);
+
+    nlmpc_ee.States(i+6).Min = jnt.PositionLimits(1);
+    nlmpc_ee.States(i+6).Max = jnt.PositionLimits(2);
+end
 
 % Torques
 maxTorques = [ones(3, 1)*baseMaxForce; ones(3, 1)*baseMaxTorque; ones(n, 1)*motorMaxTorque];
@@ -226,6 +226,7 @@ end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
+rate = 2;
 
 % Extract signals from sim
 q = logsout.getElement('q').Values;
@@ -254,7 +255,7 @@ end
 
 % Animate
 tic
-sr.animate(q, 'fps', 17, 'rate', 0.5, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(q, 'fps', 17, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots
@@ -285,28 +286,28 @@ plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :
 legend('Ref', 'NMPC')
 hold off
 
-% % --- Joint ---
-% figure
-% hold on 
-% for i=1:n
-%     subplot(n, 1, i)
-%     hold on
-%     grid on
-%     title(sprintf('Jnt%i', i))
-%     xlabel('Time [sec]')
-%     ylabel('Joint Angle [deg]')
-%     xlim([0, str2double(simTime)])
-% 
-%     tVect = q.Time;
-%     plot(tVect, reshape(rad2deg(q.Data(6+i, :, :)), [], 1))
-%     
-%     jnt = sr.findJointByConfigId(i);
-%     jntMin = rad2deg(jnt.PositionLimits(1));
-%     jntMax = rad2deg(jnt.PositionLimits(2));
-%     plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
-%     plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
-% end
-% hold off
+% --- Joint ---
+figure
+hold on 
+for i=1:n
+    subplot(n, 1, i)
+    hold on
+    grid on
+    title(sprintf('Jnt%i', i))
+    xlabel('Time [sec]')
+    ylabel('Joint Angle [deg]')
+    xlim([0, str2double(simTime)])
+
+    tVect = q.Time;
+    plot(tVect, reshape(rad2deg(q.Data(6+i, :, :)), [], 1))
+    
+    jnt = sr.findJointByConfigId(i);
+    jntMin = rad2deg(jnt.PositionLimits(1));
+    jntMax = rad2deg(jnt.PositionLimits(2));
+    plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
+    plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
+end
+hold off
 
 % % --- Torques ---
 % tau_tt = {N, 1};

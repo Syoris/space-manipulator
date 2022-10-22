@@ -5,7 +5,7 @@ sr6 = SpaceRobot;
 sr6.Name = 'SR6';
 sr6.Logging = 'debug';
 nBodies = 7; % 6DoF + ee
-
+modelPath = fullfile('Project/Models/SR6');
 %% --- Manipulator Parameters ---
 % ## Dynamic Parameters ##
 % i   ρi      li      mi      Jx_i    Jy_i    Jz_i
@@ -225,7 +225,6 @@ end
 
 sr6.homeConfig;
 
-modelPath = fullfile('Project/Models/SR6');
 
 % Create rotation matrix function handle
 RFunc_gen(sr6, modelPath);
