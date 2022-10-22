@@ -88,7 +88,9 @@ function animate(obj, ts, varargin)
         end
 
         if plotPred
-            % pred.Xee = pred.Xee.resample(tVect);
+%             pred.Xee = pred.Xee.resample(tVect);
+            pred.Xee = retime(timeseries2timetable( pred.Xee), seconds(tVect), 'previous');
+            
         end
 
         r = rateControl(fps);
@@ -110,15 +112,14 @@ function animate(obj, ts, varargin)
     hold on
 
     if plotTraj
-
         plot3(traj.ref.EE_desired(:, 1), traj.ref.EE_desired(:, 2), traj.ref.EE_desired(:, 3), 'r')
         traj_line = animatedline('Color', 'b', 'LineWidth', 2);
     end
 
     if plotPred
-        lPred = plot3(pred.Xee.Data(:, 1, 1), pred.Xee.Data(:, 2, 1), pred.Xee.Data(:, 3, 1), 'g', 'LineWidth', 1.5);
-        startPred = plot3(pred.Xee.Data(1, 1, 1), pred.Xee.Data(1, 2, 1), pred.Xee.Data(1, 3, 1), 'gX', 'LineWidth', 1.5);
-        startXee = plot3(traj.Xee.Data(1, :, 1), traj.Xee.Data(2, :, 1), traj.Xee.Data(3, :, 1), 'bX', 'LineWidth', 1.5);
+        lPred = plot3(pred.Xee(1, :).ySeq(:, :, 1), pred.Xee(1, :).ySeq(:, :, 2), pred.Xee(1, :).ySeq(:, :, 3), 'g', 'LineWidth', 1.5);
+        startPred = plot3(pred.Xee(1, :).ySeq(:, 1, 1), pred.Xee(1, :).ySeq(:, 1, 2), pred.Xee(1, :).ySeq(:, 1, 3), 'gX', 'LineWidth', 1.5);
+%         startXee = plot3(traj.Xee.Data(1, :, 1), traj.Xee.Data(2, :, 1), traj.Xee.Data(3, :, 1), 'bX', 'LineWidth', 1.5);
     end
 
     hold off
@@ -142,24 +143,33 @@ function animate(obj, ts, varargin)
             end
 
             if plotPred
-                XeePredData = pred.Xee.getsampleusingtime(curT).Data;
-                XeeData = traj.Xee.getsampleusingtime(curT).Data;
+                XeePredData = pred.Xee(i, :).ySeq;
+%                 XeePredData = pred.Xee.getsampleusingtime(curT).Data;
+%                 XeeData = traj.Xee.getsampleusingtime(curT).Data;
+                    
 
-                if ~isempty(XeePredData)
-                    lPred.XData = XeePredData(:, 1);
-                    lPred.YData = XeePredData(:, 2);
-                    lPred.ZData = XeePredData(:, 3);
+                lPred.XData = XeePredData(:, :, 1);
+                lPred.YData = XeePredData(:, :, 2);
+                lPred.ZData = XeePredData(:, :, 3);
 
-                    startPred.XData = XeePredData(1, 1);
-                    startPred.YData = XeePredData(1, 2);
-                    startPred.ZData = XeePredData(1, 3);
-                end
+                startPred.XData = XeePredData(:, 1, 1);
+                startPred.YData = XeePredData(:, 1, 2);
+                startPred.ZData = XeePredData(:, 1, 3);
+%                 if ~isempty(XeePredData)
+%                     lPred.XData = XeePredData(:, 1);
+%                     lPred.YData = XeePredData(:, 2);
+%                     lPred.ZData = XeePredData(:, 3);
+% 
+%                     startPred.XData = XeePredData(1, 1);
+%                     startPred.YData = XeePredData(1, 2);
+%                     startPred.ZData = XeePredData(1, 3);
+%                 end
 
-                if ~isempty(XeeData)
-                    startXee.XData = XeeData(1, :);
-                    startXee.YData = XeeData(2, :);
-                    startXee.ZData = XeeData(3, :);
-                end
+%                 if ~isempty(XeeData)
+%                     startXee.XData = XeeData(1, :);
+%                     startXee.YData = XeeData(2, :);
+%                     startXee.ZData = XeeData(3, :);
+%                 end
 
             end
 
@@ -187,6 +197,7 @@ function animate(obj, ts, varargin)
         waitfor(r);
 
         if ~isempty(fileName)
+            fprintf("Saving video to %s", fileName)
             close(myVideo)
         end
 

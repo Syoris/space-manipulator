@@ -10,7 +10,7 @@ simTime = '20.5';
 tStart = 0.5;
 
 % --- NMPC ---
-Ts = 0.5;
+Ts = 0.1;
 Tp = 10; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
@@ -28,7 +28,7 @@ motorMaxTorque = 200; % 200
 
 % Traj
 trajTime = 20;
-circleRadius = 1.0;
+circleRadius = 2.0;
 plane = 'yz';
 
 %% Config
@@ -182,6 +182,7 @@ if SIM
     waitBar = waitbar(0,'Simulation in progress...');
     
     % Sim Time Timer
+    startTime = datetime('now','TimeZone','local','Format','d-MMM-y HH:mm:ss Z');
     fprintf('Launching Simulation...\n')
     t = timer;
     t.Period = 2;
@@ -226,14 +227,16 @@ end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
-rate = 2;
+rate = 1;
 
 % Extract signals from sim
 q = logsout.getElement('q').Values;
 xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
 ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
 Xee = logsout.getElement('Xee').Values;
+% Xee = Xee{1};
 Xee_ref = logsout.getElement('Xee_ref').Values;
+% Xee_ref = Xee_ref{1};
 tau = logsout.getElement('tau').Values;
 
 % Setup signals for animation
@@ -247,15 +250,16 @@ pred.Xee = ySeq;
 
 % Save options
 fileName = '';
+folder = fullfile('Project/videos/');
 if ~strcmp(fileName, '')
-    savePath = strcat(folder, fileName);
+    savePath = fullfile(folder, fileName);
 else
     savePath = '';
 end
 
 % Animate
 tic
-sr.animate(q, 'fps', 17, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
+sr.animate(q, 'fps', 15, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on'); 
 toc
 
 %% Plots
@@ -276,13 +280,13 @@ legend('Ref', 'NMPC')
 hold off
 
 subplot(1, 2, 2)
-xlabel('X [m]')
+xlabel('Y [m]')
 ylabel('Z [m]')
 grid on
 axis equal
 hold on
-plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 3))
-plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
+plot(trajRes.ref.EE_desired(:, 2), trajRes.ref.EE_desired(:, 3))
+plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
 legend('Ref', 'NMPC')
 hold off
 
@@ -309,41 +313,41 @@ for i=1:n
 end
 hold off
 
-% % --- Torques ---
-% tau_tt = {N, 1};
-% for i=1:N
-%     tau_tt{i} = tau;
-%     tau_tt{i}.Data = tau.Data(:, i);
-% end
-% figure
-% subplot(3, 1, 1)
-% title('Base force')
-% hold on
-% plot(tau_tt{1})
-% plot(tau_tt{2})
-% plot(tau_tt{3})
-% legend('Fx', 'Fy', 'Fz')
-% hold off
-% 
-% subplot(3, 1, 2)
-% title('Base torque')
-% hold on
-% plot(tau_tt{4})
-% plot(tau_tt{5})
-% plot(tau_tt{6})
-% legend('nx', 'ny', 'nz')
-% hold off
-% 
-% 
-% subplot(3, 1, 3)
-% title('Joint torques')
-% hold on
-% for i=7:N
-%     name = sprintf('Body%i', i-6);
-%     plot(tau_tt{i}, 'DisplayName', name)
-% end
-% legend
-% hold off
+% --- Torques ---
+tau_tt = {N, 1};
+for i=1:N
+    tau_tt{i} = tau;
+    tau_tt{i}.Data = tau.Data(:, i);
+end
+figure
+subplot(3, 1, 1)
+title('Base force')
+hold on
+plot(tau_tt{1})
+plot(tau_tt{2})
+plot(tau_tt{3})
+legend('Fx', 'Fy', 'Fz')
+hold off
+
+subplot(3, 1, 2)
+title('Base torque')
+hold on
+plot(tau_tt{4})
+plot(tau_tt{5})
+plot(tau_tt{6})
+legend('nx', 'ny', 'nz')
+hold off
+
+
+subplot(3, 1, 3)
+title('Joint torques')
+hold on
+for i=7:N
+    name = sprintf('Body%i', i-6);
+    plot(tau_tt{i}, 'DisplayName', name)
+end
+legend
+hold off
 
 
 
