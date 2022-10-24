@@ -34,4 +34,7 @@ codegen/
 #
 codegen/*
 
-My Toolbox/src/nmpc_controller/sr_nmpc/export_mpc/qpoases/*
+src/nmpc_controller/sr_nmpc/export_mpc/qpoases/*
+
+# Results folder
+/results/*
