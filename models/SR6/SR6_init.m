@@ -59,14 +59,14 @@ bodiesCoM = [[bodyLength(1) / 2 0 0.06];
         [0 0 bodyLength(6) / 2];
         [0 0 0]; ];
 
-jointsHomePos = [pi / 4; pi / 4; -pi / 2; pi / 4; 0; 0];
+jointsHomePos = [0; deg2rad(60); deg2rad(-100); deg2rad(-50); 0; 0];
 
-jointsPositionLimits = [[-pi, pi]; % shoulder
+jointsPositionLimits = [[-inf, inf]; % shoulder
                     [0, pi]; % shoulder
-                    [-170 * pi / 180, 170 * pi / 180]; % elbow
-                    [-170 * pi / 180, 90 * pi / 180]; % wrist
-                    [-pi, pi]; % wrist
-                    [-pi, pi]; % wrist
+                    [deg2rad(-170), deg2rad(170)]; % elbow
+                    [deg2rad(-170), deg2rad(90)]; % wrist
+                    [-inf, inf]; % wrist
+                    [-inf, inf]; % wrist
                     [-inf, inf]; % ee
                     ];
 
@@ -154,9 +154,19 @@ bodiesVisual{6}(end + 1) = struct('Geometry', 'Cylinder', ...
     'T', trvec2tform([0.0 0 0]) * eul2tform([0 0 0]), ...
     'Color', materials.Orange);
 
-bodiesVisual{7}(end + 1) = struct('Geometry', 'Sphere', ...
-    'Parameters', 0.1, ...
+bodiesVisual{7}(end + 1) = struct('Geometry', 'Box', ...
+    'Parameters', [0.3, 0.1, 0.1], ...
     'T', trvec2tform([0.0 0 0]), ...
+    'Color', materials.Red);
+
+bodiesVisual{7}(end + 1) = struct('Geometry', 'Box', ...
+    'Parameters', [0.05, 0.1, 0.2], ...
+    'T', trvec2tform([-0.1250 0 0.1]), ...
+    'Color', materials.Red);
+
+bodiesVisual{7}(end + 1) = struct('Geometry', 'Box', ...
+    'Parameters', [0.05, 0.1, 0.2], ...
+    'T', trvec2tform([0.1250 0 0.1]), ...
     'Color', materials.Red);
 
 % --- Robot Initialization ---
@@ -217,15 +227,19 @@ for i = 1:length(sr6.Bodies)
     sr6.Bodies{i}.initBody();
 end
 
+sr6.initKin();
+
 % tic
-% sr6.initKin();
 % toc
 % tic
 % sr6.initDyn('simplify', false);
 % toc
 
+% sr6.qm = ;
 sr6.homeConfig;
+sr6.show;
 
+%% --- Generate functions ---
 % Create rotation matrix function handle
 RFunc_gen(sr6, modelPath);
 
@@ -240,7 +254,7 @@ sr6.InfoFunc = @SR6_info;
 sr6.StateFunc = @SR6_state_func;
 sr6.StateFuncMex = @SR6_state_func_mex;
 
-%% Generate mex for SR6
+%% --- Generate mex ---
 fprintf("Generating code for state function...\n")
 x = zeros(24, 1);
 u = zeros(12, 1);
@@ -254,6 +268,6 @@ u = zeros(12, 1);
 
 codegen -report SR6_ee_state_func.m -args {x, u} -o Project \ models \ SR6 \ SR6_ee_state_func_mex.mexw64
 fprintf("Code generation done\n")
-%% Save Robot
+%% --- Save Robot ---
 fprintf('Saving robot\n')
 saveSR(sr6, 'FileName', 'SR6', 'Path', modelPath)

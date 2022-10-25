@@ -6,30 +6,39 @@
 GEN_MEX = 0;
 SIM = 1;
 
-simTime = '20.5';
+simTime = '2';
 tStart = 0.5;
 
 % --- NMPC ---
-Ts = 0.1;
-Tp = 10; % # of prediction steps
+Ts = 0.5;
+Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
 % Weights
 r_ee_W = 100; % Position position weight
-psi_ee_W = 0; % Position orientation weight
+psi_ee_W = 100; % Position orientation weight
 
 fb_W = 1;
 nb_W = 1;
 taum_W = 1;
 
-baseMaxForce = 200; % 5
-baseMaxTorque = 200; % 5
+baseMaxForce = 5; % 5
+baseMaxTorque = 5; % 5
 motorMaxTorque = 200; % 200
 
 % Traj
-trajTime = 20;
+trajTime = 72;
 circleRadius = 2.0;
 plane = 'yz';
+
+% Initial config
+qb0 = [0; 0; 0; 0; 0; 0];
+qm0 = [0; deg2rad(30); deg2rad(-100); deg2rad(-20); deg2rad(-180); deg2rad(90)];
+% conf = [qb0; qm0];
+conf = q.getsampleusingtime(36).Data;
+
+% Start orientation down
+% qm0 = [0; deg2rad(60); deg2rad(-100); deg2rad(40); 0; 0]; 
 
 %% Config
 clc
@@ -42,35 +51,30 @@ end
 
 sr.homeConfig();
 
-close all
-qb0 = [0; 0; 0; 0; 0; 0];
-qm0 = [0; deg2rad(60); deg2rad(-100); deg2rad(-50); 0; 0];
-
-sr.q = [qb0; qm0];
-% sr.show;
-
-% conf1 = [0; 0; 0; 0; 0; 0; 0; 0];
-% conf2 = [0; 0; 0; 0; 0; 0; pi/4; -pi/2];
-%
-% sr.q = conf2;
+sr.q = conf;
 
 mdl = 'nmpc_sim_ee';
 
 q0 = sr.q;
 q_dot_0 = sr.q_dot;
 
-[~, xee0] = tr2rt(sr.Ttree.endeffector);
-xee0 = [xee0; zeros(3, 1)];
+[Ree, xee0] = tr2rt(sr.Ttree.endeffector);
+psi_ee = tr2rpy(Ree, 'zyx').';
+
+xee0 = [xee0; psi_ee];
 xee0_dot = zeros(6, 1);
 
 fprintf('--- Config ---\n')
 fprintf('SpaceRobot: %s\n', sr.Name)
 fprintf('SR initial config:\n')
-fprintf('\t-q0:')
-disp(q0.')
+fprintf('\t-qb0:')
+disp(sr.q0.')
+fprintf('\t-qm0:')
+disp(sr.qm.')
 fprintf('\t-Xee0:')
 disp(xee0.')
 
+sr.show;
 %% NMPC Controller
 fprintf('--- Creating NMPC Controller ---\n')
 % Parameters
@@ -83,7 +87,7 @@ fprintf('\tTc: %i (%.2f sec)\n', Tc, Tc * Ts)
 n = sr.NumActiveJoints;
 N = n + 6;
 nx = 12 + 2 * n + 12; % Change to 24 + 2*n w/ EE
-ny = 3; % EE states
+ny = 6; % EE states
 nu = n + 6;
 
 nlmpc_ee = nlmpc(nx, ny, nu);
@@ -106,7 +110,7 @@ nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
 nlmpc_ee.Model.IsContinuousTime = true;
 
 % Cost Function
-nlmpc_ee.Weights.OutputVariables = ones(1, 3) * r_ee_W; %[ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
+nlmpc_ee.Weights.OutputVariables = [ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3) * fb_W, ones(1, 3) * nb_W, ones(1, n) * taum_W];
 
 % nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, 2)*qm_W];
@@ -114,7 +118,7 @@ nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3) * fb_W, ones(1, 3) * nb_W, o
 % --- Solver parameters ---
 nlmpc_ee.Optimization.UseSuboptimalSolution = true;
 % nlmpc_ee.Optimization.SolverOptions.MaxIterations = 400;
-nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed';
+nlmpc_ee.Optimization.SolverOptions.Display = 'none'; %'final-detailed';
 nlmpc_ee.Optimization.SolverOptions.Algorithm = 'interior-point';
 nlmpc_ee.Optimization.SolverOptions.MaxFunctionEvaluations = 10000;
 
@@ -164,12 +168,10 @@ else
     set_param([mdl, '/NMPC Controller'], 'UseMEX', 'off')
 end
 
-%% State Estimation
-% TODO: ADD EKF for Xe
 
 %% Traj
 Nsamp = 205; % Make sure (Nsamp - 5) is multiple of 4
-traj = circleTraj(xee0(1:3), circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', tStart);
+traj = circleTraj(xee0, circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', tStart);
 traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
 
 ref = struct();
@@ -236,10 +238,9 @@ q = logsout.getElement('q').Values;
 xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
 ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
 Xee = logsout.getElement('Xee').Values;
-% Xee = Xee{1};
 Xee_ref = logsout.getElement('Xee_ref').Values;
-% Xee_ref = Xee_ref{1};
 tau = logsout.getElement('tau').Values;
+Xee_err = logsout.getElement('Xee_err').Values;
 
 % Setup signals for animation
 trajRes = struct();
@@ -266,11 +267,9 @@ sr.animate(q, 'fps', 15, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'p
 toc
 
 %% Plots
-% --- Tracking ---
+% --- EE Position Tracking ---
 figure
-
-title("EE Trajectory Tracking")
-
+title("EE Position Trajectory Tracking")
 subplot(1, 2, 1)
 xlabel('X [m]')
 ylabel('Y [m]')
@@ -291,6 +290,53 @@ hold on
 plot(trajRes.ref.EE_desired(:, 2), trajRes.ref.EE_desired(:, 3))
 plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
 legend('Ref', 'NMPC')
+hold off
+
+% --- EE Orientation Tracking ---
+titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+figure
+sgtitle("EE Orientation Trajectory Tracking")
+for i=1:3
+    subplot(3, 1, i)
+    title(titles{i})
+    xlabel('Time [sec]')
+    ylabel('[rad]')
+    grid on
+    axis equal
+    hold on
+    plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
+    plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
+    legend
+    hold off
+end
+
+% --- EE Tracking Errors---
+figure
+sgtitle("EE Position Error")
+subplot(2, 1, 1)
+title('Position')
+xlabel('Time [sec]')
+ylabel('Abs. Error [m]')
+grid on
+axis equal
+hold on
+plot(Xee_err.Time, reshape(Xee_err.Data(1, :, :), [], 1), 'DisplayName', 'X')
+plot(Xee_err.Time, reshape(Xee_err.Data(2, :, :), [], 1), 'DisplayName', 'Y')
+plot(Xee_err.Time, reshape(Xee_err.Data(3, :, :), [], 1), 'DisplayName', 'Z')
+legend
+hold off
+
+subplot(2, 1, 2)
+title('Orientation')
+xlabel('Time [sec]')
+ylabel('Abs. Error [rad]')  
+grid on
+axis equal
+hold on
+plot(Xee_err.Time, reshape(Xee_err.Data(4, :, :), [], 1), 'DisplayName', '\psi_x')
+plot(Xee_err.Time, reshape(Xee_err.Data(5, :, :), [], 1), 'DisplayName', '\psi_y')
+plot(Xee_err.Time, reshape(Xee_err.Data(6, :, :), [], 1), 'DisplayName', '\psi_z')
+legend
 hold off
 
 % --- Joint ---

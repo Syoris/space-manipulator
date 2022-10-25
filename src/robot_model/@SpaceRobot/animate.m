@@ -89,7 +89,7 @@ function animate(obj, ts, varargin)
 
         if plotPred
 %             pred.Xee = pred.Xee.resample(tVect);
-            pred.Xee = retime(timeseries2timetable( pred.Xee), seconds(tVect), 'previous');
+            pred.Xee = retime(timeseries2timetable(pred.Xee), seconds(tVect), 'previous');
             
         end
 

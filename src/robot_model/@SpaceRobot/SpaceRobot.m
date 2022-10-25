@@ -243,7 +243,7 @@ classdef SpaceRobot < handle
 
             % obj.computeJacobians('TargetFrame', 'base', 'symbolic', true);
 
-            obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
+%             obj.computeJacobians('TargetFrame', 'inertial', 'symbolic', true);
 
             obj.KinInitialized = true;
         end
