@@ -14,12 +14,11 @@ function dx = sr_state_func(x, u, sr_info) % #codegen
 
     %%    
     dx = zeros(2*N, 1);
-    q = x(1:N);
-
+    q = x(1:N); % [r_bx, r_by, r_bz, psi_b_x, psi_b_y, psi_b_z, q1, ..., qn]
     %     qb = q(1:6);
     %     qm = q(7:8);
 
-    q_dot = x(N+1:end);
+    q_dot = x(N+1:end); % [r_bx_dot, r_by_dot, r_bz_dot, w_b_x, w_b_y, w_b_z, q1_dot, ..., qn_dot]
     %     qb_dot = q_dot(1:6);
     %     qm_dot = q_dot(7:8);
     %%

@@ -1,10 +1,11 @@
 function dx = sr_ee_state_func(x, u, sr_info) %#codegen
-    % x = [q; q_dot]
-    % dx = [q_dot; q_ddot]
-    % Where  *** q_dot = [vb, psi_b_dot] ***
+    % x = [x; x_dot]
+    % dx = [x_dot; x_ddot]
+
+    % Where  *** x_dot = [vb, psi_b_dot, qm_dot] ***
+    % Where  *** x_ddot = [vb_dot, psi_b_ddot, qm_ddot] ***
     
-    %
-    % q = [rb; psi_b; qm; ree; psi_ee], 6+6+n
+    % q = x = [rb; psi_b; qm; ree; psi_ee], 6+6+n
     % q_dot = [vb; wb; qm_dot; vee; wee], 6+6+n
     % q_ddot = [vb_dot; wb_dot; qm_ddot; vee_dot; wee_dot], 6+6+n
 
@@ -13,19 +14,22 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
 %     n = sr_info.n;
     nk = sr_info.nk;   
 
-    %%
+    %% --- Initialize states ---
     dx = zeros((N+6)*2, 1);
 
     q = x(1:N);
     q_ee = x(N+1:N+6);
 
-    q_dot = x(N+7:2*N+6);
-    q_ee_dot = x(end-5:end);
+    x_dot = x(N+7:2*N+6);
+    x_ee_dot = x(end-5:end);
 
-    q_dot(4:6) = euler2omega(q(4:6), q_dot(4:6)); % wb = R_psi*psi_b_dot
-    q_ee_dot(4:6) = euler2omega(q_ee(4:6), q_ee_dot(4:6)); % wee = R_psi*psi_ee_dot
+    q_dot = x_dot;
+    q_dot(4:6) = euler2omega(q(4:6), x_dot(4:6)); % wb = R_psi*psi_b_dot
 
-    %%
+    q_ee_dot = x_ee_dot;
+    q_ee_dot(4:6) = euler2omega(q_ee(4:6), x_ee_dot(4:6)); % wee = R_psi*psi_ee_dot
+
+    %% --- Compute accel ---
     % 1 - Kinematics
     Rb = zeros(3, 3);
     Ra = zeros(6, 6);
@@ -64,7 +68,8 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     q_ee_ddot = A_inv * (u - h) + J_dot*q_dot;
 
 
-    %% Assign outputs
+    %% --- Convert states ---
+    % TODO
     % x1_dot, x1 = [xb; qm]
     dx(1:3) = q_dot(1:3); % rb_dot = rb
     dx(4:6) = omega2euler(q(4:6), q_dot(4:6)); % psi_b_dot = R_psi^-1*w_b
@@ -75,7 +80,10 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     dx(N+4:N+6) = omega2euler(q_ee(4:6), q_ee_dot(4:6)); 
     
     % x3_dot, x3 = [qb_dot, qm_dot]
-    dx(N+7:2*N+6) = q_ddot;
+    dx(N+7:N+9) = q_ddot(1:3);
+    dx(N+10:N+12) = omega2euler_accel(q(4:6), dx(4:6), q_ddot(4:6));
+    dx(N+13:2*N+6) = q_ddot(7:end);
+    
 
     % x4_dot, x4 = [q_ee_dot]  
     dx(end-5:end) = q_ee_ddot;

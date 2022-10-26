@@ -259,14 +259,14 @@ fprintf("Generating code for state function...\n")
 x = zeros(24, 1);
 u = zeros(12, 1);
 
-codegen -report SR6_state_func.m -args {x, u} -o Project \ models \ SR6 \ SR6_state_func_mex.mexw64
+codegen -report SR6_state_func.m -args {x, u} -o models\SR6\SR6_state_func_mex.mexw64
 
 % Generate mex for SR6 ee
 fprintf("Generating code for endeffector state function...\n")
 x = zeros(36, 1);
 u = zeros(12, 1);
 
-codegen -report SR6_ee_state_func.m -args {x, u} -o Project \ models \ SR6 \ SR6_ee_state_func_mex.mexw64
+codegen -report SR6_ee_state_func.m -args {x, u} -o models\SR6\SR6_ee_state_func_mex.mexw64
 fprintf("Code generation done\n")
 %% --- Save Robot ---
 fprintf('Saving robot\n')

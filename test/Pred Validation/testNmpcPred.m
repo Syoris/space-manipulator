@@ -11,7 +11,7 @@ N = 12;
 % N = 8;
 % sr = sr2;
 
-time = 5;
+time = 0.5;
 
 % Get parameters
 mvSeq = logsoutComp.getElement('mvSeq').Values; %  Sequence of all
@@ -30,6 +30,7 @@ xTT = timetable(xKSeq, 'TimeStep',seconds(Ts),'VariableNames',{'xk'});
 % Initial Cond
 q0 = xTT(seconds(0), :).xk(1:N);
 q_dot_0 = xTT(seconds(0), :).xk(N+7:2*N+6);
+x_dot_0 = [q_dot_0(1:3), omega2euler(q0(4:6)', q_dot_0(4:6)')', q_dot_0(7:end)];
 
 xee0 = xTT(seconds(0), :).xk(N+1:N+6);
 xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);

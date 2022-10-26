@@ -9,7 +9,7 @@ fileName = 'ctrl3.mat';
 load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq');
 
 startTime = 63;
-simTime = 10;
+simTime = 2;
 
 % ### OPTIONS ###
 SIM = 1;
