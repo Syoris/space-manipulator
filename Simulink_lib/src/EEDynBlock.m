@@ -24,7 +24,7 @@ classdef EEDynBlock < matlab.System
 %             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
-        function [Xee, Xee_dot, Xee_ddot] = stepImpl(obj, q, q_dot, q_ddot)
+        function [Xee, Xee_dot, Xee_ddot, Xee_dot_psi] = stepImpl(obj, q, q_dot, q_ddot, Xee_prev)
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.            
             sr_info = obj.srInfo;
@@ -39,8 +39,8 @@ classdef EEDynBlock < matlab.System
             
             psi_ee = tr2rpy(Ree, 'zyx');
             Xee = [ree; psi_ee.'];
+
 %             psi = zeros(3, 1);
-% 
 %             temp = rotm2eul(R, 'ZYX');
 %             psi(1) = temp(3);
 %             psi(2) = temp(2);
@@ -57,18 +57,22 @@ classdef EEDynBlock < matlab.System
             % 4 - Xee_dot
             Xee_dot = J*q_dot;
             Xee_ddot = J*q_ddot + J_dot*q_dot;
+
+            Xee_dot_psi = Xee_dot;
+%             Xee_dot_psi(4:6) = omega2euler(Xee(4:6), Xee_dot(4:6));
         end
 
         function resetImpl(~)
             % Initialize / reset discrete-state properties
         end
 
-        function validateInputsImpl(~, q, q_dot, q_ddot)
+        function validateInputsImpl(~, q, q_dot, q_ddot, Xee_prev)
             %validateInputsImpl Validate inputs to the step method at initialization
             
             validateattributes(q,{'single','double'},{'vector'},'EEDynBlock','Joint config');
             validateattributes(q_dot,{'single','double'},{'vector'},'EEDynBlock','Joint velocities');
             validateattributes(q_ddot,{'single','double'},{'vector'},'EEDynBlock','Joint accels');
+            validateattributes(Xee_prev,{'single','double'},{'vector'},'EEDynBlock','Xee_prev');
         end
 
         function flag = isInputSizeMutableImpl(~,~)
@@ -87,35 +91,39 @@ classdef EEDynBlock < matlab.System
 
         function num = getNumOutputsImpl(~)
             %getNumOutputsImpl Define total number of outputs
-            num = 3;
+            num = 4;
         end
         
-        function [out1, out2, out3] = getOutputSizeImpl(~)
+        function [out1, out2, out3, out4] = getOutputSizeImpl(~)
             %getOutputSizeImpl Return size for each output port
             out1 = [6 1];
             out2 = [6 1];
             out3 = [6 1];
+            out4 = [6 1];
         end
 
-        function [out1, out2, out3] = getOutputDataTypeImpl(obj)
+        function [out1, out2, out3, out4] = getOutputDataTypeImpl(obj)
             %getOutputDataTypeImpl Return data type for each output port
             out1 = propagatedInputDataType(obj,1);
             out2 = propagatedInputDataType(obj,1);
             out3 = propagatedInputDataType(obj,1);
+            out4 = propagatedInputDataType(obj,1);
         end
 
-        function [out1, out2, out3] = isOutputComplexImpl(~)
+        function [out1, out2, out3, out4] = isOutputComplexImpl(~)
             %isOutputComplexImpl Return true for each output port with complex data
             out1 = false;
             out2 = false;
             out3 = false;
+            out4 = false;
         end
 
-        function [out1, out2, out3] = isOutputFixedSizeImpl(~)
+        function [out1, out2, out3, out4] = isOutputFixedSizeImpl(~)
             %isOutputFixedSizeImpl Return true for each output port with fixed size
             out1 = true;
             out2 = true;
             out3 = true;
+            out4 = true;
         end
     end
 

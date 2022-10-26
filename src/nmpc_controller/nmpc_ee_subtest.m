@@ -2,19 +2,25 @@
 % Design and test of NMPC controller for SR
 %
 
+% close all
+% clc
+% clear all
+fileName = 'ctrl3.mat';
+load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq');
+
+startTime = 55;
+simTime = 20;
+
 % ### OPTIONS ###
-GEN_MEX = 0;
 SIM = 1;
-PLOT = 1;
+PLOT = 0;
 
-simTime = '80';
+% --- NMPC Params ---
+Ts = 0.5;
+Tp = 5; % # of prediction steps
+Tc = 5; % # of ctrl steps
 
-% --- NMPC ---
-Ts = 0.1;
-Tp = 10; % # of prediction steps
-Tc = 10; % # of ctrl steps
-
-% Weights
+% --- Weights ---
 r_ee_W = 100; % Position position weight
 psi_ee_W = 100; % Position orientation weight
 
@@ -22,52 +28,46 @@ fb_W = 1;
 nb_W = 1;
 taum_W = 1;
 
+% --- Max Forces --- 
 baseMaxForce = 5; % 5
 baseMaxTorque = 5; % 5
 motorMaxTorque = 200; % 200
 
-% Traj
-trajTime = 72;
-trajStartTime = 0.5;
-circleRadius = 2.0;
-plane = 'yz';
+% --- Start time data ---
+x_start = xSeq.getsampleusingtime(startTime).Data(1, :);
+q_start = q.getsampleusingtime(startTime).Data;
+q_dot_start = q_dot.getsampleusingtime(startTime).Data;
+xee_start = Xee.getsampleusingtime(startTime).Data;
+xee_dot_start = x_start(31:36)';
 
-% Initial config
-qb0 = [0; 0; 0; 0; 0; 0];
-qm0 = [0; deg2rad(30); deg2rad(-100); deg2rad(-20); deg2rad(-180); deg2rad(90)];
-conf = [qb0; qm0];
-% conf2 = [0.0095; -0.0006; -0.0529;  0.0975; -0.0945; -0.0888;  0.2408;  0.9110; -0.4195;  0.9643; -3.0714; -1.4067];
+traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+tr = timerange(seconds(startTime), seconds(simTime + startTime));
+traj = traj(tr, :);
+% traj.Time = traj.Time - seconds(startTime);
 
-% Start orientation down
-% qm0 = [0; deg2rad(60); deg2rad(-100); deg2rad(40); 0; 0]; 
+traj.Time = traj.Time - seconds(startTime - 0.5);
+tt2 = timetable([xee_start'; xee_start'],'RowTimes', [seconds(0); seconds(0.4)], 'VariableNames',{'EE_desired'});
+traj = [tt2; traj];
 
-% xee0 = [3.3964; -0.4000;  0.6030; 0;  0; 0];
-% startTime = 36; % To start traj at different point
-
+ref = struct();
+ref.time = seconds(traj.Time);
+ref.signals.values = traj.EE_desired;
 %% Config
-clc
-close all
+sr.q = q_start;
+sr.q_dot = zeros(12, 1); %q_dot_start;
 
-if ~exist('sr', 'var')
-    fprintf("Loading SR\n")
-    load 'SR6.mat'
-end
-
-sr.homeConfig();
-
-sr.q = conf;
-% sr.q = conf2;
+sr.Bodies{6}.Joint.PositionLimits = [-inf, inf];
 
 mdl = 'nmpc_sim_ee';
 
 q0 = sr.q;
 q_dot_0 = sr.q_dot;
 
-[Ree, xee0] = tr2rt(sr.Ttree.endeffector);
-psi_ee = tr2rpy(Ree, 'zyx').';
+% [Ree, xee0] = tr2rt(sr.Ttree.endeffector);
+% psi_ee = tr2rpy(Ree, 'zyx').';
 
-xee0 = [xee0; psi_ee];
-xee0_dot = zeros(6, 1);
+xee0 = xee_start;%[xee0; psi_ee];
+xee0_dot = zeros(6, 1); % xee_dot_start; 
 
 fprintf('--- Config ---\n')
 fprintf('SpaceRobot: %s\n', sr.Name)
@@ -77,28 +77,20 @@ disp(sr.q0.')
 fprintf('\t-qm0:')
 disp(sr.qm.')
 fprintf('\t-Xee0:')
-disp(xee0.')
+disp(xee_start.')
+fprintf('\t-Xee0 Ref:')
+disp(traj(1, :).EE_desired)
 
 % sr.show;
-
-%% Traj
-Nsamp = 205; % Make sure (Nsamp - 5) is multiple of 4
-traj = circleTraj(xee0, circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', trajStartTime);
-traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
-
-
-ref = struct();
-ref.time = seconds(traj.Time);
-ref.signals.values = traj.EE_desired;
 %% NMPC Controller
 fprintf('--- Creating NMPC Controller ---\n')
-% Parameters
+
+% --- Parameters ---
 fprintf('Parameters:\n')
 fprintf('\tTs: %.2f\n', Ts)
 fprintf('\tTp: %i (%.2f sec)\n', Tp, Tp * Ts)
 fprintf('\tTc: %i (%.2f sec)\n', Tc, Tc * Ts)
 
-%
 n = sr.NumActiveJoints;
 N = n + 6;
 nx = 12 + 2 * n + 12; % Change to 24 + 2*n w/ EE
@@ -111,20 +103,27 @@ nlmpc_ee.Ts = Ts;
 nlmpc_ee.PredictionHorizon = Tp;
 nlmpc_ee.ControlHorizon = Tc;
 
-% Prediction Model
+% --- Prediction Model ---
 nlmpc_ee.Model.NumberOfParameters = 0;
 
-if GEN_MEX
-    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func";
-else
-    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
-end
-
+nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
 nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
-
 nlmpc_ee.Model.IsContinuousTime = true;
 
-% Cost Function
+% --- Scales ---
+URange = [ones(1, 3)*2*baseMaxForce, ones(1, 3)*2*baseMaxTorque, ones(1, 6)*2*motorMaxTorque];
+YRange = [ones(1, 3)*10, ones(1, 3)*2*pi];
+
+for i = 1:nu
+    nlmpc_ee.MV(i).ScaleFactor = URange(i);
+end
+
+for i = 1:ny
+    nlmpc_ee.OV(i).ScaleFactor = YRange(i);
+end
+
+
+% --- Cost Function ---
 nlmpc_ee.Weights.OutputVariables = [ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3) * fb_W, ones(1, 3) * nb_W, ones(1, n) * taum_W];
 
@@ -155,38 +154,17 @@ for i = 1:N
     nlmpc_ee.MV(i).Max = maxTorques(i);
 end
 
+
+
 % % Validate
 x0 = [sr.q; xee0; sr.q_dot; xee0_dot];
 u0 = zeros(N, 1);
-% validateFcns(nlmpc_ee, x0, u0, []);
-%
-% yref = [x0(1:6)', 0, 0];
 
-%% Generate MEX file
-if GEN_MEX
-    tic
-    fprintf('\n--- MEX file generation ---\n')
-    path = fullfile('src/nmpc_controller/');
-    ctrl_save_name = 'nlmpc_ee_SR6_mex';
-
-    save_path = fullfile(path, ctrl_save_name);
-
-    set_param([mdl, '/NMPC Controller'], 'UseMEX', 'on')
-    set_param([mdl, '/NMPC Controller'], 'mexname', ctrl_save_name)
-
-    % path = []
-    [coreData, onlineData] = getCodeGenerationData(nlmpc_ee, x0, u0);
-    mexFcn = buildMEX(nlmpc_ee, save_path, coreData, onlineData);
-    tMex = toc;
-    fprintf('Time to generate: %.2f (min)\n', tMex / 60);
-else
-    set_param([mdl, '/NMPC Controller'], 'UseMEX', 'off')
-end
 %% Simulink
 if SIM
     simOk = true;
     fprintf('\n--- SIM ---\n')
-    set_param(mdl, 'StopTime', simTime)
+    set_param(mdl, 'StopTime', num2str(simTime))
     waitBar = waitbar(0, 'Simulation in progress...');
 
     % Sim Time Timer
@@ -195,9 +173,9 @@ if SIM
     t = timer;
     t.Period = 2;
     t.ExecutionMode = 'fixedRate';
-    t.TimerFcn = @(myTimerObj, thisEvent)waitbar(get_param(mdl, 'SimulationTime') / str2double(simTime), ...
+    t.TimerFcn = @(myTimerObj, thisEvent)waitbar(get_param(mdl, 'SimulationTime') / simTime, ...
         waitBar, {'Simulation in progress...', ...
-            [num2str(get_param(mdl, 'SimulationTime')), '/', simTime]});
+            [num2str(get_param(mdl, 'SimulationTime')), '/', num2str(simTime)]});
 
     start(t)
 
@@ -240,11 +218,12 @@ end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
+close all
 rate = 1;
+animStart = 0;
 
 % Extract signals from sim
 q = logsout.getElement('q').Values;
-q_dot = logsout.getElement('q_dot').Values;
 xSeq = logsout.getElement('xSeq').Values; % predicted states, (Tp+1 x nx x timeStep). xSeq.
 ySeq = logsout.getElement('ySeq').Values; % predicted states, (Tp+1 x ny x timeStep). ySeq.
 Xee = logsout.getElement('Xee').Values;
@@ -273,7 +252,7 @@ end
 
 % Animate
 tic
-sr.animate(q, 'fps', 15, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on', 'tStart', 55);
+sr.animate(q, 'fps', 15, 'rate', rate, 'fileName', savePath, 'traj', trajRes, 'pred', pred, 'viz', 'on', 'tStart', animStart);
 toc
 
 %% Plots
@@ -303,40 +282,40 @@ if PLOT
     legend('Ref', 'NMPC')
     hold off
     
-%     % --- EE Orientation Tracking ---
-%     titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
-%     figure
-%     sgtitle("EE Orientation Trajectory Tracking")
-%     for i=1:3
-%         subplot(3, 1, i)
-%         title(titles{i})
-%         xlabel('Time [sec]')
-%         ylabel('[rad]')
-%         grid on
-%         axis equal
-%         hold on
-%         plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
-%         plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
-%         legend
-%         hold off
-%     end
-%     
-%     % --- EE Tracking Errors---
-%     varNames = {'X','Y','Z', '\psi_x', '\psi_y', '\psi_z'};
-%     tt_err = timetable(seconds(Xee_err.Time),...
-%         reshape(100*Xee_err.Data(1, :, :), [], 1), ...
-%         reshape(100*Xee_err.Data(2, :, :), [], 1),...
-%         reshape(100*Xee_err.Data(3, :, :), [], 1),...
-%         reshape(180/pi*Xee_err.Data(4, :, :), [], 1),...
-%         reshape(180/pi*Xee_err.Data(5, :, :), [], 1),...
-%         reshape(180/pi*Xee_err.Data(6, :, :), [], 1),...
-%         'VariableNames',varNames ...
-%         );
-%     
-%     figure
-%     vars = {["X","Y","Z"],["\psi_x", "\psi_y", "\psi_z"]};
-%     yLabels = ["Position Error [cm]", "Orientation Error [deg]"];
-%     stackedplot(tt_err, vars, "Title","EE Tracking Error", "DisplayLabels",yLabels)
+    % --- EE Orientation Tracking ---
+    titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+    figure
+    sgtitle("EE Orientation Trajectory Tracking")
+    for i=1:3
+        subplot(3, 1, i)
+        title(titles{i})
+        xlabel('Time [sec]')
+        ylabel('[rad]')
+        grid on
+        axis equal
+        hold on
+        plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
+        plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
+        legend
+        hold off
+    end
+    
+    % --- EE Tracking Errors---
+    varNames = {'X','Y','Z', '\psi_x', '\psi_y', '\psi_z'};
+    tt_err = timetable(seconds(Xee_err.Time),...
+        reshape(100*Xee_err.Data(1, :, :), [], 1), ...
+        reshape(100*Xee_err.Data(2, :, :), [], 1),...
+        reshape(100*Xee_err.Data(3, :, :), [], 1),...
+        reshape(180/pi*Xee_err.Data(4, :, :), [], 1),...
+        reshape(180/pi*Xee_err.Data(5, :, :), [], 1),...
+        reshape(180/pi*Xee_err.Data(6, :, :), [], 1),...
+        'VariableNames',varNames ...
+        );
+    
+    figure
+    vars = {["X","Y","Z"],["\psi_x", "\psi_y", "\psi_z"]};
+    yLabels = ["Position Error [cm]", "Orientation Error [deg]"];
+    stackedplot(tt_err, vars, "Title","EE Tracking Error", "DisplayLabels",yLabels)
     
     % --- Joint ---
     figure
@@ -349,7 +328,7 @@ if PLOT
         title(sprintf('Jnt%i', i))
         xlabel('Time [sec]')
         ylabel('Joint Angle [deg]')
-        xlim([0, str2double(simTime)])
+        xlim([0, simTime])
     
         tVect = q.Time;
         plot(tVect, reshape(rad2deg(q.Data(6 + i, :, :)), [], 1))

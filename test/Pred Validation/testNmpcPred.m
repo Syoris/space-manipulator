@@ -4,14 +4,14 @@
 % % 6
 logsoutComp = logsout6;
 N = 12;
-sr = sr6;
+% sr = sr6;
 
 % 2
 % logsout = logsout2;
 % N = 8;
 % sr = sr2;
 
-time = 0.2;
+time = 35;
 
 % Get parameters
 mvSeq = logsoutComp.getElement('mvSeq').Values; %  Sequence of all
@@ -37,7 +37,10 @@ xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);
 
 %% Plots
 close all
-simRes = sim('testNmpcPred_sim');  
+simTime = Tp*Ts;
+mdlPred = 'testNmpcPred_sim';
+set_param(mdlPred, 'StopTime', num2str(simTime))
+simRes = sim(mdlPred);  
 
 predLogsout = simRes.logsout;
 

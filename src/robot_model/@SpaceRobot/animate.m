@@ -27,6 +27,8 @@ function animate(obj, ts, varargin)
     %                                       pred.Xee.Data(:, 2, i) is the prediction of y_ee at time step i
     %                                       pred.Xee.Data(:, 3, i) is the prediction of z_ee at time step i
     %
+    %       'tStart'        - Animation start time. Default to 0
+    %
 
     % parse inputs
     parser = inputParser;
@@ -47,7 +49,10 @@ function animate(obj, ts, varargin)
 
     parser.addParameter('pred', [], @(x)(validateattributes(x, {'struct'}, ...
         {'nonempty'})));
-
+    
+    parser.addParameter('tStart', 0, @(x)(validateattributes(x, {'numeric'}, ...
+        {'nonnan', 'finite', 'real'})));
+    
     parser.parse(varargin{:});
 
     fps = parser.Results.fps;
@@ -56,10 +61,10 @@ function animate(obj, ts, varargin)
     rate = parser.Results.rate;
     fileName = parser.Results.fileName;
     viz = parser.Results.viz;
+    tStart = parser.Results.tStart;
 
     % Setup
-    dim = [.2 .5 .3 .3]; % For annotation
-    str = sprintf('t = %.2fs', 0);
+    dim = [.2 .5 .3 .3]; % For annotation    
     fpsSet = false;
     plotTraj = false;
     plotPred = false;
@@ -103,9 +108,12 @@ function animate(obj, ts, varargin)
         myVideo.Quality = 100;
         open(myVideo);
     end
+   
+    iStart = find(tVect==tStart, 1);
 
     % First frame
-    obj.q = ts.Data(:, :, 1);
+    obj.q = ts.Data(:, :, iStart);
+    str = sprintf('t = %.2fs', tVect(iStart));
     h_annot = annotation('textbox', dim, 'String', str, 'FitBoxToText', 'on');
     obj.show('preserve', false, 'fast', true, 'visuals', viz);
 
@@ -117,8 +125,8 @@ function animate(obj, ts, varargin)
     end
 
     if plotPred
-        lPred = plot3(pred.Xee(1, :).ySeq(:, :, 1), pred.Xee(1, :).ySeq(:, :, 2), pred.Xee(1, :).ySeq(:, :, 3), 'g', 'LineWidth', 1.5);
-        startPred = plot3(pred.Xee(1, :).ySeq(:, 1, 1), pred.Xee(1, :).ySeq(:, 1, 2), pred.Xee(1, :).ySeq(:, 1, 3), 'gX', 'LineWidth', 1.5);
+        lPred = plot3(pred.Xee(iStart, :).ySeq(:, :, 1), pred.Xee(iStart, :).ySeq(:, :, 2), pred.Xee(iStart, :).ySeq(:, :, 3), 'g', 'LineWidth', 1.5);
+        startPred = plot3(pred.Xee(iStart, :).ySeq(:, 1, 1), pred.Xee(iStart, :).ySeq(:, 1, 2), pred.Xee(iStart, :).ySeq(:, 1, 3), 'gX', 'LineWidth', 1.5);
 %         startXee = plot3(traj.Xee.Data(1, :, 1), traj.Xee.Data(2, :, 1), traj.Xee.Data(3, :, 1), 'bX', 'LineWidth', 1.5);
     end
 
@@ -127,9 +135,8 @@ function animate(obj, ts, varargin)
     drawnow
 
     try
-
         % Animate
-        for i = 1:nFrame
+        for i = iStart:nFrame
             curT = tVect(i);
             str = sprintf('t = %.2fs', curT);
 
