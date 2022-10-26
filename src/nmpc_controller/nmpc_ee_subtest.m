@@ -8,12 +8,12 @@
 fileName = 'ctrl3.mat';
 load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq');
 
-startTime = 55;
-simTime = 20;
+startTime = 63;
+simTime = 10;
 
 % ### OPTIONS ###
 SIM = 1;
-PLOT = 0;
+PLOT = 1;
 
 % --- NMPC Params ---
 Ts = 0.5;
@@ -21,12 +21,18 @@ Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
 
 % --- Weights ---
-r_ee_W = 100; % Position position weight
-psi_ee_W = 100; % Position orientation weight
+r_ee_W = 20; % Position position weight        1000
+psi_ee_W = 10; % Position orientation weight   628
 
-fb_W = 1;
-nb_W = 1;
-taum_W = 1;
+fb_W = 0.5;
+nb_W = 0.1;
+taum_W = 0.1;
+
+fb_rate_W = 0.1;
+nb_rate_W = 0.1;
+taum_rate_W = 0.1;
+
+
 
 % --- Max Forces --- 
 baseMaxForce = 5; % 5
@@ -127,8 +133,7 @@ end
 nlmpc_ee.Weights.OutputVariables = [ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3) * fb_W, ones(1, 3) * nb_W, ones(1, n) * taum_W];
 
-% nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, 2)*qm_W];
-
+nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, n)*taum_rate_W];
 % --- Solver parameters ---
 nlmpc_ee.Optimization.UseSuboptimalSolution = true;
 nlmpc_ee.Optimization.SolverOptions.MaxIterations = 5000;
@@ -257,48 +262,48 @@ toc
 
 %% Plots
 if PLOT
-    % --- EE Position Tracking ---
-    figure
-    title("EE Position Trajectory Tracking")
-    subplot(1, 2, 1)
-    xlabel('X [m]')
-    ylabel('Y [m]')
-    grid on
-    axis equal
-    hold on
-    plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
-    plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
-    legend('Ref', 'NMPC')
-    hold off
-    
-    subplot(1, 2, 2)
-    xlabel('Y [m]')
-    ylabel('Z [m]')
-    grid on
-    axis equal
-    hold on
-    plot(trajRes.ref.EE_desired(:, 2), trajRes.ref.EE_desired(:, 3))
-    plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
-    legend('Ref', 'NMPC')
-    hold off
-    
-    % --- EE Orientation Tracking ---
-    titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
-    figure
-    sgtitle("EE Orientation Trajectory Tracking")
-    for i=1:3
-        subplot(3, 1, i)
-        title(titles{i})
-        xlabel('Time [sec]')
-        ylabel('[rad]')
-        grid on
-        axis equal
-        hold on
-        plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
-        plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
-        legend
-        hold off
-    end
+%     % --- EE Position Tracking ---
+%     figure
+%     title("EE Position Trajectory Tracking")
+%     subplot(1, 2, 1)
+%     xlabel('X [m]')
+%     ylabel('Y [m]')
+%     grid on
+%     axis equal
+%     hold on
+%     plot(trajRes.ref.EE_desired(:, 1), trajRes.ref.EE_desired(:, 2))
+%     plot(reshape(trajRes.Xee.Data(1, :, :), [], 1), reshape(trajRes.Xee.Data(2, :, :), [], 1))
+%     legend('Ref', 'NMPC')
+%     hold off
+%     
+%     subplot(1, 2, 2)
+%     xlabel('Y [m]')
+%     ylabel('Z [m]')
+%     grid on
+%     axis equal
+%     hold on
+%     plot(trajRes.ref.EE_desired(:, 2), trajRes.ref.EE_desired(:, 3))
+%     plot(reshape(trajRes.Xee.Data(2, :, :), [], 1), reshape(trajRes.Xee.Data(3, :, :), [], 1))
+%     legend('Ref', 'NMPC')
+%     hold off
+%     
+%     % --- EE Orientation Tracking ---
+%     titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+%     figure
+%     sgtitle("EE Orientation Trajectory Tracking")
+%     for i=1:3
+%         subplot(3, 1, i)
+%         title(titles{i})
+%         xlabel('Time [sec]')
+%         ylabel('[rad]')
+%         grid on
+%         axis equal
+%         hold on
+%         plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
+%         plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
+%         legend
+%         hold off
+%     end
     
     % --- EE Tracking Errors---
     varNames = {'X','Y','Z', '\psi_x', '\psi_y', '\psi_z'};
