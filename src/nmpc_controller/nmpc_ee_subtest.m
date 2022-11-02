@@ -9,7 +9,7 @@ fileName = 'ctrl3.mat';
 load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq', 'logsout');
 
 startTime = 63;
-simTime = 2;
+simTime = 0.5;
 
 % ### OPTIONS ###
 SIM = 1;
@@ -32,8 +32,6 @@ fb_rate_W = 0.1;
 nb_rate_W = 0.1;
 taum_rate_W = 0.1;
 
-
-
 % --- Max Forces --- 
 baseMaxForce = 5; % 5
 baseMaxTorque = 5; % 5
@@ -43,8 +41,14 @@ motorMaxTorque = 200; % 200
 x_start = xSeq.getsampleusingtime(startTime).Data(1, :);
 q_start = q.getsampleusingtime(startTime).Data;
 q_dot_start = q_dot.getsampleusingtime(startTime).Data;
+
+[xee_start, xee_dot_start] = ee_speed(sr_info, q_start, q_dot_start);
+
 xee_start = Xee.getsampleusingtime(startTime).Data;
-xee_dot_start = x_start(31:36)';
+% xee_dot_start = x_start(31:36)';
+
+q_dot_start = zeros(N, 1);
+xee_dot_start = zeros(6, 1);
 
 traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
 tr = timerange(seconds(startTime), seconds(simTime + startTime));

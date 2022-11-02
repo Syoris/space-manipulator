@@ -27,7 +27,7 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     q_dot(4:6) = euler2omega(q(4:6), x_dot(4:6)); % wb = R_psi*psi_b_dot
 
     q_ee_dot = x_ee_dot;
-    q_ee_dot(4:6) = euler2omega(q_ee(4:6), x_ee_dot(4:6)); % wee = R_psi*psi_ee_dot
+%     q_ee_dot(4:6) = euler2omega(q_ee(4:6), x_ee_dot(4:6)); % wee = R_psi*psi_ee_dot
 
     %% --- Compute accel ---
     % 1 - Kinematics
@@ -61,7 +61,6 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     Ree = Tee(1:3, 1:3);
     Ree = blkdiag(Ree, Ree);
     J = Ree*Jacobian('endeffector', sr_info, A, {Rb, Ra});
-%     J_inv = pinv(J);
     J_dot = Ree*Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
     
     A_inv = J*D_inv;   
@@ -69,29 +68,32 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
 
     
     %% --- Convert states ---
+    x_ddot = q_ddot;
+    x_ddot(4:6) = omega2euler_accel(q(4:6), x_dot(4:6), q_ddot(4:6)); % psi, psi_dot, wb_dot
 
-    
-
+    x_ee_ddot = q_ee_ddot;
+%     x_ee_ddot(4:6) = omega2euler_accel(q_ee(4:6), x_ee_dot(4:6), q_ee_ddot(4:6)); % omega2euler_accel(psi, psi_dot, wb_dot)
+   
     % TODO
     % x1_dot, x1 = [xb; qm]
-    dx(1:3) = q_dot(1:3); % rb_dot = rb
-    dx(4:6) = omega2euler(q(4:6), q_dot(4:6)); % psi_b_dot = R_psi^-1*w_b
-    dx(7:N) = q_dot(7:N); % qm_d0t
+%     dx(1:3) = q_dot(1:3); % rb_dot = rb
+%     dx(4:6) = omega2euler(q(4:6), q_dot(4:6)); % psi_b_dot = R_psi^-1*w_b
+%     dx(7:N) = q_dot(7:N); % qm_d0t
+    dx(1:N) = x_dot;
 
     % x2_dot, x2 = [xee]
-    dx(N+1:N+3) = q_ee_dot(1:3);
-    dx(N+4:N+6) = omega2euler(q_ee(4:6), q_ee_dot(4:6)); 
+%     dx(N+1:N+3) = q_ee_dot(1:3);
+%     dx(N+4:N+6) = omega2euler(q_ee(4:6), q_ee_dot(4:6)); 
+    dx(N+1:N+6) = x_ee_dot;
     
     % x3_dot, x3 = [qb_dot, qm_dot]
-    dx(N+7:N+9) = q_ddot(1:3);
-    dx(N+10:N+12) = omega2euler_accel(q(4:6), dx(4:6), q_ddot(4:6));
-    dx(N+13:2*N+6) = q_ddot(7:end);
-    
+%     dx(N+7:N+9) = q_ddot(1:3);
+%     dx(N+10:N+12) = omega2euler_accel(q(4:6), dx(4:6), q_ddot(4:6));
+%     dx(N+13:2*N+6) = q_ddot(7:end);    
+    dx(N+7:2*N+6) = x_ddot;
 
     % x4_dot, x4 = [q_ee_dot]
-%     q_ee_ddot_psi = q_ee_ddot;
-%     q_ee_ddot_psi(4:6) = ;
-
-    dx(end-5:end-3) = q_ee_ddot(1:3);
-    dx(end-2:end) = omega2euler_accel(q_ee(4:6), dx(N+4:N+6), q_ee_ddot(4:6));     
+%     dx(end-5:end-3) = q_ee_ddot(1:3);
+%     dx(end-2:end) = omega2euler_accel(q_ee(4:6), dx(N+4:N+6), q_ee_ddot(4:6));     
+    dx(2*N+7:2*N+12) = x_ee_ddot;
 end

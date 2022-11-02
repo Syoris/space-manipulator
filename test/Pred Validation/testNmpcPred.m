@@ -5,13 +5,14 @@
 logsoutComp = logsout;
 N = 12;
 % sr = sr6;
+sr_info = SR6_info();
 
 % 2
 % logsout = logsout2;
 % N = 8;
 % sr = sr2;
 
-time = 0.5;
+time = 0;
 
 % Get parameters
 mvSeq = logsoutComp.getElement('mvSeq').Values; %  Sequence of all
@@ -32,9 +33,16 @@ q0 = xTT(seconds(0), :).xk(1:N);
 q_dot_0 = xTT(seconds(0), :).xk(N+7:2*N+6);
 x_dot_0 = [q_dot_0(1:3), omega2euler(q0(4:6)', q_dot_0(4:6)')', q_dot_0(7:end)];
 
-xee0 = xTT(seconds(0), :).xk(N+1:N+6);
-xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);
+[xee0, xee_dot_0] = ee_speed(sr_info, q0.', q_dot_0.');
+xee0 = xee0.';
+xee_dot_0 = xee_dot_0.';
+xee0(4) = xee0(4) + 2*pi;
 
+% xee0 = xTT(seconds(0), :).xk(N+1:N+6);
+% xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);
+
+% [R, r] = tr2rt(sr.getTransform('endeffector', 'TargetFrame', 'inertial', 'config', q0', 'Symbolic', false));
+% psi = tr2rpy(R, 'zyx');
 
 %% --- Sim ---
 % figsToPlot = {'Base', 'Joints', 'EE'};
@@ -48,6 +56,10 @@ simRes = sim(mdlPred);
 predLogsout = simRes.logsout;
 
 %% --- Plots ---
+close all
+% runIDs = Simulink.sdi.getAllRunIDs;
+% predLogsout = Simulink.sdi.exportRun(runIDs(end));
+
 tau = predLogsout.getElement('tau').Values;
 x = predLogsout.getElement('X').Values;
 xPred = predLogsout.getElement('Xpred').Values;
@@ -71,7 +83,7 @@ x2 = predLogsout.getElement('X2').Values;
 %     hold off
 % end
 % sgtitle('Base position')
-
+% 
 % % ### Joints ###
 % idx = 7:N;
 % figure
@@ -120,7 +132,7 @@ sgtitle('EE position')
 %     hold off
 % end
 % sgtitle('Base Velocity')
-
+% 
 % % ### Joint Vels ###
 % idx = N+13:2*N+6;
 % figure
@@ -138,7 +150,7 @@ sgtitle('EE position')
 
 % ### EE Vels ###
 idx = 2*N+7:2*N+12;
-names = {'vx_{ee}', 'vy_{ee}', 'vz_{ee}', '\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+names = {'vx_{ee}', 'vy_{ee}', 'vz_{ee}', '\psi_{ee, x}, dot', '\psi_{ee, y}, dot', '\psi_{ee, z}, dot'};
 figure
 for i=1:6
     subplot(6, 1, i)
