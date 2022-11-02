@@ -55,11 +55,11 @@ classdef EEDynBlock < matlab.System
             J_dot = Ree_blk*Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
 
             % 4 - Xee_dot
-            Xee_dot = J*q_dot;
+            Xee_dot = J*q_dot;  % Omega
             Xee_ddot = J*q_ddot + J_dot*q_dot;
 
             Xee_dot_psi = Xee_dot;
-%             Xee_dot_psi(4:6) = omega2euler(Xee(4:6), Xee_dot(4:6));
+            Xee_dot_psi(4:6) = omega2euler(Xee(4:6), Xee_dot(4:6));
         end
 
         function resetImpl(~)

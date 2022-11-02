@@ -6,14 +6,14 @@
 % clc
 % clear all
 fileName = 'ctrl3.mat';
-load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq');
+load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq', 'logsout');
 
 startTime = 63;
 simTime = 2;
 
 % ### OPTIONS ###
 SIM = 1;
-PLOT = 1;
+PLOT = 0;
 
 % --- NMPC Params ---
 Ts = 0.5;
@@ -89,7 +89,7 @@ disp(traj(1, :).EE_desired)
 
 % sr.show;
 %% NMPC Controller
-fprintf('--- Creating NMPC Controller ---\n')
+fprintf('--- NMPC Controller Initialization ---\n')
 
 % --- Parameters ---
 fprintf('Parameters:\n')
@@ -189,13 +189,14 @@ if SIM
         %     profile on
         simRes = sim(mdl);
         logsout = simRes.logsout;
+        
     catch ME
         fprintf("ERROR during simulation:\n")
         disp(ME.identifier)
         runIDs = Simulink.sdi.getAllRunIDs;
         logsout = Simulink.sdi.exportRun(runIDs(end));
         simOk = false;
-    end
+    end   
 
     %     profile off
     stop(t);

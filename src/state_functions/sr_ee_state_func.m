@@ -21,7 +21,7 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     q_ee = x(N+1:N+6);
 
     x_dot = x(N+7:2*N+6);
-    x_ee_dot = x(end-5:end);
+    x_ee_dot = x(2*N+7:end);
 
     q_dot = x_dot;
     q_dot(4:6) = euler2omega(q(4:6), x_dot(4:6)); % wb = R_psi*psi_b_dot
@@ -67,8 +67,11 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     A_inv = J*D_inv;   
     q_ee_ddot = A_inv * (u - h) + J_dot*q_dot;
 
-
+    
     %% --- Convert states ---
+
+    
+
     % TODO
     % x1_dot, x1 = [xb; qm]
     dx(1:3) = q_dot(1:3); % rb_dot = rb
@@ -85,6 +88,10 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     dx(N+13:2*N+6) = q_ddot(7:end);
     
 
-    % x4_dot, x4 = [q_ee_dot]  
-    dx(end-5:end) = q_ee_ddot;
+    % x4_dot, x4 = [q_ee_dot]
+%     q_ee_ddot_psi = q_ee_ddot;
+%     q_ee_ddot_psi(4:6) = ;
+
+    dx(end-5:end-3) = q_ee_ddot(1:3);
+    dx(end-2:end) = omega2euler_accel(q_ee(4:6), dx(N+4:N+6), q_ee_ddot(4:6));     
 end
