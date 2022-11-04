@@ -5,18 +5,18 @@
 % close all
 % clc
 % clear all
-fileName = 'ctrl3.mat';
+fileName = 'ctrl4.mat';
 load(fileName, 'q', 'q_dot', 'traj', 'sr', 'Xee', 'xSeq', 'logsout');
 
-startTime = 63;
-simTime = 0.5;
+startTime = 45;
+simTime = 10;
 
 % ### OPTIONS ###
 SIM = 1;
 PLOT = 0;
 
 % --- NMPC Params ---
-Ts = 0.5;
+Ts = 0.1;
 Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
 

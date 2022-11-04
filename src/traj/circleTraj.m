@@ -1,25 +1,36 @@
 function tt = circleTraj(p0, r, tF, N, varargin)
 %squareTraj : Generate a square traj
-%   p0      - Initial position [x; y; z; psi_x; psi_y; psi_z]
-%   r       - Circle radius
-%   tF      - Final time
-%   N       - Number of sample, where N-5 must be multiple of 4
-%   'plane' - Trajectory plane. 'xy', 'xz', 'yz'
-%   'tStart' - To delay start of trajectory
-%   'rotAxis' - Axis to rotate ee
+%   p0              - Initial position [x; y; z; psi_x; psi_y; psi_z]
+%   r               - Circle radius
+%   tF              - Final time
+%   N               - Number of sample, where N-5 must be multiple of 4
+%   'plane'         - Trajectory plane. 'xy', 'xz', 'yz'
+%   'tStart'        - To delay start of trajectory
+%   'rotAxis'       - Axis to rotate ee
+%   'startOffset'   - Start position offset, in deg
+%
+%   EXAMPLE
+%       traj = circleTraj(xee0, 2.0, trajTime, Nsamp, 'plane', plane, 'tStart', trajStartTime);
+%       traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+%       
+%       
 
     parser = inputParser;
     parser.addParameter('plane', 'xy', ...
         @(x)any(validatestring(x, {'xy', 'xz', 'yz'})));
     parser.addParameter('tStart', 0);
-        parser.addParameter('rotAxis', 'x', ...
-        @(x)any(validatestring(x, {'x', 'y', 'z'})));
+    
+    parser.addParameter('rotAxis', 'x', ...
+    @(x)any(validatestring(x, {'x', 'y', 'z'})));
+    
+    parser.addParameter('startOffset', 0);
 
     parser.parse(varargin{:});
                 
     plane = parser.Results.plane;
     tStart = parser.Results.tStart;
     rotAxis = parser.Results.rotAxis;
+    startOffset = deg2rad(parser.Results.startOffset);
 
     % points
     points = repmat(p0, 1, N);
@@ -43,7 +54,8 @@ function tt = circleTraj(p0, r, tF, N, varargin)
             j = 3;
     
         case 'yz'
-            center(3) = center(3) + r;
+            center(2) = center(2) - r*sin(startOffset);
+            center(3) = center(3) + r*cos(startOffset);
             thOffset = -pi/2;
 
             i = 2;
@@ -66,8 +78,8 @@ function tt = circleTraj(p0, r, tF, N, varargin)
     for k=1:N
         theta = (k-1)*dTheta;
 
-        points(i, k) = center(i) + cos(theta + thOffset)*r;
-        points(j, k) = center(j) + sin(theta + thOffset)*r;
+        points(i, k) = center(i) + cos(theta + thOffset + startOffset)*r;
+        points(j, k) = center(j) + sin(theta + thOffset + startOffset)*r;
 
         points(rIdx, k) = theta + p0(rIdx);
     end  

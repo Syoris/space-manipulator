@@ -64,7 +64,7 @@ jointsHomePos = [0; deg2rad(60); deg2rad(-100); deg2rad(-50); 0; 0];
 jointsPositionLimits = [[-inf, inf]; % shoulder
                     [0, pi]; % shoulder
                     [deg2rad(-170), deg2rad(170)]; % elbow
-                    [deg2rad(-170), deg2rad(90)]; % wrist
+                    [-inf, inf];%[deg2rad(-170), deg2rad(90)]; % wrist
                     [-inf, inf]; % wrist
                     [-inf, inf]; % wrist
                     [-inf, inf]; % ee

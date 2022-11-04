@@ -12,11 +12,11 @@ sr_info = SR6_info();
 % N = 8;
 % sr = sr2;
 
-time = 0;
+time = 5.1;
 
 % Get parameters
 mvSeq = logsoutComp.getElement('mvSeq').Values; %  Sequence of all
-mvKSeq = mvSeq.getsampleusingtime(time).Data; % (Tpx12)
+mvKSeq = mvSeq.getsampleusingtime(time-0.001, time+0.001).Data; % (Tpx12)
 % tt = ts2timetable(mvSeq);
 mvTT = timetable(mvKSeq, 'TimeStep',seconds(Ts),'VariableNames',{'mv'});
 mvTT = retime(mvTT,'regular','previous','TimeStep',seconds(0.001));
@@ -24,9 +24,13 @@ mvTT = retime(mvTT,'regular','previous','TimeStep',seconds(0.001));
 % Access specific time: mvTT(seconds(0.1), :)
 
 xSeq = logsoutComp.getElement('xSeq').Values; %  Sequence of all
-xKSeq = xSeq.getsampleusingtime(time).Data; % (Tpx12)
-% tt = ts2timetable(mvSeq);
+xKSeq = xSeq.getsampleusingtime(time-0.001, time+0.001).Data; % (Tpx12)
+xInt = xSeq.getsampleusingtime(time, time+Ts*(Tp+1)).Data; % Get robot states from sim over horizon
+xInt = xInt(1, :, :);
+xInt = reshape(xInt, 4, [], 1);
+
 xTT = timetable(xKSeq, 'TimeStep',seconds(Ts),'VariableNames',{'xk'});
+XSim = timetable(xInt, 'TimeStep',seconds(Ts),'VariableNames',{'X'});
 
 % Initial Cond
 q0 = xTT(seconds(0), :).xk(1:N);
@@ -36,7 +40,7 @@ x_dot_0 = [q_dot_0(1:3), omega2euler(q0(4:6)', q_dot_0(4:6)')', q_dot_0(7:end)];
 [xee0, xee_dot_0] = ee_speed(sr_info, q0.', q_dot_0.');
 xee0 = xee0.';
 xee_dot_0 = xee_dot_0.';
-xee0(4) = xee0(4) + 2*pi;
+xee0(4) = xee0(4); %+ 2*pi;
 
 % xee0 = xTT(seconds(0), :).xk(N+1:N+6);
 % xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);
@@ -56,7 +60,7 @@ simRes = sim(mdlPred);
 predLogsout = simRes.logsout;
 
 %% --- Plots ---
-close all
+% close all
 % runIDs = Simulink.sdi.getAllRunIDs;
 % predLogsout = Simulink.sdi.exportRun(runIDs(end));
 
@@ -64,40 +68,79 @@ tau = predLogsout.getElement('tau').Values;
 x = predLogsout.getElement('X').Values;
 xPred = predLogsout.getElement('Xpred').Values;
 x2 = predLogsout.getElement('X2').Values;
+xSim = predLogsout.getElement('XSim').Values;
 
 % xee3 = predLogsout.getElement('Xee3').Values;
 % xee_dot3 = predLogsout.getElement('Xee_dot3').Values;
 
-% % ### Base Position ###
-% idx = 1:6;
-% names = {'rx', 'ry', 'rz', '\psi_{bx}', '\psi_{by}', '\psi_{bz}'};
-% figure
-% for i=1:6
-%     subplot(6, 1, i)
-%     title(names{i})
-%     hold on
-%     grid on
-%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')    
-%     legend;
-%     hold off
-% end
-% sgtitle('Base position')
-% 
-% % ### Joints ###
-% idx = 7:N;
-% figure
-% for i=1:length(idx)
-%     subplot(n, 1, i)
-%     title(['Joint ', num2str(i)])
-%     hold on
-%     grid on
-%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')   
-%     legend;
-%     hold off
-% end
-% sgtitle('Joints')
+% ### Torques ###
+names = {'fb_x', 'fb_y', 'fb_z', 'nb_x', 'nb_y', 'nb_z', '\tau_1', '\tau_2', '\tau_3', '\tau_4','\tau_5', '\tau_6'};
+figure
+
+subplot(3, 1, 1)
+title('Base Force')
+hold on
+grid on
+for i=1:3
+    plot(tau.Time, reshape(tau.Data(i, :, :), 1, []), 'DisplayName', names{i})  
+end
+legend;
+hold off
+
+subplot(3, 1, 2)
+title('Base Torque')
+hold on
+grid on
+for i=4:6
+    plot(tau.Time, reshape(tau.Data(i, :, :), 1, []), 'DisplayName', names{i})  
+end
+legend;
+hold off
+
+subplot(3, 1, 3)
+title('Manip Torques')
+hold on
+grid on
+for i=7:N
+    plot(tau.Time, reshape(tau.Data(i, :, :), 1, []), 'DisplayName', names{i})  
+end
+legend;
+hold off
+
+sgtitle('Base position')
+
+
+% ### Base Position ###
+idx = 1:6;
+names = {'rx', 'ry', 'rz', '\psi_{bx}', '\psi_{by}', '\psi_{bz}'};
+figure
+for i=1:6
+    subplot(6, 1, i)
+    title(names{i})
+    hold on
+    grid on
+    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')    
+%     plot(xSim.Time, reshape(xSim.Data(idx(i), :, :), 1, []), '--','DisplayName', 'Res')    
+    legend;
+    hold off
+end
+sgtitle('Base position')
+
+% ### Joints ###
+idx = 7:N;
+figure
+for i=1:length(idx)
+    subplot(n, 1, i)
+    title(['Joint ', num2str(i)])
+    hold on
+    grid on
+    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')   
+    legend;
+    hold off
+end
+sgtitle('Joints')
 
 % ### EE ###
 idx = N+1:N+6;
@@ -117,36 +160,36 @@ end
 sgtitle('EE position')
 
 % --- Speeds ---
-% % ### Base Vels ###
-% idx = N+7:N+12;
-% names = {'vx', 'vy', 'vz', '\psi_{b, x}', '\psi_{b, y}', '\psi_{b, z}'};
-% figure
-% for i=1:6
-%     subplot(6, 1, i)
-%     title(names{i})
-%     hold on
-%     grid on
-%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
-%     legend;
-%     hold off
-% end
-% sgtitle('Base Velocity')
-% 
-% % ### Joint Vels ###
-% idx = N+13:2*N+6;
-% figure
-% for i=1:length(idx)
-%     subplot(n, 1, i)
-%     title(['Joint ', num2str(i), ', speed'])
-%     hold on
-%     grid on
-%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
-%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
-%     legend;
-%     hold off
-% end
-% sgtitle('Joints Velocities')
+% ### Base Vels ###
+idx = N+7:N+12;
+names = {'vx', 'vy', 'vz', '\psi_{b, x}', '\psi_{b, y}', '\psi_{b, z}'};
+figure
+for i=1:6
+    subplot(6, 1, i)
+    title(names{i})
+    hold on
+    grid on
+    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), 'DisplayName', 'Pred')
+    legend;
+    hold off
+end
+sgtitle('Base Velocity')
+
+% ### Joint Vels ###
+idx = N+13:2*N+6;
+figure
+for i=1:length(idx)
+    subplot(n, 1, i)
+    title(['Joint ', num2str(i), ', speed'])
+    hold on
+    grid on
+    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, []), 'DisplayName', 'Sim')
+    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, []), '--', 'DisplayName', 'Pred')
+    legend;
+    hold off
+end
+sgtitle('Joints Velocities')
 
 % ### EE Vels ###
 idx = 2*N+7:2*N+12;

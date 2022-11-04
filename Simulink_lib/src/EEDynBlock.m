@@ -36,8 +36,13 @@ classdef EEDynBlock < matlab.System
             [Ree, ree] = tr2rt(Tee);
             Ree_blk = blkdiag(Ree, Ree);
 
-            
+            psi_prev = Xee_prev(4:6);
             psi_ee = tr2rpy(Ree, 'zyx');
+
+            if psi_ee(1)<0 && psi_prev(1)>0
+                psi_ee(1) = psi_ee(1) + 2*pi;
+            end
+
             Xee = [ree; psi_ee.'];
 
 %             psi = zeros(3, 1);

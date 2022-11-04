@@ -63,8 +63,10 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     J = Ree*Jacobian('endeffector', sr_info, A, {Rb, Ra});
     J_dot = Ree*Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
     
-    A_inv = J*D_inv;   
-    q_ee_ddot = A_inv * (u - h) + J_dot*q_dot;
+%     A_inv = J*D_inv;   
+%     q_ee_ddot = A_inv * (u - h) + J_dot*q_dot;
+
+    q_ee_ddot = J*q_ddot + J_dot*q_dot;
 
     
     %% --- Convert states ---

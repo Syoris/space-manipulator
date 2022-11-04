@@ -81,6 +81,10 @@ function animate(obj, ts, varargin)
     Tend = ts.Time(end);
     tVect = ts.Time;
 
+    if tStart > Tend
+        error("Animation start time must be smaller than end time")
+    end
+
     if fps ~= 0
         fpsSet = true;
         tVect = ts.Time(1):1 / fps * rate:Tend;
