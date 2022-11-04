@@ -64,7 +64,22 @@ classdef EEDynBlock < matlab.System
             Xee_ddot = J*q_ddot + J_dot*q_dot;
 
             Xee_dot_psi = Xee_dot;
-%             Xee_dot_psi(4:6) = omega2euler(Xee(4:6), Xee_dot(4:6));
+            
+%             euler = Xee(4:6);
+%             sy = sin(euler(2));
+%             cy = cos(euler(2));
+%             sz = sin(euler(3));
+%             cz = cos(euler(3));
+%         
+%             RotM_inv = [cz/cy,      sz/cy,      0;
+%                         -sz,        cz,         0;
+%                         sy*cz/cy,   sy*sz/cy,   1];
+% 
+%             % Conversion
+%             eulerRate = RotM_inv * Xee_dot(4:6);
+%             Xee_dot_psi(4:6) = eulerRate;
+
+            Xee_dot_psi(4:6) = omega2euler(Xee(4:6), Xee_dot(4:6), 'refFrame', 'inertial');
         end
 
         function resetImpl(~)

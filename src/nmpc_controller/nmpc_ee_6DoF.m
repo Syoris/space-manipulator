@@ -17,24 +17,24 @@ Tc = 5; % # of ctrl steps
 solver = "interior-point"; % sqp or interior-point
 
 % --- Weights ---
-r_ee_W = 1; % Position position weight        1000
-psi_ee_W = 1; % Position orientation weight   628
+r_ee_W = [1, 1, 1]; % Position position weight        1000
+psi_ee_W = [10, 10, 10]; % Position orientation weight   628  
 
 fb_W = 0.1;
 nb_W = 0.1;
-taum_W = 1;
+taum_W = 0.1;
 
 
 fb_rate_W = 0.1;
 nb_rate_W = 0.1;
-taum_rate_W = 0.1;
+taum_rate_W = 5;
 
 ecr = 1000;
 
 % --- Max Forces --- 
 baseMaxForce = 5; % 5
 baseMaxTorque = 5; % 5
-motorMaxTorque = 200; % 200
+motorMaxTorque = 10; % 200
 
 % --- Traj ---
 trajTime = 72;
@@ -148,8 +148,9 @@ nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
 nlmpc_ee.Model.IsContinuousTime = true;
 
 % --- Scales ---
-URange = [ones(1, 3)*2*baseMaxForce, ones(1, 3)*2*baseMaxTorque, ones(1, 6)*2*motorMaxTorque];
-YRange = [ones(1, 3)*5, ones(1, 3)*2*pi];
+URange = [ones(1, 3)*2*baseMaxForce, ones(1, 3)*2*baseMaxTorque, ones(1, n)*2*motorMaxTorque];
+% YRange = [ones(1, 3)*4, ones(1, 3)*2*pi];
+YRange = [4, 4, 4, 2*pi, 2*pi, 2*pi];
 
 for i = 1:nu
     nlmpc_ee.MV(i).ScaleFactor = URange(i);
@@ -161,10 +162,11 @@ end
 
 
 % --- Cost Function ---
-nlmpc_ee.Weights.OutputVariables = [ones(1, 3)*r_ee_W, ones(1, 3)*psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
+nlmpc_ee.Weights.OutputVariables = [r_ee_W, psi_ee_W]; % [ree_x ree_y ree_z psi_ee_x psi_ee_y psi_ee_z]
 nlmpc_ee.Weights.ManipulatedVariables = [ones(1, 3) * fb_W, ones(1, 3) * nb_W, ones(1, n) * taum_W];
 
-nlmpc_ee.Weights.ManipulatedVariables(11) = 100;
+% nlmpc_ee.Weights.ManipulatedVariables(11) = 10;
+% nlmpc_ee.Weights.ManipulatedVariables(12) = 10;
 
 nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb_rate_W, ones(1, n)*taum_rate_W];
 
@@ -340,24 +342,24 @@ if PLOT
     legend('Ref', 'NMPC')
     hold off
     
-%     % --- EE Orientation Tracking ---
-%     titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
-%     figure
-%     sgtitle("EE Orientation Trajectory Tracking")
-%     for i=1:3
-%         subplot(3, 1, i)
-%         title(titles{i})
-%         xlabel('Time [sec]')
-%         ylabel('[rad]')
-%         grid on
-%         axis equal
-%         hold on
-%         plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
-%         plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
-%         legend
-%         hold off
-%     end
-%     
+    % --- EE Orientation Tracking ---
+    titles = {'\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+    figure
+    sgtitle("EE Orientation Trajectory Tracking")
+    for i=1:3
+        subplot(3, 1, i)
+        title(titles{i})
+        xlabel('Time [sec]')
+        ylabel('[rad]')
+        grid on
+        axis equal
+        hold on
+        plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
+        plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
+        legend
+        hold off
+    end
+    
     % --- EE Tracking Errors---
     varNames = {'X','Y','Z', '\psi_x', '\psi_y', '\psi_z'};
     tt_err = timetable(seconds(Xee_err.Time),...
@@ -452,8 +454,6 @@ fprintf('\n--- ERROR Stats ---\n')
 
 % Convert to cm and deg
 err = reshape(Xee_err.Data, 6, [], 1);
-err(1:3, :) = err(1:3, :);
-err(4:6, :) = err(4:6, :);
 
 % RMS
 rmsError = sqrt(mean((err).^2, 2)).';
@@ -471,7 +471,7 @@ fprintf('\n\tAverage Position RMS Error: %.2f [cm]\n', averagePositionErr);
 fprintf('\tAverage Orientation RMS Error: %.2f [deg]\n', averageOriErr);
 
 % Max Error
-errMax = max(err,[],2);
+errMax = max(abs(err),[],2);
 errMaxPos = max(errMax(1:3));
 errMaxOri = max(errMax(4:6));
 
@@ -487,8 +487,8 @@ fprintf('\n\t Max Position Error: %.2f [cm]\n', errMaxPos)
 fprintf('\t Max Orientation Error: %.2f [deg]\n', errMaxOri)
 
 
-
 %% Save CTRL Infos
+return
 load ctrl_table.mat
 
 Controller = ctrlName;
