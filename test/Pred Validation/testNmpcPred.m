@@ -12,7 +12,7 @@ sr_info = SR6_info();
 % N = 8;
 % sr = sr2;
 
-time = 0.4;
+time = 9.0;
 fprintf("Comparing sim and prediction at time: %.2f\n", time);
 
 % Get parameters
@@ -45,6 +45,9 @@ q_dot_0(4:6) = euler2omega_local(q0(4:6), q_dot_0(4:6));
 [xee0, xee_dot_0] = ee_speed(sr_info, q0, q_dot_0);
 
 xee0(4) = xee0(4); %+ 2*pi;
+
+X0 = [q0; xee0; x_dot_0; xee_dot_0];
+u0 = mvTT(1, :).mv';
 
 % xee0 = xTT(seconds(0), :).xk(N+1:N+6);
 % xee_dot_0 = xTT(seconds(0), :).xk(2*N+7:2*N+12);
@@ -156,37 +159,37 @@ x2 = predLogsout.getElement('X2').Values;
 % 
 % sgtitle('Joints')
 
-% ### EE ###
-idx = N + 1:N + 6;
-names = {'rx_ee', 'ry_ee', 'rz_ee', '\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
-xlabels = {'[cm]', '[deg]'};
-figure
-
-for i = 1:3
-    subplot(6, 1, i)
-    title(names{i})
-    hold on
-    grid on
-    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, [])*100, 'DisplayName', 'Sim')
-    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, [])*100, 'DisplayName', 'Pred')
-    plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, [])*100, '--', 'DisplayName', 'X2')
-    ylabel('[cm]')
-    legend;
-    hold off
-end
-for i = 4:6
-    subplot(6, 1, i)
-    title(names{i})
-    hold on
-    grid on
-    plot(x.Time, reshape(x.Data(idx(i), :, :), 1, [])*180/pi, 'DisplayName', 'Sim')
-    plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, [])*180/pi, 'DisplayName', 'Pred')
-    plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, [])*180/pi, '--', 'DisplayName', 'X2')
-    ylabel('[deg]')
-    legend;
-    hold off
-end
-sgtitle('EE position')
+% % ### EE ###
+% idx = N + 1:N + 6;
+% names = {'rx_ee', 'ry_ee', 'rz_ee', '\psi_{ee, x}', '\psi_{ee, y}', '\psi_{ee, z}'};
+% xlabels = {'[cm]', '[deg]'};
+% figure
+% 
+% for i = 1:3
+%     subplot(6, 1, i)
+%     title(names{i})
+%     hold on
+%     grid on
+%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, [])*100, 'DisplayName', 'Sim')
+%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, [])*100, 'DisplayName', 'Pred')
+%     plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, [])*100, '--', 'DisplayName', 'X2')
+%     ylabel('[cm]')
+%     legend;
+%     hold off
+% end
+% for i = 4:6
+%     subplot(6, 1, i)
+%     title(names{i})
+%     hold on
+%     grid on
+%     plot(x.Time, reshape(x.Data(idx(i), :, :), 1, [])*180/pi, 'DisplayName', 'Sim')
+%     plot(xPred.Time, reshape(xPred.Data(idx(i), :, :), 1, [])*180/pi, 'DisplayName', 'Pred')
+%     plot(x2.Time, reshape(x2.Data(idx(i), :, :), 1, [])*180/pi, '--', 'DisplayName', 'X2')
+%     ylabel('[deg]')
+%     legend;
+%     hold off
+% end
+% sgtitle('EE position')
 
 % ### EE Error ###
 idx = N + 1:N + 6;

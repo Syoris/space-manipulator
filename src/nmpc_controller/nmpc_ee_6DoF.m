@@ -3,24 +3,24 @@
 %
 
 % ### OPTIONS ###
-GEN_MEX = 0;
+GEN_MEX = 1;
 SIM = 1;
 PLOT = 1;
 
-simTime = 0.5;
+simTime = 75.0;
 
 ctrlName = "CtrlX";
 % --- NMPC Params ---
-Ts = 0.1;
+Ts = 0.5;
 Tp = 5; % # of prediction steps
 Tc = 5; % # of ctrl steps
-solver = "interior-point"; % sqp or interior-point
+solver = "sqp"; % sqp or interior-point
 
 % --- Weights ---
-r_ee_W = [10, 10, 10]; % Position position weight        1000
+r_ee_W = [15, 15, 15]; % Position position weight        1000
 psi_ee_W = [10, 10, 10]; % Position orientation weight   628  
 
-fb_W = 0.1;
+fb_W = 1;
 nb_W = 0.1;
 taum_W = 0.1;
 
@@ -38,24 +38,24 @@ motorMaxTorque = 10; % 200
 
 % --- Traj ---
 trajTime = 72;
-trajStartTime = 0.2;
+trajStartTime = 0.5;
 circleRadius = 2.0;
 plane = "yz";
 
 % --- Initial config ---
-% % Start at beginning
-% qb0 = [0; 0; 0; 0; 0; 0];
-% qm0 = [0; deg2rad(30); deg2rad(-100); deg2rad(-20); deg2rad(-180); deg2rad(90)];
-% startOffset = 0;
-% conf = [qb0; qm0];
+% Start at beginning
+qb0 = [0; 0; 0; 0; 0; 0];
+qm0 = [0; deg2rad(30); deg2rad(-100); deg2rad(-20); deg2rad(-180); deg2rad(90)];
+startOffset = 0;
+conf = [qb0; qm0];
 
 % % Start after half
 % startOffset = 222.5;
 % conf = [0.0116;  0.0266; -0.0388;  0.1432; -0.3090; -0.0815; -0.1992;  0.4289; -0.1066;  0.8168; -3.6622; -1.8092];
 
-% Start near end
-startOffset = 307.5;
-conf = [0.0168;  0.0305; -0.0039; -0.0654; -0.4979; -0.0530; -0.4719;  0.0184; -1.0479; -0.2921; -4.0928; -3.8103];
+% % Start near end
+% startOffset = 307.5;
+% conf = [0.0168;  0.0305; -0.0039; -0.0654; -0.4979; -0.0530; -0.4719;  0.0184; -1.0479; -0.2921; -4.0928; -3.8103];
 
 %% Config
 clc
@@ -85,7 +85,8 @@ xee0_dot = zeros(6, 1);
 %% Traj
 Nsamp = 205; % Make sure (Nsamp - 5) is multiple of 4
 traj = circleTraj(xee0, circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', trajStartTime, 'startOffset', startOffset);
-traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+trajTs = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
+trajSmooth = retime(traj, 'regular', 'linear', 'TimeStep', seconds(0.1));
 
 % i  = 500;
 % close all
@@ -99,8 +100,8 @@ traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
 % grid on
 
 ref = struct();
-ref.time = seconds(traj.Time);
-ref.signals.values = traj.EE_desired;
+ref.time = seconds(trajTs.Time);
+ref.signals.values = trajTs.EE_desired;
 
 fprintf('--- Config ---\n')
 fprintf('SpaceRobot: %s\n', sr.Name)
@@ -112,7 +113,7 @@ disp(sr.qm.')
 fprintf('\t-Xee0:')
 disp(xee0.')
 fprintf('\t-Xee0 Ref:')
-disp(traj(1, :).EE_desired)
+disp(trajTs(1, :).EE_desired)
 
 % sr.show;
 %% NMPC Controller
@@ -140,13 +141,16 @@ nlmpc_ee.ControlHorizon = Tc;
 nlmpc_ee.Model.NumberOfParameters = 0;
     
 if GEN_MEX
-    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func";
+    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt";
 else
     nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
 end
 
+% nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt_mex";
+
 nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
-nlmpc_ee.Model.IsContinuousTime = true;
+
+nlmpc_ee.Model.IsContinuousTime = false;
 
 % --- Scales ---
 URange = [ones(1, 3)*2*baseMaxForce, ones(1, 3)*2*baseMaxTorque, ones(1, n)*2*motorMaxTorque];
@@ -174,9 +178,9 @@ nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb
 nlmpc_ee.Weights.ECR = ecr;
 
 % --- Solver parameters ---
-nlmpc_ee.Optimization.UseSuboptimalSolution = true;
+nlmpc_ee.Optimization.UseSuboptimalSolution = false;
 nlmpc_ee.Optimization.SolverOptions.MaxIterations = 5000;
-nlmpc_ee.Optimization.SolverOptions.Display = 'none'; %'final-detailed';
+nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed'; %'final-detailed';
 nlmpc_ee.Optimization.SolverOptions.Algorithm = solver;
 nlmpc_ee.Optimization.SolverOptions.MaxFunctionEvaluations = 10000;
 
