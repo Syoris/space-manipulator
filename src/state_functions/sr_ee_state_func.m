@@ -58,7 +58,7 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
 
     % 6 - End Effector
     Ree = Tee(1:3, 1:3);
-    Ree = blkdiag(Ree, zeros(3, 3));
+    Ree = blkdiag(Ree, Ree);
     J = Ree * Jacobian('endeffector', sr_info, A, {Rb, Ra});
     J_dot = Ree * Jacobian_dot('endeffector', sr_info, A, A_dot, {Rb, Ra}, wb, Omega);
 
@@ -69,7 +69,7 @@ function dx = sr_ee_state_func(x, u, sr_info) %#codegen
     x_ddot(4:6) = omega2euler_accel_local(q(4:6), x_dot(4:6), q_ddot(4:6)); % psi, psi_dot, wb_dot
 
     x_ee_ddot = q_ee_ddot;
-    x_ee_ddot(4:6) = omega2euler_accel_local(q_ee(4:6), x_ee_dot(4:6), q_ee_ddot(4:6)); % omega2euler_accel(psi, psi_dot, wb_dot)
+    x_ee_ddot(4:6) = omega2euler_accel_inertial(q_ee(4:6), x_ee_dot(4:6), q_ee_ddot(4:6)); % omega2euler_accel(psi, psi_dot, wb_dot)
 
     % TODO
     % x1_dot, x1 = [xb; qm]

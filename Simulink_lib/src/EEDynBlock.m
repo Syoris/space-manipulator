@@ -27,7 +27,9 @@ classdef EEDynBlock < matlab.System
             %             obj.spaceRobot = SpaceRobot(obj.spaceRobotStruct);
         end
 
-        function [Xee, Xee_dot, Xee_ddot, Xee_dot_psi] = stepImpl(obj, q, q_dot, q_ddot, Xee_prev)
+        function [Xee, Xee_dot, Xee_ddot, Xee_dot_psi] = stepImpl(obj, q, q_dot, q_ddot, Xee_prev,Xee_dot_prev)
+            % OUTPUTS in euler rates, not angular
+            
             % Implement algorithm. Calculate y as a function of input u and
             % discrete states.
             sr_info = obj.srInfo;
@@ -68,19 +70,23 @@ classdef EEDynBlock < matlab.System
 
             Xee_dot_psi = Xee_dot;
             Xee_dot_psi(4:6) = omega2euler_inertial(Xee(4:6), Xee_dot(4:6));
+
+            Xee_ddot(4:6) = omega2euler_accel_inertial(Xee_prev(4:6), Xee_dot_prev(4:6), Xee_ddot(4:6));
+%             x_ee_ddot(4:6) = omega2euler_accel_inertial(q_ee(4:6), x_ee_dot(4:6), q_ee_ddot(4:6)); % omega2euler_accel(psi, psi_dot, wb_dot)
         end
 
         function resetImpl(~)
             % Initialize / reset discrete-state properties
         end
 
-        function validateInputsImpl(~, q, q_dot, q_ddot, Xee_prev)
+        function validateInputsImpl(~, q, q_dot, q_ddot, Xee_prev,Xee_dot_prev)
             %validateInputsImpl Validate inputs to the step method at initialization
 
             validateattributes(q, {'single', 'double'}, {'vector'}, 'EEDynBlock', 'Joint config');
             validateattributes(q_dot, {'single', 'double'}, {'vector'}, 'EEDynBlock', 'Joint velocities');
             validateattributes(q_ddot, {'single', 'double'}, {'vector'}, 'EEDynBlock', 'Joint accels');
             validateattributes(Xee_prev, {'single', 'double'}, {'vector'}, 'EEDynBlock', 'Xee_prev');
+            validateattributes(Xee_dot_prev, {'single', 'double'}, {'vector'}, 'EEDynBlock', 'Xee_dot_prev');
         end
 
         function flag = isInputSizeMutableImpl(~, ~)
@@ -102,7 +108,7 @@ classdef EEDynBlock < matlab.System
             num = 4;
         end
 
-        function [out1, out2, out3, out4] = getOutputSizeImpl(~)
+        function [out1, out2, out3, out4,out5] = getOutputSizeImpl(~)
             %getOutputSizeImpl Return size for each output port
             out1 = [6 1];
             out2 = [6 1];

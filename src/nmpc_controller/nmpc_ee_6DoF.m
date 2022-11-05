@@ -9,7 +9,7 @@ PLOT = 1;
 
 simTime = 0.5;
 
-ctrlName = "Ctrl3";
+ctrlName = "CtrlX";
 % --- NMPC Params ---
 Ts = 0.1;
 Tp = 5; % # of prediction steps
