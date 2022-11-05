@@ -7,7 +7,7 @@ GEN_MEX = 0;
 SIM = 1;
 PLOT = 1;
 
-simTime = 7;
+simTime = 0.5;
 
 ctrlName = "Ctrl3";
 % --- NMPC Params ---
@@ -17,7 +17,7 @@ Tc = 5; % # of ctrl steps
 solver = "interior-point"; % sqp or interior-point
 
 % --- Weights ---
-r_ee_W = [1, 1, 1]; % Position position weight        1000
+r_ee_W = [10, 10, 10]; % Position position weight        1000
 psi_ee_W = [10, 10, 10]; % Position orientation weight   628  
 
 fb_W = 0.1;
@@ -27,7 +27,7 @@ taum_W = 0.1;
 
 fb_rate_W = 0.1;
 nb_rate_W = 0.1;
-taum_rate_W = 5;
+taum_rate_W = 0.1;
 
 ecr = 1000;
 
@@ -38,7 +38,7 @@ motorMaxTorque = 10; % 200
 
 % --- Traj ---
 trajTime = 72;
-trajStartTime = 0.5;
+trajStartTime = 0.2;
 circleRadius = 2.0;
 plane = "yz";
 
@@ -144,6 +144,7 @@ if GEN_MEX
 else
     nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
 end
+
 nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
 nlmpc_ee.Model.IsContinuousTime = true;
 
