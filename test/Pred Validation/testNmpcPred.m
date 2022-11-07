@@ -12,7 +12,7 @@ sr_info = SR6_info();
 % N = 8;
 % sr = sr2;
 
-time = 9.0;
+time = 1.0;
 fprintf("Comparing sim and prediction at time: %.2f\n", time);
 
 % Get parameters

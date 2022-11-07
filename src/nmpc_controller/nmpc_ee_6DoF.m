@@ -1,44 +1,42 @@
 %% nmpc_matlab.m  NMPC First tests
 % Design and test of NMPC controller for SR
-%
 
 % ### OPTIONS ###
 GEN_MEX = 1;
 SIM = 1;
 PLOT = 1;
 
-simTime = 75.0;
+simTime = 80;
 
-ctrlName = "CtrlX";
+% ctrlName = "Ctrl7";
 % --- NMPC Params ---
 Ts = 0.5;
-Tp = 5; % # of prediction steps
+Tp = 8; % # of prediction steps
 Tc = 5; % # of ctrl steps
 solver = "sqp"; % sqp or interior-point
 
 % --- Weights ---
-r_ee_W = [15, 15, 15]; % Position position weight        1000
-psi_ee_W = [10, 10, 10]; % Position orientation weight   628  
+r_ee_W = [10, 10, 10]; % Position position weight
+psi_ee_W = [7, 7, 7]; % Position orientation weight
 
-fb_W = 1;
+fb_W = 0.5;
 nb_W = 0.1;
-taum_W = 0.1;
-
+taum_W = 0.01;
 
 fb_rate_W = 0.1;
 nb_rate_W = 0.1;
-taum_rate_W = 0.1;
+taum_rate_W = 1.0;
 
 ecr = 1000;
 
 % --- Max Forces --- 
 baseMaxForce = 5; % 5
 baseMaxTorque = 5; % 5
-motorMaxTorque = 10; % 200
+motorMaxTorque = 100; % 200
 
 % --- Traj ---
 trajTime = 72;
-trajStartTime = 0.5;
+trajStartTime = 2.0;
 circleRadius = 2.0;
 plane = "yz";
 
@@ -56,6 +54,17 @@ conf = [qb0; qm0];
 % % Start near end
 % startOffset = 307.5;
 % conf = [0.0168;  0.0305; -0.0039; -0.0654; -0.4979; -0.0530; -0.4719;  0.0184; -1.0479; -0.2921; -4.0928; -3.8103];
+%% Find Ctrl Name
+fPath = fullfile('results/controllers/Ctrl*.mat');
+files = dir(fPath);
+idxList = {};
+for i=1:length(files)
+    fName = files(i).name;
+    fName = fName(1:end-4);
+    idxList{end+1} = fName(5:end);
+end
+nextIdx = max(str2double(idxList)) + 1;
+ctrlName = sprintf("Ctrl%i", nextIdx);
 
 %% Config
 clc
@@ -69,12 +78,12 @@ end
 sr.homeConfig();
 
 sr.q = conf;
-% sr.q = conf2;
+sr.q_dot = zeros(N, 1); 
 
 mdl = 'nmpc_sim_ee';
 
 q0 = sr.q;
-q_dot_0 = sr.q_dot;
+q_dot_0 = zeros(N, 1);
 
 [Ree, xee0] = tr2rt(sr.Ttree.endeffector);
 psi_ee = tr2rpy(Ree, 'zyx').';
@@ -85,25 +94,17 @@ xee0_dot = zeros(6, 1);
 %% Traj
 Nsamp = 205; % Make sure (Nsamp - 5) is multiple of 4
 traj = circleTraj(xee0, circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', trajStartTime, 'startOffset', startOffset);
-trajTs = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts));
-trajSmooth = retime(traj, 'regular', 'linear', 'TimeStep', seconds(0.1));
+traj = [traj; timetable(traj(end, :).EE_desired,'RowTimes', seconds(simTime+10), 'VariableNames',{'EE_desired'})]; % Maintain final position              
+traj = retime(traj, 'regular', 'linear', 'TimeStep', seconds(0.1)); % For more points
 
-% i  = 500;
-% close all
-% figure
-% hold on
-% plot(traj.EE_desired(1, 2), traj.EE_desired(1, 3), 'xg')
-% plot(traj.EE_desired(1:i, 2), traj.EE_desired(1:i, 3), 'r')
-% % plot(traj2.EE_desired(:, 2), traj2.EE_desired(:, 3), 'b')
-% hold off
-% axis equal
-% grid on
+trajTs = retime(traj, 'regular', 'linear', 'TimeStep', seconds(Ts)); % Traj for ref
 
 ref = struct();
 ref.time = seconds(trajTs.Time);
 ref.signals.values = trajTs.EE_desired;
 
 fprintf('--- Config ---\n')
+fprintf('Controller: %s\n', ctrlName)
 fprintf('SpaceRobot: %s\n', sr.Name)
 fprintf('SR initial config:\n')
 fprintf('\t-qb0:')
@@ -180,7 +181,7 @@ nlmpc_ee.Weights.ECR = ecr;
 % --- Solver parameters ---
 nlmpc_ee.Optimization.UseSuboptimalSolution = false;
 nlmpc_ee.Optimization.SolverOptions.MaxIterations = 5000;
-nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed'; %'final-detailed';
+% nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed'; %'final-detailed';
 nlmpc_ee.Optimization.SolverOptions.Algorithm = solver;
 nlmpc_ee.Optimization.SolverOptions.MaxFunctionEvaluations = 10000;
 
@@ -262,8 +263,9 @@ if SIM
     delete(t);
     delete(waitBar)
     fprintf('Simulation DONE\n')
+    compTime = simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime / 60;
     if simOk
-        fprintf('Total Sim Time (min): %.2f\n', simRes.getSimulationMetadata.TimingInfo.TotalElapsedWallTime / 60);
+        fprintf('Total Sim Time (min): %.2f\n', compTime);
     end
     %     profile viewer
 
@@ -283,7 +285,7 @@ end
 
 %% Animate
 fprintf('\n--- Animation ---\n')
-rate = 1;
+rate = 2;
 
 % Extract signals from sim
 q = logsout.getElement('q').Values;
@@ -294,6 +296,19 @@ Xee = logsout.getElement('Xee').Values;
 Xee_ref = logsout.getElement('Xee_ref').Values;
 tau = logsout.getElement('tau').Values;
 Xee_err = logsout.getElement('Xee_err').Values;
+
+%
+% q = q.getsampleusingtime(0,70);
+% q_dot = q_dot.getsampleusingtime(0,70);
+% xSeq = xSeq.getsampleusingtime(0,70);
+% ySeq = ySeq.getsampleusingtime(0,70);
+% Xee = Xee.getsampleusingtime(0,70);
+% Xee_ref = Xee_ref.getsampleusingtime(0,70);
+% tau = tau.getsampleusingtime(0,70);
+% Xee_err = Xee_err.getsampleusingtime(0,70);
+
+ySeq.Name = 'ySeq';
+
 
 % Setup signals for animation
 trajRes = struct();
@@ -362,6 +377,7 @@ if PLOT
         plot(trajRes.ref.Time, trajRes.ref.EE_desired(:, i+3), 'DisplayName', 'Ref')
         plot(trajRes.Xee.Time, reshape(trajRes.Xee.Data(i+3, :, :), [], 1), 'DisplayName', 'NMPC')
         legend
+        xlim([seconds(0) seconds(simTime)])
         hold off
     end
     
@@ -384,8 +400,7 @@ if PLOT
     
     % --- Joint ---
     figure
-    hold on
-    
+    hold on    
     for i = 1:n
         subplot(n, 1, i)
         hold on
@@ -403,18 +418,16 @@ if PLOT
         jntMax = rad2deg(jnt.PositionLimits(2));
         plot(tVect, repmat(jntMin, length(tVect), 1), 'k--')
         plot(tVect, repmat(jntMax, length(tVect), 1), 'k--')
+        xlim([0 simTime])
     end
-    
     hold off
     
     % --- Torques ---
-    tau_tt = {N, 1};
-    
+    tau_tt = {N, 1};    
     for i = 1:N
         tau_tt{i} = tau;
         tau_tt{i}.Data = tau.Data(:, i);
-    end
-    
+    end    
     figure
     subplot(4, 1, 1)
     title('Base force')
@@ -423,6 +436,7 @@ if PLOT
     plot(tau_tt{2})
     plot(tau_tt{3})
     legend('Fx', 'Fy', 'Fz')
+    xlim([0 simTime])
     hold off
     
     subplot(4, 1, 2)
@@ -432,6 +446,7 @@ if PLOT
     plot(tau_tt{5})
     plot(tau_tt{6})
     legend('nx', 'ny', 'nz')
+    xlim([0 simTime])
     hold off
     
     subplot(4, 1, 3)
@@ -442,6 +457,7 @@ if PLOT
         plot(tau_tt{i}, 'DisplayName', name)
     end
     legend
+    xlim([0 simTime])
     hold off
     
     subplot(4, 1, 4)
@@ -452,6 +468,7 @@ if PLOT
         plot(tau_tt{i}, 'DisplayName', name)
     end
     legend
+    xlim([0 simTime])
     hold off
 end
 %% Error Stats
@@ -490,57 +507,78 @@ fprintf('\t psi_z: %.2f [deg]\n', errMax(6))
 
 fprintf('\n\t Max Position Error: %.2f [cm]\n', errMaxPos)
 fprintf('\t Max Orientation Error: %.2f [deg]\n', errMaxOri)
-
-
 %% Save CTRL Infos
-return
-load ctrl_table.mat
+load table_ctrl.mat
+% fprintf("Press a key to save result to table ...\n");
+% pause;
+fprintf("Saving result to table as: %s\n", ctrlName);
+% --- Create result struct ---
+ctrl_struct = struct();
 
-Controller = ctrlName;
-Algo = solver;
+ctrl_struct.Controller = struct();
+ctrl_struct.Res = struct();
+ctrl_struct.Traj = struct();
 
-W_r = r_ee_W;
-W_psi = psi_ee_W;
+ctrl_struct.Controller.Name = ctrlName;
+ctrl_struct.Controller.Ts = Ts;
+ctrl_struct.Controller.Tp = Tp;
+ctrl_struct.Controller.Tc = Tc;
+ctrl_struct.Controller.Algo = solver;
+ctrl_struct.Controller.r_ee_W = r_ee_W;
+ctrl_struct.Controller.psi_ee_W = psi_ee_W;
+ctrl_struct.Controller.u_W = [fb_W, nb_W, taum_W];
+ctrl_struct.Controller.du_W = [fb_rate_W, nb_rate_W, taum_rate_W];
+ctrl_struct.Controller.ecr = ecr;
+ctrl_struct.Controller.uMax = [baseMaxForce, baseMaxTorque, motorMaxTorque];
+ctrl_struct.Controller.uRange = [2*baseMaxForce, 2*baseMaxTorque, 2*motorMaxTorque];
+ctrl_struct.Controller.yRange = [4, 2*pi];
+ctrl_struct.Controller.sr = sr;
 
-W_fb = fb_W;
-W_nb = nb_W;
-W_tau = taum_W;
+ctrl_struct.Traj.traj_tt = traj;
+ctrl_struct.Traj.startConf = conf;
+ctrl_struct.Traj.startOffset = startOffset;
+ctrl_struct.Traj.trajTime = [trajTime, trajStartTime];
+ctrl_struct.Traj.r = circleRadius;
+ctrl_struct.Traj.plane = plane;
 
-W_d_fb = fb_rate_W;
-W_d_nb = nb_rate_W;
-W_d_tau = taum_rate_W;
-W_ecr = ecr;
+ctrl_struct.Res.logsout = logsout;
+ctrl_struct.Res.simTime = simTime;
+ctrl_struct.Res.compTime = compTime;
+ctrl_struct.Res.savePath = fullfile('results\controllers\', ctrl_struct.Controller.Name);
+ctrl_struct.Res.rmsErr = rmsError;
+ctrl_struct.Res.averagePositionErr = averagePositionErr;
+ctrl_struct.Res.averageOriErr = averageOriErr;
+ctrl_struct.Res.maxErr = errMax;
+ctrl_struct.Res.maxPosErr = errMaxPos;
+ctrl_struct.Res.maxOriErr = errMaxOri;
 
-traj_time = trajTime;
-traj_r = circleRadius;
-traj_plane = plane;
+save(ctrl_struct.Res.savePath, 'ctrl_struct');
 
-Err_rms_pos = averagePositionErr;
-Err_rms_ori = averageOriErr;
-Err_max_pos = errMaxPos;
-Err_max_ori = errMaxOri;
+newRow = {ctrl_struct.Controller.Name, ...
+            ctrl_struct.Controller.Ts, ...
+            ctrl_struct.Controller.Tp, ...
+            ctrl_struct.Controller.Tc, ...
+            ctrl_struct.Controller.Algo, ...
+            ctrl_struct.Res.simTime, ...
+            ctrl_struct.Res.compTime, ...
+            ctrl_struct.Res.averagePositionErr, ...        % Average position rms [cm]
+            ctrl_struct.Res.averageOriErr, ...        % Average ori rms [deg]   
+            ctrl_struct.Res.maxPosErr, ...        % Max pos error [cm]
+            ctrl_struct.Res.maxOriErr, ...        % Max ori error [deg]
+            ctrl_struct.Controller.r_ee_W, ...             % [ee_x_W, ee_y_W, ee_z_W]
+            ctrl_struct.Controller.psi_ee_W, ...           % [ee_psi_x_W, ee_psi_y_W, ee_psi_z_W]      
+            ctrl_struct.Controller.u_W, ...   % u_W
+            ctrl_struct.Controller.du_W, ... % du_W
+            ctrl_struct.Controller.ecr, ...
+            ctrl_struct.Controller.uMax, ...
+            ctrl_struct.Controller.uRange, ...    % U Range
+            ctrl_struct.Controller.yRange, ... % Y Range
+            ctrl_struct.Traj.trajTime, ... % Traj time
+            ctrl_struct.Traj.r, ...
+            ctrl_struct.Traj.plane, ...
+            ctrl_struct.Res.savePath, ...
+           };              
 
-newRow = {Controller, ...
-                Ts, ...
-                Tp, ...
-                Tc, ...
-                Algo, ...
-                Err_rms_pos, ...
-                Err_rms_ori, ...
-                Err_max_pos, ...
-                Err_max_ori, ...
-                W_r, ...
-                W_psi, ...
-                W_fb, ...
-                W_nb, ...
-                W_tau, ...
-                W_d_fb, ...
-                W_d_nb, ...
-                W_d_tau, ...
-                W_ecr, ...
-                traj_time, ...
-                traj_r, ...
-                traj_plane};
 ctrl_table = [ctrl_table; newRow];
-save(fullfile('results\controllers\ctrl_table.mat'), "ctrl_table");
-save(fullfile('results\controllers\', ctrlName));
+save(fullfile('results\controllers\table_ctrl.mat'), "ctrl_table");
+fprintf("DONE\n")
