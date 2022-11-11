@@ -4,22 +4,22 @@
 %% Init
 % To load vars and setup robot
 clearvars
-load 'SC_2DoF.mat'
+load 'SR2.mat'
 
 % Config Test
 close all
 qm = [pi / 4; -pi / 2];
-sc.qm = qm;
-sc.q0 = [2; 3; 4; 0; pi / 4; 0];
+sr.qm = qm;
+sr.q0 = [2; 3; 4; 0; pi / 4; 0];
 
 %% CoM
 % Plot all CoM Positions
-comPositions = sc.getCoMPosition();
+comPositions = sr.getCoMPosition();
 
 figure
 hold on
 title('SpaceRobot CoM Positions')
-sc.show('Visuals', 'off');
+sr.show('Visuals', 'off');
 bodyNames = fields(comPositions);
 
 for i = 1:length(bodyNames)
@@ -35,19 +35,19 @@ hold off
 % Plot the transform between different bodies parts
 q2 = [1; 0.5; 0; 0; 0; 0; -pi / 4; 0];
 
-tTree = sc.forwardKinematics();
+tTree = sr.forwardKinematics();
 
-T_b_1 = sc.getTransform('Body1'); % Frame 1 wrt base, symbolic
+T_b_1 = sr.getTransform('Body1'); % Frame 1 wrt base, symbolic
 
-T_1_2 = sc.getTransform('Body2', 'TargetFrame', 'Body1', 'symbolic', true); % Frame 2 wrt frame, symbolic
+T_1_2 = sr.getTransform('Body2', 'TargetFrame', 'Body1', 'symbolic', true); % Frame 2 wrt frame, symbolic
 
-T_b_2 = sc.getTransform('Body2', 'TargetFrame', 'spacecraftBase', 'symbolic', false); % Frame 2 wrt base, numeric, current config
+T_b_2 = sr.getTransform('Body2', 'TargetFrame', 'spacecraftBase', 'symbolic', false); % Frame 2 wrt base, numeric, current config
 
-T_2_b = sc.getTransform('spacecraftBase', 'TargetFrame', 'Body2', 'symbolic', false); % Base wrt frame 2, numeric, current config
+T_2_b = sr.getTransform('spacecraftBase', 'TargetFrame', 'Body2', 'symbolic', false); % Base wrt frame 2, numeric, current config
 
-T_1_ee = sc.getTransform('endeffector', 'TargetFrame', 'Body1', 'Config', q2, 'symbolic', false); % ee wrt frame 1, numeric, at q2
+T_1_ee = sr.getTransform('endeffector', 'TargetFrame', 'Body1', 'Config', q2, 'symbolic', false); % ee wrt frame 1, numeric, at q2
 
-T_i_2 = sc.getTransform('Body2', 'TargetFrame', 'inertial', 'symbolic', false); % Frame 2 wrt inertial frame, numeric, current conf, could also get with T_i_b * T_b_2
+T_i_2 = sr.getTransform('Body2', 'TargetFrame', 'inertial', 'symbolic', false); % Frame 2 wrt inertial frame, numeric, current conf, could also get with T_i_b * T_b_2
 
 % Plot
 % Transforms are plot using Spatial Math Toolbox by Peter Corke
@@ -55,7 +55,7 @@ T_i_2 = sc.getTransform('Body2', 'TargetFrame', 'inertial', 'symbolic', false); 
 figure
 title('Transform Visualization')
 hold on
-sc.show('Visuals', 'off');
+sr.show('Visuals', 'off');
 
 SE3(T_b_2).plot;
 SE3(T_2_b).plot;
