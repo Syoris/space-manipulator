@@ -2,9 +2,10 @@
 % Design and test of NMPC controller for SR
 
 % ### OPTIONS ###
-GEN_MEX = 1;
+GEN_MEX = 0;
 SIM = 1;
 PLOT = 1;
+UNCERTAINTIES = 1;
 
 simTime = 80;
 
@@ -12,7 +13,7 @@ simTime = 80;
 % --- NMPC Params ---
 Ts = 0.5;
 Tp = 8; % # of prediction steps
-Tc = 5; % # of ctrl steps
+Tc = 3; % # of ctrl steps
 solver = "sqp"; % sqp or interior-point
 
 % --- Weights ---
@@ -32,13 +33,27 @@ ecr = 1000;
 % --- Max Forces --- 
 baseMaxForce = 5; % 5
 baseMaxTorque = 5; % 5
-motorMaxTorque = 100; % 200
+motorMaxTorque = 200; % 200
+
+baseMaxAngle = 30;
 
 % --- Traj ---
 trajTime = 72;
 trajStartTime = 2.0;
 circleRadius = 2.0;
 plane = "yz";
+
+% --- Constants ---
+d_n = 0.9; % thruster dist, for [nx, ny, nz]
+Isp = 200;
+g0 = 9.81;
+fuel_gain = 1/Isp/g0;
+
+% --- Uncertainties ---
+% baseMass = 672;
+baseMassDiff = -0.5; % In '%'
+baseInertiaDiff = -0.5; % In '%' 
+
 
 % --- Initial config ---
 % Start at beginning
@@ -70,10 +85,16 @@ ctrlName = sprintf("Ctrl%i", nextIdx);
 clc
 close all
 
-if ~exist('sr', 'var')
-    fprintf("Loading SR\n")
-    load 'SR6.mat'
-end
+% if ~exist('sr', 'var')
+%     fprintf("Loading SR\n")
+%     load 'SR6.mat'
+% end
+
+fprintf("Loading SR\n")
+load 'SR6.mat'
+
+n = sr.NumActiveJoints;
+N = n + 6;
 
 sr.homeConfig();
 
@@ -91,6 +112,34 @@ psi_ee = tr2rpy(Ree, 'zyx').';
 xee0 = [xee0; psi_ee];
 xee0_dot = zeros(6, 1);
 
+%% Uncertainties
+if UNCERTAINTIES
+    fprintf("Loading SR UNC\n")
+    sr_unc = load('SR_unc.mat');
+    sr_unc = sr_unc.sr;
+
+    sr_unc.Base.Mass = baseMass;
+    sr_unc.Base.Inertia = sr_unc.Base.Inertia*(1+baseInertiaDiff);
+
+    sr_unc.Base.initBase();
+    
+    % Update info file
+    modelPath = fullfile('models/SR_unc');
+    sr_unc_info = srInfoInit(sr_unc);  
+    Struct2File(sr_unc_info, modelPath);
+    
+    % Set sim model to uncertain model
+    sr_sim = sr_unc;   
+else
+    sr_sim = sr_unc;
+end
+
+% Check Base Mass Mat
+srInfo_sim = feval(sr_sim.InfoFunc);
+M_unc = srInfo_sim.M{1};
+
+srInfo_mod = feval(sr.InfoFunc);
+M_mod = srInfo_mod.M{1};
 %% Traj
 Nsamp = 205; % Make sure (Nsamp - 5) is multiple of 4
 traj = circleTraj(xee0, circleRadius, trajTime, Nsamp, 'plane', plane, 'tStart', trajStartTime, 'startOffset', startOffset);
@@ -103,6 +152,7 @@ ref = struct();
 ref.time = seconds(trajTs.Time);
 ref.signals.values = trajTs.EE_desired;
 
+%% Print
 fprintf('--- Config ---\n')
 fprintf('Controller: %s\n', ctrlName)
 fprintf('SpaceRobot: %s\n', sr.Name)
@@ -116,6 +166,13 @@ disp(xee0.')
 fprintf('\t-Xee0 Ref:')
 disp(trajTs(1, :).EE_desired)
 
+fprintf('--- Uncertainties ---\n')
+fprintf('Considered?  %i\n', UNCERTAINTIES)
+fprintf('Model Mass mat\n')
+disp(M_mod)
+fprintf('Sim Mass mat\n')
+disp(M_unc)
+
 % sr.show;
 %% NMPC Controller
 fprintf('--- NMPC Controller Initialization ---\n')
@@ -126,8 +183,6 @@ fprintf('\tTs: %.2f\n', Ts)
 fprintf('\tTp: %i (%.2f sec)\n', Tp, Tp * Ts)
 fprintf('\tTc: %i (%.2f sec)\n', Tc, Tc * Ts)
 
-n = sr.NumActiveJoints;
-N = n + 6;
 nx = 12 + 2 * n + 12; % Change to 24 + 2*n w/ EE
 ny = 6; % EE states
 nu = n + 6;
@@ -141,12 +196,13 @@ nlmpc_ee.ControlHorizon = Tc;
 % --- Prediction Model ---
 nlmpc_ee.Model.NumberOfParameters = 0;
     
-if GEN_MEX
-    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt";
-else
-    nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
-end
+% if GEN_MEX
+%     nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt";
+% else
+%     nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_mex";
+% end
 
+nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt";
 % nlmpc_ee.Model.StateFcn = "SR6_ee_state_func_dt_mex";
 
 nlmpc_ee.Model.OutputFcn = "SR6_ee_output_func";
@@ -194,6 +250,12 @@ for i = 1:sr.NumActiveJoints
     nlmpc_ee.States(i + 6).Max = jnt.PositionLimits(2);
 end
 
+% Base angle
+for i=5:6
+    nlmpc_ee.States(i).Min = -deg2rad(baseMaxAngle);
+    nlmpc_ee.States(i).Max = deg2rad(baseMaxAngle);
+end
+
 % Torques
 maxTorques = [ones(3, 1) * baseMaxForce; ones(3, 1) * baseMaxTorque; ones(n, 1) * motorMaxTorque];
 
@@ -223,7 +285,7 @@ if GEN_MEX
     tMex = toc;
     fprintf('Time to generate: %.2f (min)\n', tMex / 60);
 else
-    set_param([mdl, '/NMPC Controller'], 'UseMEX', 'off')
+%     set_param([mdl, '/NMPC Controller'], 'UseMEX', 'off')
 end
 %% Simulink
 if SIM
@@ -289,19 +351,22 @@ fprintf('\n--- Animation ---\n')
 rate = 2;
 saveName = '';
 
-animateFunc(sr, logsout, rate, saveName);
+% animateFunc(sr, logsout, rate, saveName);
 
 
 
 %% Plots
 if PLOT
-    plotFunc();
+    plotFunc(sr, logsout, simTime, n, N);
 end
 
 %% Error Stats
-fprintf('\n--- ERROR Stats ---\n')
+fprintf('\n--- Performance Stats ---\n')
 
 % Convert to cm and deg
+Xee_err = logsout.getElement('Xee_err').Values;
+mFuel = logsout.getElement('m_fuel').Values;
+totFuel = mFuel.Data(end)*1000;
 err = reshape(Xee_err.Data, 6, [], 1);
 
 % RMS
@@ -334,6 +399,10 @@ fprintf('\t psi_z: %.2f [deg]\n', errMax(6))
 
 fprintf('\n\t Max Position Error: %.2f [cm]\n', errMaxPos)
 fprintf('\t Max Orientation Error: %.2f [deg]\n', errMaxOri)
+
+fprintf('\nFuel Usage:\n')
+fprintf('\t Total: %.2f [g]\n', totFuel)
+
 %% Save CTRL Infos
 load table_ctrl.mat
 % fprintf("Press a key to save result to table ...\n");
@@ -378,6 +447,10 @@ ctrl_struct.Res.averageOriErr = averageOriErr;
 ctrl_struct.Res.maxErr = errMax;
 ctrl_struct.Res.maxPosErr = errMaxPos;
 ctrl_struct.Res.maxOriErr = errMaxOri;
+ctrl_struct.Res.fuel = totFuel;
+ctrl_struct.Res.withUncertainties = UNCERTAINTIES;
+ctrl_struct.Res.simBaseM = M_unc;
+ctrl_struct.Res.modBaseM = M_mod;
 
 save(ctrl_struct.Res.savePath, 'ctrl_struct');
 
@@ -392,6 +465,7 @@ newRow = {ctrl_struct.Controller.Name, ...
             ctrl_struct.Res.averageOriErr, ...        % Average ori rms [deg]   
             ctrl_struct.Res.maxPosErr, ...        % Max pos error [cm]
             ctrl_struct.Res.maxOriErr, ...        % Max ori error [deg]
+            ctrl_struct.Res.fuel, ...               % Fuel [g]
             ctrl_struct.Controller.r_ee_W, ...             % [ee_x_W, ee_y_W, ee_z_W]
             ctrl_struct.Controller.psi_ee_W, ...           % [ee_psi_x_W, ee_psi_y_W, ee_psi_z_W]      
             ctrl_struct.Controller.u_W, ...   % u_W
