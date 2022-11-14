@@ -5,14 +5,14 @@
 GEN_MEX = 1;
 SIM = 1;
 PLOT = 1;
-UNCERTAINTIES = 0;
+UNCERTAINTIES = 1;
 
 simTime = 80;
 
 % ctrlName = "Ctrl7";
 % --- NMPC Params ---
 Ts = 0.5;
-Tp = 8; % # of prediction steps
+Tp = 5; % # of prediction steps
 Tc = 3; % # of ctrl steps
 solver = "sqp"; % sqp or interior-point
 
@@ -31,8 +31,8 @@ taum_rate_W = 1.0;
 ecr = 1000;
 
 % --- Max Forces --- 
-baseMaxForce = 5; % 5
-baseMaxTorque = 5; % 5
+baseMaxForce = 20; % 5
+baseMaxTorque = 10; % 5
 motorMaxTorque = 200; % 200
 
 baseMaxAngle = 30;
@@ -44,15 +44,15 @@ circleRadius = 2.0;
 plane = "yz";
 
 % --- Constants ---
-d_n = 0.9; % thruster dist, for [nx, ny, nz]
+d_n = 1.5; % thruster dist, for [nx, ny, nz]
 Isp = 200;
 g0 = 9.81;
 fuel_gain = 1/Isp/g0;
 
 % --- Uncertainties ---
-% baseMass = 672;
-baseMassDiff = -0.5; % In '%'
-baseInertiaDiff = -0.5; % In '%' 
+% baseMass = 672
+baseMassDiff = -0.2; % In '%'
+baseInertiaDiff = -0; % In '%' 
 
 
 % --- Initial config ---
@@ -250,11 +250,11 @@ for i = 1:sr.NumActiveJoints
     nlmpc_ee.States(i + 6).Max = jnt.PositionLimits(2);
 end
 
-% % Base angle
-% for i=5:6
-%     nlmpc_ee.States(i).Min = -deg2rad(baseMaxAngle);
-%     nlmpc_ee.States(i).Max = deg2rad(baseMaxAngle);
-% end
+% Base angle
+for i=5:6
+    nlmpc_ee.States(i).Min = -deg2rad(baseMaxAngle);
+    nlmpc_ee.States(i).Max = deg2rad(baseMaxAngle);
+end
 
 % Torques
 maxTorques = [ones(3, 1) * baseMaxForce; ones(3, 1) * baseMaxTorque; ones(n, 1) * motorMaxTorque];

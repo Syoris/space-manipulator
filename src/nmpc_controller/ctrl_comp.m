@@ -14,6 +14,10 @@ load SR6.mat
 % 7: Good
 % 8: Really good
 % 9: 8 but with base mass
+%
+% NEW BASE
+% 13: Good action;  Unc: None;          Base Cstr: 45
+% 14: __;           Unc: Base mass;     Base Cstr: 30
 
 % Best ones: 3, 4, 7
 
