@@ -44,7 +44,7 @@ circleRadius = 2.0;
 plane = "yz";
 
 % --- Constants ---
-d_n = 1.5; % thruster dist, for [nx, ny, nz]
+d_n = 1; % thruster dist, for [nx, ny, nz]
 Isp = 200;
 g0 = 9.81;
 fuel_gain = 1/Isp/g0;
@@ -118,7 +118,7 @@ if UNCERTAINTIES
     sr_unc = load('SR_unc.mat');
     sr_unc = sr_unc.sr;
 
-    sr_unc.Base.Mass = baseMass;
+    sr_unc.Base.Mass = sr_unc.Base.Mass*(1+baseMassDiff);
     sr_unc.Base.Inertia = sr_unc.Base.Inertia*(1+baseInertiaDiff);
 
     sr_unc.Base.initBase();

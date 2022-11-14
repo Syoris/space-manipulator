@@ -74,7 +74,7 @@ bodyNames = {'Body1', 'Body2', 'Body3', 'Body4', 'Body5', 'Body6', 'endeffector'
 jointNames = {'jnt1', 'jnt2', 'jnt3', 'jnt4', 'jnt5', 'jnt6', 'jnt_ee'};
 
 % --- Base Parameters ---
-sizeBase = [1.5, 1.5, 1.5]; % Base [height, width, depth] [m], [z, x, y]
+sizeBase = [2.0, 2.0, 2.0]; % Base [height, width, depth] [m], [z, x, y]
 mBase = 200; % [kg]
 comBase = [0 0 0];
 intertiaBase = [50, 50, 50, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
@@ -241,10 +241,11 @@ sr6.show;
 
 %% --- Generate functions ---
 % Create rotation matrix function handle
+fprintf('Generating RFunc\n')
 RFunc_gen(sr6, modelPath);
 
+fprintf('Creating struct file\n')
 sr6_info = srInfoInit(sr6);
-
 Struct2File(sr6_info, modelPath);
 
 sr6.InfoFunc = @SR6_info;

@@ -17,8 +17,8 @@ modelPath = fullfile('models/SR_unc');
 % 5   −       0.10    0.36    0.82    0.82    1.00
 % 6   −       0.50    1.78    0.04    0.04    0.01
 
-bodyLength = [0.1, 2.61, 2.62, 0.1, 0.1, 0.5, 0];
-bodyMass = [0.36, 9.20, 9.20, 0.36, 0.36, 1.78, 0];
+bodyLength = [0.1, 2.61, 2.61, 0.1, 0.1, 0.5, 0];
+bodyMass = [0.36, 9.20, 9.20, 0.36, 0.36, 1.78, 5];
 Jx = [0.82, 0.03, 0.03, 1.00, 0.82, 0.04, 0];
 Jy = [1, 5.24, 5.24, 0.82, 0.82, 0.04, 0];
 Jz = [0.82, 5.24, 5.24, 0.82, 1, 0.01, 0];
@@ -75,17 +75,17 @@ bodyNames = {'Body1', 'Body2', 'Body3', 'Body4', 'Body5', 'Body6', 'endeffector'
 jointNames = {'jnt1', 'jnt2', 'jnt3', 'jnt4', 'jnt5', 'jnt6', 'jnt_ee'};
 
 % --- Base Parameters ---
-sizeBase = [2.6, 1.7, 1.8]; % Base [height, width, depth] [m], [z, x, y]
-mBase = 786; % [kg]
+sizeBase = [2.0, 2.0, 2.0]; % Base [height, width, depth] [m], [z, x, y]
+mBase = 200; % [kg]
 comBase = [0 0 0];
-intertiaBase = [401.5, 655.0, 632.1, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
+intertiaBase = [50, 50, 50, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
 
 sr_unc.Base.Mass = mBase;
 sr_unc.Base.Inertia = intertiaBase;
 sr_unc.Base.HomeConf = [0; 0; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 sr_unc.Base.ManipToBaseTransform = rt2tr(eye(3), [0; 0; sizeBase(1) / 2]);
 
-% --- Visuals ---
+%% --- Visuals ---
 % Materials
 materials = struct();
 materials.Blue = [0.5 0.7 1.0 1.0];
@@ -235,11 +235,11 @@ sr_unc.show;
 
 %% --- Generate functions ---
 % Create rotation matrix function handle
+fprintf('Generating RFunc\n')
 RFunc_gen(sr_unc, modelPath);
 
+fprintf('Creating struct file\n')
 sr_unc_info = srInfoInit(sr_unc);
-
-% save(fullfile(modelPath, 'SR_unc_data.mat'), 'sr_unc_info')
 Struct2File(sr_unc_info, modelPath);
 
 sr_unc.InfoFunc = @SR_unc_info_struct;
