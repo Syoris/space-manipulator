@@ -2,10 +2,10 @@
 % Design and test of NMPC controller for SR
 
 % ### OPTIONS ###
-GEN_MEX = 0;
+GEN_MEX = 1;
 SIM = 1;
 PLOT = 1;
-UNCERTAINTIES = 1;
+UNCERTAINTIES = 0;
 
 simTime = 80;
 
@@ -131,7 +131,7 @@ if UNCERTAINTIES
     % Set sim model to uncertain model
     sr_sim = sr_unc;   
 else
-    sr_sim = sr_unc;
+    sr_sim = sr;
 end
 
 % Check Base Mass Mat
@@ -250,11 +250,11 @@ for i = 1:sr.NumActiveJoints
     nlmpc_ee.States(i + 6).Max = jnt.PositionLimits(2);
 end
 
-% Base angle
-for i=5:6
-    nlmpc_ee.States(i).Min = -deg2rad(baseMaxAngle);
-    nlmpc_ee.States(i).Max = deg2rad(baseMaxAngle);
-end
+% % Base angle
+% for i=5:6
+%     nlmpc_ee.States(i).Min = -deg2rad(baseMaxAngle);
+%     nlmpc_ee.States(i).Max = deg2rad(baseMaxAngle);
+% end
 
 % Torques
 maxTorques = [ones(3, 1) * baseMaxForce; ones(3, 1) * baseMaxTorque; ones(n, 1) * motorMaxTorque];
@@ -351,7 +351,7 @@ fprintf('\n--- Animation ---\n')
 rate = 2;
 saveName = '';
 
-% animateFunc(sr, logsout, rate, saveName);
+animateFunc(sr, logsout, rate, saveName);
 
 
 

@@ -16,8 +16,8 @@ modelPath = fullfile('models/SR6');
 % 5   −       0.10    0.36    0.82    0.82    1.00
 % 6   −       0.50    1.78    0.04    0.04    0.01
 
-bodyLength = [0.1, 2.61, 2.62, 0.1, 0.1, 0.5, 0];
-bodyMass = [0.36, 9.20, 9.20, 0.36, 0.36, 1.78, 0];
+bodyLength = [0.1, 2.61, 2.61, 0.1, 0.1, 0.5, 0];
+bodyMass = [0.36, 9.20, 9.20, 0.36, 0.36, 1.78, 5];
 Jx = [0.82, 0.03, 0.03, 1.00, 0.82, 0.04, 0];
 Jy = [1, 5.24, 5.24, 0.82, 0.82, 0.04, 0];
 Jz = [0.82, 5.24, 5.24, 0.82, 1, 0.01, 0];
@@ -74,17 +74,17 @@ bodyNames = {'Body1', 'Body2', 'Body3', 'Body4', 'Body5', 'Body6', 'endeffector'
 jointNames = {'jnt1', 'jnt2', 'jnt3', 'jnt4', 'jnt5', 'jnt6', 'jnt_ee'};
 
 % --- Base Parameters ---
-sizeBase = [2.6, 1.7, 1.8]; % Base [height, width, depth] [m], [z, x, y]
-mBase = 786; % [kg]
+sizeBase = [1.5, 1.5, 1.5]; % Base [height, width, depth] [m], [z, x, y]
+mBase = 200; % [kg]
 comBase = [0 0 0];
-intertiaBase = [401.5, 655.0, 632.1, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
+intertiaBase = [50, 50, 50, 0, 0, 0]; % [Ixx Iyy Izz Iyz Ixz Ixy]
 
 sr6.Base.Mass = mBase;
 sr6.Base.Inertia = intertiaBase;
 sr6.Base.HomeConf = [0; 0; 0; 0; 0; 0]; % [Rx; Ry; Rz; r; p; y]
 sr6.Base.ManipToBaseTransform = rt2tr(eye(3), [0; 0; sizeBase(1) / 2]);
 
-% --- Visuals ---
+%% --- Visuals ---
 % Materials
 materials = struct();
 materials.Blue = [0.5 0.7 1.0 1.0];
@@ -169,7 +169,7 @@ bodiesVisual{7}(end + 1) = struct('Geometry', 'Box', ...
     'T', trvec2tform([0.1250 0 0.1]), ...
     'Color', materials.Red);
 
-% --- Robot Initialization ---
+%% --- Robot Initialization ---
 sr6.Base.addVisual(baseVisual.Geometry, baseVisual.Parameters, ...
 baseVisual.T, baseVisual.Color);
 
@@ -244,38 +244,35 @@ sr6.show;
 RFunc_gen(sr6, modelPath);
 
 sr6_info = srInfoInit(sr6);
-% sr6_info.RFunc = @RFunc_SR6;
-% sr6_info.RFunc = 'RFunc_SR6_mex';
 
-save(fullfile(modelPath, 'SR6_data.mat'), 'sr6_info')
 Struct2File(sr6_info, modelPath);
 
 sr6.InfoFunc = @SR6_info;
 sr6.StateFunc = @SR6_state_func;
 sr6.StateFuncMex = @SR6_state_func_mex;
 
-%% --- Generate mex ---
-fprintf("Generating code for state function...\n")
-x = zeros(24, 1);
-u = zeros(12, 1);
-
-codegen -report SR6_state_func.m -args {x, u} -o models\SR6\SR6_state_func_mex.mexw64
-
-%% Generate mex for SR6 ee
-fprintf("Generating code for EE CONTINUOUS state function...\n")
-x = zeros(36, 1);
-u = zeros(12, 1);
-
-codegen -report SR6_ee_state_func.m -args {x, u} -o models\SR6\SR6_ee_state_func_mex.mexw64
-fprintf("Code generation done\n")
-
-%% Generate mex for SR6 ee, discrete
-fprintf("Generating code for EE DISCRETE state function...\n")
-x = zeros(36, 1);
-u = zeros(12, 1);
-
-codegen -report SR6_ee_state_func_dt.m -args {x, u} -o models\SR6\SR6_ee_state_func_dt_mex.mexw64
-fprintf("Code generation done\n")
+% %% --- Generate mex ---
+% fprintf("Generating code for state function...\n")
+% x = zeros(24, 1);
+% u = zeros(12, 1);
+% 
+% codegen -report SR6_state_func.m -args {x, u} -o models\SR6\SR6_state_func_mex.mexw64
+% 
+% %% Generate mex for SR6 ee
+% fprintf("Generating code for EE CONTINUOUS state function...\n")
+% x = zeros(36, 1);
+% u = zeros(12, 1);
+% 
+% codegen -report SR6_ee_state_func.m -args {x, u} -o models\SR6\SR6_ee_state_func_mex.mexw64
+% fprintf("Code generation done\n")
+% 
+% %% Generate mex for SR6 ee, discrete
+% fprintf("Generating code for EE DISCRETE state function...\n")
+% x = zeros(36, 1);
+% u = zeros(12, 1);
+% 
+% codegen -report SR6_ee_state_func_dt.m -args {x, u} -o models\SR6\SR6_ee_state_func_dt_mex.mexw64
+% fprintf("Code generation done\n")
 %% --- Save Robot ---
 fprintf('Saving robot\n')
 saveSR(sr6, 'FileName', 'SR6', 'Path', modelPath)

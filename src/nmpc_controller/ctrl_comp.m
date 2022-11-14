@@ -33,7 +33,7 @@ N = n + 6;
 % Animate
 rate = 2;
 saveName = '';
-% animateFunc(sr, logsout, rate, saveName);
+animateFunc(sr, logsout, rate, saveName);
 
 % Plots
 plotFunc(sr, logsout, simTime, n, N);
