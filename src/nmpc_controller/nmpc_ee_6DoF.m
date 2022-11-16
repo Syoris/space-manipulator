@@ -11,7 +11,7 @@ simTime = 80;
 
 % ctrlName = "Ctrl7";
 % --- NMPC Params ---
-Ts = 0.5;
+Ts = 0.25;
 Tp = 5; % # of prediction steps
 Tc = 3; % # of ctrl steps
 solver = "sqp"; % sqp or interior-point
@@ -28,7 +28,7 @@ fb_rate_W = 0.1;
 nb_rate_W = 0.1;
 taum_rate_W = 1.0;
 
-ecr = 1000;
+ecr = 100;
 
 % --- Max Forces --- 
 baseMaxForce = 20; % 5
@@ -51,7 +51,7 @@ fuel_gain = 1/Isp/g0;
 
 % --- Uncertainties ---
 % baseMass = 672
-baseMassDiff = -0.2; % In '%'
+baseMassDiff = -0; % In '%'
 baseInertiaDiff = -0; % In '%' 
 
 
@@ -235,7 +235,7 @@ nlmpc_ee.Weights.ManipulatedVariablesRate = [ones(1, 3)*fb_rate_W, ones(1, 3)*nb
 nlmpc_ee.Weights.ECR = ecr;
 
 % --- Solver parameters ---
-nlmpc_ee.Optimization.UseSuboptimalSolution = false;
+nlmpc_ee.Optimization.UseSuboptimalSolution = true;
 nlmpc_ee.Optimization.SolverOptions.MaxIterations = 5000;
 % nlmpc_ee.Optimization.SolverOptions.Display = 'final-detailed'; %'final-detailed';
 nlmpc_ee.Optimization.SolverOptions.Algorithm = solver;
